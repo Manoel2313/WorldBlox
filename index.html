@@ -8,7 +8,6 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { overflow: hidden; background: #0a0a12; font-family: 'Segoe UI', Arial, sans-serif; touch-action: none; }
         
-        /* === MENU INICIAL === */
         #menu {
             position: absolute;
             top: 0;
@@ -38,10 +37,7 @@
             margin-bottom: 40px;
             font-weight: 300;
         }
-        #menu .platform-select {
-            display: flex;
-            gap: 30px;
-        }
+        #menu .platform-select { display: flex; gap: 30px; }
         #menu .platform-btn {
             padding: 16px 50px;
             font-size: clamp(16px, 2vw, 24px);
@@ -55,29 +51,15 @@
             letter-spacing: 4px;
             min-width: 140px;
         }
-        #menu .platform-btn:hover {
-            border-color: #88ccff;
-            color: #88ccff;
-            background: rgba(136,204,255,0.05);
-            transform: scale(1.02);
-        }
-        #menu .platform-btn:active {
-            transform: scale(0.95);
-        }
+        #menu .platform-btn:hover { border-color: #88ccff; color: #88ccff; background: rgba(136,204,255,0.05); transform: scale(1.02); }
+        #menu .platform-btn:active { transform: scale(0.95); }
         #menu .platform-btn.pc { border-color: #4a6a8a; }
         #menu .platform-btn.mobile { border-color: #6a4a8a; }
         #menu .platform-btn.pc:hover { border-color: #88ccff; color: #88ccff; }
         #menu .platform-btn.mobile:hover { border-color: #cc88ff; color: #cc88ff; }
-        #menu .footer {
-            position: absolute;
-            bottom: 30px;
-            font-size: 11px;
-            color: #333;
-            letter-spacing: 2px;
-        }
+        #menu .footer { position: absolute; bottom: 30px; font-size: 11px; color: #333; letter-spacing: 2px; }
         #menu.hidden { display: none; }
 
-        /* === HUD === */
         #hud {
             position: absolute;
             bottom: 30px;
@@ -94,7 +76,6 @@
         #hud .time { color: #88ccff; font-size: 16px; }
         #hud .pos { color: #888; font-size: 12px; }
 
-        /* === CROSSHAIR === */
         #crosshair {
             position: absolute;
             top: 50%;
@@ -107,7 +88,6 @@
             z-index: 10;
         }
 
-        /* === MOBILE CONTROLS === */
         #mobile-controls {
             position: absolute;
             bottom: 0;
@@ -121,7 +101,6 @@
         }
         #mobile-controls.active { display: block; }
 
-        /* Joystick */
         #joystick-area {
             position: absolute;
             bottom: 40px;
@@ -154,7 +133,6 @@
             transition: none;
         }
 
-        /* Botões mobile */
         #mobile-buttons {
             position: absolute;
             bottom: 50px;
@@ -183,15 +161,11 @@
             font-family: 'Segoe UI', Arial, sans-serif;
             letter-spacing: 1px;
         }
-        .mobile-btn:active {
-            transform: scale(0.92);
-            background: rgba(255,255,255,0.12);
-        }
+        .mobile-btn:active { transform: scale(0.92); background: rgba(255,255,255,0.12); }
         .mobile-btn.jump { color: #88ccff; border-color: rgba(136,204,255,0.2); }
         .mobile-btn.sprint { color: #cc88ff; border-color: rgba(204,136,255,0.2); }
         .mobile-btn.sprint.active { color: #ff88cc; border-color: rgba(255,136,204,0.3); background: rgba(255,136,204,0.08); }
 
-        /* Bloqueio de cursor */
         #blocker {
             position: absolute;
             top: 0;
@@ -210,33 +184,44 @@
             flex-direction: column;
             text-shadow: 0 0 30px rgba(0,0,0,0.9);
         }
-        #blocker .sub {
-            font-size: 14px;
-            font-weight: normal;
-            margin-top: 12px;
-            opacity: 0.4;
-            font-family: monospace;
-        }
+        #blocker .sub { font-size: 14px; font-weight: normal; margin-top: 12px; opacity: 0.4; font-family: monospace; }
         #blocker.hidden { display: none; }
 
-        /* Loading */
         #loading {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: #666;
-            font-size: 14px;
+            color: #88ccff;
+            font-size: 18px;
             font-family: monospace;
             z-index: 5;
             display: none;
+            background: rgba(0,0,0,0.8);
+            padding: 20px 40px;
+            border-radius: 8px;
+            border: 1px solid rgba(136,204,255,0.1);
+        }
+        #loading .bar {
+            width: 200px;
+            height: 4px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 2px;
+            margin-top: 12px;
+            overflow: hidden;
+        }
+        #loading .bar .fill {
+            height: 100%;
+            background: #88ccff;
+            width: 0%;
+            transition: width 0.3s;
+            border-radius: 2px;
         }
         #loading.active { display: block; }
     </style>
 </head>
 <body>
 
-    <!-- MENU -->
     <div id="menu">
         <div class="title">INDUSTRY FUND</div>
         <div class="subtitle">— EXPLORE THE INFINITE —</div>
@@ -244,10 +229,9 @@
             <button class="platform-btn pc" data-platform="pc">🖥 PC</button>
             <button class="platform-btn mobile" data-platform="mobile">📱 MOBILE</button>
         </div>
-        <div class="footer">v1.0 · procedural world</div>
+        <div class="footer">v1.0 · procedural world · 600m radius</div>
     </div>
 
-    <!-- HUD -->
     <div id="hud">
         <div class="time" id="gameTime">⏱ 00:00:00</div>
         <div class="pos" id="playerPos">📍 0.0, 0.0, 0.0</div>
@@ -255,7 +239,6 @@
 
     <div id="crosshair">+</div>
 
-    <!-- MOBILE CONTROLS -->
     <div id="mobile-controls">
         <div id="joystick-area">
             <div id="joystick-bg">
@@ -268,13 +251,16 @@
         </div>
     </div>
 
-    <!-- BLOCKER -->
     <div id="blocker">
         🏭 Clique para Explorar
         <div class="sub">WASD · Mouse · ESPAÇO(pular) · Q(correr)</div>
     </div>
 
-    <div id="loading">CARREGANDO MUNDO...</div>
+    <div id="loading">
+        <div>🏗️ GERANDO MUNDO</div>
+        <div class="bar"><div class="fill" id="loadBar"></div></div>
+        <div style="font-size:12px; color:#666; margin-top:8px;" id="loadText">0%</div>
+    </div>
 
     <script type="importmap">
         {
@@ -300,7 +286,6 @@
             GRAVITY: -16,
             MAX_STRUCTURE_HEIGHT: 14,
             MIN_STRUCTURE_HEIGHT: 3,
-            INITIAL_CHUNK_RADIUS: 4,
         };
 
         // ============================================================
@@ -316,12 +301,14 @@
         const btnJump = document.getElementById('btnJump');
         const btnSprint = document.getElementById('btnSprint');
         const loadingEl = document.getElementById('loading');
+        const loadBar = document.getElementById('loadBar');
+        const loadText = document.getElementById('loadText');
 
-        let platform = null; // 'pc' ou 'mobile'
+        let platform = null;
         let gameStarted = false;
 
         // ============================================================
-        // 3. THREE.JS - CENA, CÂMERA, RENDER
+        // 3. THREE.JS
         // ============================================================
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x12121e);
@@ -330,10 +317,7 @@
         const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 700);
         camera.position.set(0, CONFIG.PLAYER_HEIGHT, 0);
 
-        const renderer = new THREE.WebGLRenderer({ 
-            antialias: true, 
-            powerPreference: "high-performance" 
-        });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.2));
         renderer.shadowMap.enabled = true;
@@ -347,10 +331,8 @@
         // ============================================================
         const ambient = new THREE.AmbientLight(0x445566, 0.5);
         scene.add(ambient);
-
         const hemi = new THREE.HemisphereLight(0x8899bb, 0x443322, 0.4);
         scene.add(hemi);
-
         const sun = new THREE.DirectionalLight(0xffeedd, 1.4);
         sun.position.set(40, 60, 30);
         sun.castShadow = true;
@@ -363,13 +345,12 @@
         sun.shadow.camera.top = 60;
         sun.shadow.camera.bottom = -60;
         scene.add(sun);
-
         const fill = new THREE.DirectionalLight(0x8888ff, 0.2);
         fill.position.set(-30, 20, -30);
         scene.add(fill);
 
         // ============================================================
-        // 5. MATERIAIS E GEOMETRIAS (compartilhados)
+        // 5. MATERIAIS E GEOMETRIAS
         // ============================================================
         const materials = {
             wall: new THREE.MeshStandardMaterial({ color: 0x6a7a8a, roughness: 0.7, metalness: 0.3 }),
@@ -379,7 +360,6 @@
             metal: new THREE.MeshStandardMaterial({ color: 0x8a9aaa, roughness: 0.4, metalness: 0.7 }),
             metalDark: new THREE.MeshStandardMaterial({ color: 0x5a6a7a, roughness: 0.5, metalness: 0.6 }),
         };
-
         const geometries = {
             box: new THREE.BoxGeometry(1, 1, 1),
             cylinder: new THREE.CylinderGeometry(0.5, 0.5, 1, 6),
@@ -391,42 +371,30 @@
         const chunks = new Map();
         let gameStartTime = Date.now();
         let totalObjects = 0;
-        let chunksGenerated = 0;
 
-        function getChunkKey(cx, cz) {
-            return `${cx},${cz}`;
-        }
-
+        function getChunkKey(cx, cz) { return `${cx},${cz}`; }
         function getChunkCenter(cx, cz) {
-            return {
-                x: cx * CONFIG.CHUNK_SIZE + CONFIG.CHUNK_SIZE / 2,
-                z: cz * CONFIG.CHUNK_SIZE + CONFIG.CHUNK_SIZE / 2
-            };
+            return { x: cx * CONFIG.CHUNK_SIZE + CONFIG.CHUNK_SIZE / 2, z: cz * CONFIG.CHUNK_SIZE + CONFIG.CHUNK_SIZE / 2 };
         }
-
         function getDistanceToPlayer(cx, cz, playerPos) {
             const center = getChunkCenter(cx, cz);
-            const dx = center.x - playerPos.x;
-            const dz = center.z - playerPos.z;
-            return Math.sqrt(dx*dx + dz*dz);
+            return Math.sqrt((center.x - playerPos.x)**2 + (center.z - playerPos.z)**2);
         }
 
         // ============================================================
-        // 7. GERADOR DE ESTRUTURAS (COM ALTA DENSIDADE)
+        // 7. GERADOR DE ESTRUTURAS (ALTA DENSIDADE)
         // ============================================================
         function generateStructures(cx, cz) {
             const structures = [];
             const center = getChunkCenter(cx, cz);
             const seed = (cx * 73856093 + cz * 19349663 + 83492791) & 0x7fffffff;
-            
             const rng = (n) => {
                 const s = (seed * 9301 + 49297) % 233280;
                 seed = (s * 9301 + 49297) % 233280;
                 return (s / 233280) * n;
             };
 
-            // MUITAS estruturas por chunk
-            const count = 4 + Math.floor(rng(6));
+            const count = 5 + Math.floor(rng(7));
             
             for (let i = 0; i < count; i++) {
                 const x = center.x + (rng(1) - 0.5) * CONFIG.CHUNK_SIZE * 0.75;
@@ -434,16 +402,9 @@
                 const w = 1.5 + rng(5);
                 const d = 1.5 + rng(5);
                 const h = CONFIG.MIN_STRUCTURE_HEIGHT + rng(CONFIG.MAX_STRUCTURE_HEIGHT - CONFIG.MIN_STRUCTURE_HEIGHT);
-                
-                structures.push({
-                    x, z, w, d, h,
-                    type: Math.floor(rng(4)),
-                    hasRoof: rng(1) > 0.3,
-                    colorVariant: Math.floor(rng(2))
-                });
+                structures.push({ x, z, w, d, h, type: Math.floor(rng(4)), hasRoof: rng(1) > 0.3, colorVariant: Math.floor(rng(2)) });
             }
-            
-            // Conexões
+
             const connCount = 2 + Math.floor(rng(structures.length));
             for (let i = 0; i < connCount; i++) {
                 const a = Math.floor(rng(structures.length));
@@ -452,46 +413,31 @@
                     structures.push({
                         x: (structures[a].x + structures[b].x) / 2 + (rng(1) - 0.5) * 2,
                         z: (structures[a].z + structures[b].z) / 2 + (rng(1) - 0.5) * 2,
-                        w: 1.2 + rng(2),
-                        d: 1.2 + rng(2),
-                        h: 2 + rng(3),
-                        type: 4,
-                        isCorridor: true,
+                        w: 1.2 + rng(2), d: 1.2 + rng(2), h: 2 + rng(3), type: 4, isCorridor: true
                     });
                 }
             }
-            
-            // Plataformas
+
             for (const s of structures) {
                 if (s.h > 4 && rng(1) > 0.4) {
                     structures.push({
                         x: s.x + (rng(1) - 0.5) * s.w * 0.6,
                         z: s.z + (rng(1) - 0.5) * s.d * 0.6,
-                        w: 1.5 + rng(2.5),
-                        d: 1.5 + rng(2.5),
-                        h: 0.2,
-                        type: 5,
-                        isPlatform: true,
-                        platformY: 2 + rng(s.h - 3)
+                        w: 1.5 + rng(2.5), d: 1.5 + rng(2.5), h: 0.2,
+                        type: 5, isPlatform: true, platformY: 2 + rng(s.h - 3)
                     });
                 }
             }
-            
-            // Estruturas gigantes
+
             if (rng(1) > 0.6) {
                 structures.push({
                     x: center.x + (rng(1) - 0.5) * CONFIG.CHUNK_SIZE * 0.25,
                     z: center.z + (rng(1) - 0.5) * CONFIG.CHUNK_SIZE * 0.25,
-                    w: 6 + rng(8),
-                    d: 6 + rng(8),
-                    h: 8 + rng(10),
-                    type: 0,
-                    hasRoof: true,
-                    colorVariant: Math.floor(rng(2)),
-                    isGiant: true
+                    w: 6 + rng(8), d: 6 + rng(8), h: 8 + rng(10),
+                    type: 0, hasRoof: true, colorVariant: Math.floor(rng(2)), isGiant: true
                 });
             }
-            
+
             return structures;
         }
 
@@ -503,19 +449,17 @@
             const mat = s.colorVariant === 0 ? materials.wall : materials.wallDark;
             const matFloor = s.colorVariant === 0 ? materials.floor : materials.floorDark;
             const matMetal = s.colorVariant === 0 ? materials.metal : materials.metalDark;
-            
+
             if (s.isCorridor) {
                 const floor = new THREE.Mesh(geometries.box, matFloor);
                 floor.scale.set(s.w, 0.15, s.d);
                 floor.position.set(s.x, 0.1, s.z);
                 meshes.push(floor);
-                
                 if (s.w < 4) {
                     const wall1 = new THREE.Mesh(geometries.box, mat);
                     wall1.scale.set(s.w, s.h, 0.15);
                     wall1.position.set(s.x, s.h/2, s.z + s.d/2);
                     meshes.push(wall1);
-                    
                     const wall2 = new THREE.Mesh(geometries.box, mat);
                     wall2.scale.set(s.w, s.h, 0.15);
                     wall2.position.set(s.x, s.h/2, s.z - s.d/2);
@@ -523,103 +467,86 @@
                 }
                 return meshes;
             }
-            
+
             if (s.isPlatform) {
                 const plat = new THREE.Mesh(geometries.box, matMetal);
                 plat.scale.set(s.w, 0.15, s.d);
                 plat.position.set(s.x, s.platformY || 2, s.z);
                 meshes.push(plat);
-                
                 for (let i = -1; i <= 1; i += 2) {
                     for (let j = -1; j <= 1; j += 2) {
                         const support = new THREE.Mesh(geometries.cylinder, materials.metalDark);
                         support.scale.set(1, s.platformY || 2, 1);
-                        support.position.set(
-                            s.x + i * s.w * 0.3,
-                            (s.platformY || 2) / 2,
-                            s.z + j * s.d * 0.3
-                        );
+                        support.position.set(s.x + i * s.w * 0.3, (s.platformY || 2) / 2, s.z + j * s.d * 0.3);
                         meshes.push(support);
                     }
                 }
                 return meshes;
             }
-            
-            // Estrutura principal
-            const w = s.w, d = s.d, h = s.h;
-            const x = s.x, z = s.z;
-            
-            // Piso
+
+            const w = s.w, d = s.d, h = s.h, x = s.x, z = s.z;
+            const wallMat = s.type === 0 ? mat : materials.wallDark;
+
             const floor = new THREE.Mesh(geometries.box, matFloor);
             floor.scale.set(w, 0.15, d);
             floor.position.set(x, 0.1, z);
             meshes.push(floor);
-            
-            // Paredes
-            const wallMat = s.type === 0 ? mat : materials.wallDark;
-            
+
             const back = new THREE.Mesh(geometries.box, wallMat);
             back.scale.set(w, h, 0.15);
             back.position.set(x, h/2, z - d/2);
             meshes.push(back);
-            
+
             const front = new THREE.Mesh(geometries.box, wallMat);
             front.scale.set(w, h, 0.15);
             front.position.set(x, h/2, z + d/2);
             meshes.push(front);
-            
+
             const side1 = new THREE.Mesh(geometries.box, wallMat);
             side1.scale.set(0.15, h, d);
             side1.position.set(x - w/2, h/2, z);
             meshes.push(side1);
-            
+
             const side2 = new THREE.Mesh(geometries.box, wallMat);
             side2.scale.set(0.15, h, d);
             side2.position.set(x + w/2, h/2, z);
             meshes.push(side2);
-            
-            // Teto
+
             if (s.hasRoof && h > 2) {
                 const roof = new THREE.Mesh(geometries.box, matFloor);
                 roof.scale.set(w, 0.15, d);
                 roof.position.set(x, h, z);
                 meshes.push(roof);
             }
-            
-            // Vigas
+
             if (h > 3) {
                 for (let i = 0; i < Math.min(3, Math.floor(h / 2)); i++) {
                     const beam = new THREE.Mesh(geometries.box, matMetal);
                     beam.scale.set(w + 0.3, 0.08, 0.08);
                     beam.position.set(x, 0.5 + i * 1.6, z - d/2 - 0.08);
                     meshes.push(beam);
-                    
                     const beam2 = new THREE.Mesh(geometries.box, matMetal);
                     beam2.scale.set(w + 0.3, 0.08, 0.08);
                     beam2.position.set(x, 0.5 + i * 1.6, z + d/2 + 0.08);
                     meshes.push(beam2);
                 }
             }
-            
+
             return meshes;
         }
 
         // ============================================================
-        // 9. CRIAÇÃO DE CHUNK (COM VISIBILIDADE GARANTIDA)
+        // 9. CRIAÇÃO DE CHUNK
         // ============================================================
         function createChunk(cx, cz) {
             const key = getChunkKey(cx, cz);
-            
-            if (chunks.has(key)) {
-                return;
-            }
-            
+            if (chunks.has(key)) return;
+
             const structures = generateStructures(cx, cz);
             const group = new THREE.Group();
             const center = getChunkCenter(cx, cz);
             const objects = [];
-            
-            // Chão
+
             const floorMesh = new THREE.Mesh(
                 new THREE.PlaneGeometry(CONFIG.CHUNK_SIZE, CONFIG.CHUNK_SIZE),
                 (cx + cz) % 2 === 0 ? materials.floor : materials.floorDark
@@ -630,8 +557,7 @@
             floorMesh.userData.isCollider = true;
             group.add(floorMesh);
             objects.push(floorMesh);
-            
-            // Estruturas
+
             for (const s of structures) {
                 const meshes = buildStructureMeshes(s);
                 for (const mesh of meshes) {
@@ -642,49 +568,42 @@
                     objects.push(mesh);
                 }
             }
-            
-            // ADICIONA À CENA IMEDIATAMENTE
+
             scene.add(group);
-            chunks.set(key, { 
-                group, 
-                objects, 
-                structures,
-                cx, cz,
-                visible: true
-            });
-            
+            chunks.set(key, { group, objects, structures, cx, cz, visible: true });
             totalObjects += objects.length;
-            chunksGenerated++;
-            
             return objects.length;
         }
 
         // ============================================================
-        // 10. GERENCIADOR DE CHUNKS
+        // 10. GERENCIADOR DE CHUNKS (CARREGA 600m)
         // ============================================================
         function updateChunks(playerPos) {
             const cx = Math.floor(playerPos.x / CONFIG.CHUNK_SIZE);
             const cz = Math.floor(playerPos.z / CONFIG.CHUNK_SIZE);
             const radius = Math.ceil(CONFIG.VIEW_DISTANCE / CONFIG.CHUNK_SIZE);
-            
-            // Cria chunks
+
             let created = 0;
+            let total = 0;
+            const totalChunks = (radius * 2 + 1) ** 2;
+
             for (let dx = -radius; dx <= radius; dx++) {
                 for (let dz = -radius; dz <= radius; dz++) {
                     const dist = Math.sqrt(dx*dx + dz*dz) * CONFIG.CHUNK_SIZE;
                     if (dist > CONFIG.VIEW_DISTANCE + CONFIG.CHUNK_SIZE) continue;
-                    
+
                     const chunkX = cx + dx;
                     const chunkZ = cz + dz;
                     const key = getChunkKey(chunkX, chunkZ);
-                    
+
                     if (!chunks.has(key)) {
                         createChunk(chunkX, chunkZ);
                         created++;
                     }
+                    total++;
                 }
             }
-            
+
             // Remove chunks distantes
             const toRemove = [];
             for (const [key, data] of chunks) {
@@ -693,7 +612,6 @@
                     toRemove.push(key);
                 }
             }
-            
             for (const key of toRemove) {
                 const data = chunks.get(key);
                 scene.remove(data.group);
@@ -703,8 +621,8 @@
                 });
                 chunks.delete(key);
             }
-            
-            return created;
+
+            return { created, total, totalChunks };
         }
 
         // ============================================================
@@ -712,8 +630,7 @@
         // ============================================================
         const player = {
             position: new THREE.Vector3(0, CONFIG.PLAYER_HEIGHT, 0),
-            yaw: 0,
-            pitch: 0,
+            yaw: 0, pitch: 0,
             velocity: new THREE.Vector3(0, 0, 0),
             isGrounded: false,
             speed: CONFIG.PLAYER_SPEED,
@@ -721,7 +638,6 @@
             radius: 0.3,
             height: CONFIG.PLAYER_HEIGHT,
         };
-
         camera.position.copy(player.position);
 
         // ============================================================
@@ -732,29 +648,22 @@
                 const chunkPos = getChunkCenter(data.cx, data.cz);
                 const dxc = pos.x - chunkPos.x;
                 const dzc = pos.z - chunkPos.z;
-                if (Math.abs(dxc) > CONFIG.CHUNK_SIZE / 2 + 2 || 
-                    Math.abs(dzc) > CONFIG.CHUNK_SIZE / 2 + 2) continue;
-                
+                if (Math.abs(dxc) > CONFIG.CHUNK_SIZE / 2 + 2 || Math.abs(dzc) > CONFIG.CHUNK_SIZE / 2 + 2) continue;
+
                 for (const obj of data.objects) {
                     if (!obj.userData.isCollider) continue;
-                    
                     const box = new THREE.Box3().setFromObject(obj);
                     const center = new THREE.Vector3();
                     const size = new THREE.Vector3();
                     box.getCenter(center);
                     box.getSize(size);
-                    
                     const halfW = size.x / 2 + radius;
                     const halfD = size.z / 2 + radius;
                     const halfH = size.y / 2 + height / 2;
-                    
                     const dx = pos.x - center.x;
                     const dz = pos.z - center.z;
                     const dy = pos.y - center.y;
-                    
-                    if (Math.abs(dx) < halfW && Math.abs(dz) < halfD && Math.abs(dy) < halfH) {
-                        return true;
-                    }
+                    if (Math.abs(dx) < halfW && Math.abs(dz) < halfD && Math.abs(dy) < halfH) return true;
                 }
             }
             return false;
@@ -762,10 +671,8 @@
 
         function moveWithCollision(entity, dx, dy, dz) {
             const testX = new THREE.Vector3(entity.position.x + dx, entity.position.y, entity.position.z);
-            if (!checkCollision(testX, entity.radius, entity.height)) {
-                entity.position.x += dx;
-            }
-            
+            if (!checkCollision(testX, entity.radius, entity.height)) entity.position.x += dx;
+
             const testY = new THREE.Vector3(entity.position.x, entity.position.y + dy, entity.position.z);
             if (!checkCollision(testY, entity.radius, entity.height)) {
                 entity.position.y += dy;
@@ -773,38 +680,31 @@
                 entity.velocity.y = 0;
                 entity.isGrounded = true;
             }
-            
+
             const testZ = new THREE.Vector3(entity.position.x, entity.position.y, entity.position.z + dz);
-            if (!checkCollision(testZ, entity.radius, entity.height)) {
-                entity.position.z += dz;
-            }
+            if (!checkCollision(testZ, entity.radius, entity.height)) entity.position.z += dz;
         }
 
         // ============================================================
-        // 13. MOVIMENTO (compartilhado)
+        // 13. MOVIMENTO COMPARTILHADO
         // ============================================================
         let moveInput = { x: 0, z: 0 };
         let jumpRequested = false;
-        let sprintRequested = false;
 
         function updatePlayer(delta) {
             const speed = player.isSprinting ? CONFIG.PLAYER_SPEED * CONFIG.SPRINT_MULTIPLIER : CONFIG.PLAYER_SPEED;
 
-            // Pulo
             if (jumpRequested && player.isGrounded) {
                 player.velocity.y = CONFIG.JUMP_FORCE;
                 player.isGrounded = false;
                 jumpRequested = false;
             }
 
-            // Gravidade
             player.velocity.y += CONFIG.GRAVITY * delta;
-            
-            // Movimento
+
             const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
             forward.y = 0;
             forward.normalize();
-
             const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
             right.y = 0;
             right.normalize();
@@ -816,11 +716,7 @@
                 moveDir.normalize().multiplyScalar(speed * delta);
             }
 
-            const dx = moveDir.x;
-            const dz = moveDir.z;
-            const dy = player.velocity.y * delta;
-            
-            moveWithCollision(player, dx, dy, dz);
+            moveWithCollision(player, moveDir.x, player.velocity.y * delta, moveDir.z);
 
             if (player.position.y < -10) {
                 player.position.y = CONFIG.PLAYER_HEIGHT;
@@ -835,8 +731,7 @@
 
             // Atualiza chunks
             updateChunks(player.position);
-            
-            // HUD
+
             const elapsed = Math.floor((Date.now() - gameStartTime) / 1000);
             const hours = String(Math.floor(elapsed / 3600)).padStart(2, '0');
             const minutes = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
@@ -846,23 +741,17 @@
         }
 
         // ============================================================
-        // 14. CONTROLES - PC
+        // 14. CONTROLES PC
         // ============================================================
         const pcKeys = { w: false, a: false, s: false, d: false, space: false, q: false };
 
         function updatePCInput() {
             moveInput.x = (pcKeys.d ? 1 : 0) - (pcKeys.a ? 1 : 0);
             moveInput.z = (pcKeys.s ? 1 : 0) - (pcKeys.w ? 1 : 0);
-            
-            if (pcKeys.space) {
-                jumpRequested = true;
-                pcKeys.space = false; // prevenir pulo múltiplo
-            }
-            
+            if (pcKeys.space) { jumpRequested = true; pcKeys.space = false; }
             player.isSprinting = pcKeys.q;
         }
 
-        // Eventos PC
         document.addEventListener('keydown', (e) => {
             if (platform !== 'pc' || !gameStarted) return;
             switch (e.code) {
@@ -886,7 +775,6 @@
             }
         });
 
-        // Mouse PC
         document.addEventListener('mousemove', (e) => {
             if (platform !== 'pc' || !gameStarted || document.pointerLockElement !== renderer.domElement) return;
             const sens = 0.002;
@@ -896,28 +784,22 @@
         });
 
         // ============================================================
-        // 15. CONTROLES - MOBILE
+        // 15. CONTROLES MOBILE
         // ============================================================
-        let joystickActive = false;
         let joystickTouchId = null;
         let cameraTouchId = null;
-        let lastCameraX = 0;
-        let lastCameraY = 0;
+        let lastCameraX = 0, lastCameraY = 0;
 
-        // Joystick
         joystickBg.addEventListener('touchstart', (e) => {
             e.preventDefault();
             const touch = e.changedTouches[0];
             joystickTouchId = touch.identifier;
-            joystickActive = true;
             updateJoystick(touch);
         });
 
         document.addEventListener('touchmove', (e) => {
             for (const touch of e.changedTouches) {
-                if (touch.identifier === joystickTouchId) {
-                    updateJoystick(touch);
-                }
+                if (touch.identifier === joystickTouchId) updateJoystick(touch);
                 if (touch.identifier === cameraTouchId) {
                     const dx = touch.clientX - lastCameraX;
                     const dy = touch.clientY - lastCameraY;
@@ -934,15 +816,12 @@
         document.addEventListener('touchend', (e) => {
             for (const touch of e.changedTouches) {
                 if (touch.identifier === joystickTouchId) {
-                    joystickActive = false;
                     joystickTouchId = null;
                     moveInput.x = 0;
                     moveInput.z = 0;
                     joystickKnob.style.transform = 'translate(-50%, -50%)';
                 }
-                if (touch.identifier === cameraTouchId) {
-                    cameraTouchId = null;
-                }
+                if (touch.identifier === cameraTouchId) cameraTouchId = null;
             }
         });
 
@@ -951,27 +830,18 @@
             const cx = rect.left + rect.width / 2;
             const cy = rect.top + rect.height / 2;
             const maxDist = rect.width / 2 - 10;
-            
             let dx = touch.clientX - cx;
             let dy = touch.clientY - cy;
             const dist = Math.sqrt(dx*dx + dy*dy);
-            
-            if (dist > maxDist) {
-                dx = (dx / dist) * maxDist;
-                dy = (dy / dist) * maxDist;
-            }
-            
+            if (dist > maxDist) { dx = (dx / dist) * maxDist; dy = (dy / dist) * maxDist; }
             joystickKnob.style.transform = `translate(${-50 + (dx / maxDist) * 50}%, ${-50 + (dy / maxDist) * 50}%)`;
-            
             moveInput.x = dx / maxDist;
             moveInput.z = dy / maxDist;
         }
 
-        // Câmera mobile
         renderer.domElement.addEventListener('touchstart', (e) => {
             if (platform !== 'mobile' || !gameStarted) return;
             for (const touch of e.changedTouches) {
-                // Verifica se não é no joystick
                 const rect = joystickBg.getBoundingClientRect();
                 const isOnJoystick = touch.clientX >= rect.left && touch.clientX <= rect.right &&
                                      touch.clientY >= rect.top && touch.clientY <= rect.bottom;
@@ -983,14 +853,7 @@
             }
         });
 
-        // Botões mobile
-        btnJump.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            if (platform === 'mobile' && gameStarted) {
-                jumpRequested = true;
-            }
-        });
-
+        btnJump.addEventListener('touchstart', (e) => { e.preventDefault(); if (platform === 'mobile' && gameStarted) jumpRequested = true; });
         btnSprint.addEventListener('touchstart', (e) => {
             e.preventDefault();
             if (platform === 'mobile' && gameStarted) {
@@ -1001,61 +864,67 @@
         });
 
         // ============================================================
-        // 16. INÍCIO DO JOGO
+        // 16. INÍCIO DO JOGO (COM CARREGAMENTO GARANTIDO)
         // ============================================================
-        function startGame(selectedPlatform) {
+        async function startGame(selectedPlatform) {
             platform = selectedPlatform;
             gameStarted = true;
-            
             menu.classList.add('hidden');
-            
+
             if (platform === 'mobile') {
                 mobileControls.classList.add('active');
-                // Remove o blocker para mobile
                 blocker.classList.add('hidden');
-                // Esconde o crosshair
                 document.getElementById('crosshair').style.display = 'none';
             } else {
-                // PC - mostra blocker para travar o mouse
                 blocker.classList.remove('hidden');
             }
-            
-            // Gera chunks iniciais
+
+            // Mostra loading
             loadingEl.classList.add('active');
-            
-            // Geração inicial FORÇADA
-            const radius = CONFIG.INITIAL_CHUNK_RADIUS;
+            loadBar.style.width = '0%';
+            loadText.textContent = '0%';
+
+            // Gera chunks EM TODAS AS DIREÇÕES até 600m
+            const radius = Math.ceil(CONFIG.VIEW_DISTANCE / CONFIG.CHUNK_SIZE);
+            const totalChunks = (radius * 2 + 1) ** 2;
             let generated = 0;
+
             for (let dx = -radius; dx <= radius; dx++) {
                 for (let dz = -radius; dz <= radius; dz++) {
-                    if (dx*dx + dz*dz <= radius*radius) {
-                        const chunkX = dx;
-                        const chunkZ = dz;
-                        const key = getChunkKey(chunkX, chunkZ);
-                        if (!chunks.has(key)) {
-                            createChunk(chunkX, chunkZ);
-                            generated++;
-                        }
+                    const dist = Math.sqrt(dx*dx + dz*dz) * CONFIG.CHUNK_SIZE;
+                    if (dist > CONFIG.VIEW_DISTANCE + CONFIG.CHUNK_SIZE) continue;
+
+                    const chunkX = dx;
+                    const chunkZ = dz;
+                    const key = getChunkKey(chunkX, chunkZ);
+
+                    if (!chunks.has(key)) {
+                        createChunk(chunkX, chunkZ);
+                        generated++;
+                    }
+
+                    // Atualiza barra de progresso
+                    const progress = Math.min(100, (generated / totalChunks) * 100);
+                    loadBar.style.width = progress + '%';
+                    loadText.textContent = Math.round(progress) + '%';
+
+                    // Pequena pausa para não travar
+                    if (generated % 10 === 0) {
+                        await new Promise(r => setTimeout(r, 5));
                     }
                 }
             }
-            
-            console.log(`✅ ${generated} chunks gerados inicialmente`);
-            console.log(`📊 Total de objetos: ${totalObjects}`);
-            
+
+            console.log(`✅ ${generated} chunks gerados (${totalObjects} objetos)`);
+            console.log(`📊 Raio: ${radius} chunks (${CONFIG.VIEW_DISTANCE}m)`);
+
             loadingEl.classList.remove('active');
-            
-            // Se for PC, pede para travar o mouse
+
             if (platform === 'pc') {
-                blocker.addEventListener('click', () => {
-                    renderer.domElement.requestPointerLock();
-                });
+                blocker.addEventListener('click', () => renderer.domElement.requestPointerLock());
                 document.addEventListener('pointerlockchange', () => {
-                    if (document.pointerLockElement === renderer.domElement) {
-                        blocker.classList.add('hidden');
-                    } else {
-                        blocker.classList.remove('hidden');
-                    }
+                    if (document.pointerLockElement === renderer.domElement) blocker.classList.add('hidden');
+                    else blocker.classList.remove('hidden');
                 });
             }
         }
@@ -1064,10 +933,7 @@
         // 17. EVENTOS DO MENU
         // ============================================================
         document.querySelectorAll('.platform-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const platform = btn.dataset.platform;
-                startGame(platform);
-            });
+            btn.addEventListener('click', () => startGame(btn.dataset.platform));
         });
 
         // ============================================================
@@ -1080,11 +946,7 @@
             lastTime = time;
 
             if (gameStarted) {
-                // Atualiza input PC
-                if (platform === 'pc') {
-                    updatePCInput();
-                }
-                
+                if (platform === 'pc') updatePCInput();
                 updatePlayer(delta);
             }
 
@@ -1103,12 +965,9 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // Previne scroll em mobile
-        document.addEventListener('touchmove', (e) => {
-            if (gameStarted) e.preventDefault();
-        }, { passive: false });
+        document.addEventListener('touchmove', (e) => { if (gameStarted) e.preventDefault(); }, { passive: false });
 
-        console.log('🏭 INDUSTRY FUND carregado!');
+        console.log('🏭 INDUSTRY FUND - MUNDO 600m GARANTIDO');
         console.log('📋 Aguardando seleção de plataforma...');
     </script>
 </body>
