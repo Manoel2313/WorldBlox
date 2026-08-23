@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mundo Industrial - Mutável</title>
+    <title>Mundo Industrial - CORRIGIDO</title>
     <style>
         * { margin: 0; padding: 0; }
         body { overflow: hidden; background: #0a0a12; font-family: 'Segoe UI', Arial, sans-serif; }
@@ -23,6 +23,7 @@
         }
         #hud .time { color: #88ccff; font-size: 18px; }
         #hud .pos { color: #aaa; font-size: 13px; }
+        #hud .debug { color: #666; font-size: 11px; }
         
         #crosshair {
             position: absolute;
@@ -69,6 +70,7 @@
     <div id="hud">
         <div class="time" id="gameTime">⏱ 00:00:00</div>
         <div class="pos" id="playerPos">📍 0.0, 0.0, 0.0</div>
+        <div class="debug" id="debugInfo">Chunks: 0 | Objetos: 0</div>
     </div>
 
     <div id="crosshair">+</div>
@@ -95,8 +97,8 @@
         // ============================================================
         const CONFIG = {
             CHUNK_SIZE: 24,
-            VIEW_DISTANCE: 600, // METROS
-            MAX_STRUCTURES_PER_CHUNK: 6,
+            VIEW_DISTANCE: 600,
+            MAX_STRUCTURES_PER_CHUNK: 8,
             PLAYER_HEIGHT: 1.6,
             PLAYER_SPEED: 6,
             PLAYER_SPRINT: 11,
@@ -104,9 +106,10 @@
             GRAVITY: -16,
             MAX_STRUCTURE_HEIGHT: 14,
             MIN_STRUCTURE_HEIGHT: 3,
-            GENERATE_PER_FRAME: 8,
-            FADE_DISTANCE: 550, // começa a desaparecer
-            BIRTH_DISTANCE: 580, // começa a nascer
+            GENERATE_PER_FRAME: 20,
+            FADE_DISTANCE: 550,
+            BIRTH_DISTANCE: 580,
+            CHUNKS_INITIAL_RADIUS: 3, // Chunks iniciais ao redor do spawn
         };
 
         // ============================================================
@@ -115,6 +118,7 @@
         const blocker = document.getElementById('blocker');
         const gameTimeSpan = document.getElementById('gameTime');
         const playerPosSpan = document.getElementById('playerPos');
+        const debugInfoSpan = document.getElementById('debugInfo');
 
         // ============================================================
         // 3. CENA
@@ -185,17 +189,11 @@
         // 6. SISTEMA DE CHUNKS
         // ============================================================
         const chunks = new Map();
-        const generationQueue = [];
-        let isGenerating = false;
         let gameStartTime = Date.now();
+        let totalObjects = 0;
 
         function getChunkKey(cx, cz) {
             return `${cx},${cz}`;
-        }
-
-        function getChunkCoord(key) {
-            const [cx, cz] = key.split(',').map(Number);
-            return { cx, cz };
         }
 
         function getChunkCenter(cx, cz) {
@@ -213,7 +211,7 @@
         }
 
         // ============================================================
-        // 7. GERADOR DE ESTRUTURAS
+        // 7. GERADOR DE ESTRUTURAS (MAIS DENSIDADE)
         // ============================================================
         function generateStructures(cx, cz) {
             const structures = [];
@@ -226,26 +224,26 @@
                 return (s / 233280) * n;
             };
 
-            const count = 2 + Math.floor(rng(CONFIG.MAX_STRUCTURES_PER_CHUNK - 1));
+            // MAIS ESTRUTURAS por chunk
+            const count = 3 + Math.floor(rng(CONFIG.MAX_STRUCTURES_PER_CHUNK - 1));
             
             for (let i = 0; i < count; i++) {
-                const x = center.x + (rng(1) - 0.5) * CONFIG.CHUNK_SIZE * 0.7;
-                const z = center.z + (rng(1) - 0.5) * CONFIG.CHUNK_SIZE * 0.7;
-                const w = 1.5 + rng(4);
-                const d = 1.5 + rng(4);
+                const x = center.x + (rng(1) - 0.5) * CONFIG.CHUNK_SIZE * 0.75;
+                const z = center.z + (rng(1) - 0.5) * CONFIG.CHUNK_SIZE * 0.75;
+                const w = 1.5 + rng(5);
+                const d = 1.5 + rng(5);
                 const h = CONFIG.MIN_STRUCTURE_HEIGHT + rng(CONFIG.MAX_STRUCTURE_HEIGHT - CONFIG.MIN_STRUCTURE_HEIGHT);
-                const type = Math.floor(rng(4));
                 
                 structures.push({
                     x, z, w, d, h,
-                    type,
-                    hasRoof: rng(1) > 0.4,
+                    type: Math.floor(rng(4)),
+                    hasRoof: rng(1) > 0.3,
                     colorVariant: Math.floor(rng(2))
                 });
             }
             
-            // Conexões
-            const connCount = Math.floor(rng(structures.length));
+            // Conexões (corredores) - MAIS CONEXÕES
+            const connCount = 2 + Math.floor(rng(structures.length));
             for (let i = 0; i < connCount; i++) {
                 const a = Math.floor(rng(structures.length));
                 const b = Math.floor(rng(structures.length));
@@ -253,23 +251,23 @@
                     structures.push({
                         x: (structures[a].x + structures[b].x) / 2 + (rng(1) - 0.5) * 2,
                         z: (structures[a].z + structures[b].z) / 2 + (rng(1) - 0.5) * 2,
-                        w: 1.2 + rng(1.5),
-                        d: 1.2 + rng(1.5),
-                        h: 2 + rng(2),
+                        w: 1.2 + rng(2),
+                        d: 1.2 + rng(2),
+                        h: 2 + rng(3),
                         type: 4,
                         isCorridor: true,
                     });
                 }
             }
             
-            // Plataformas
+            // Plataformas - MAIS PLATAFORMAS
             for (const s of structures) {
-                if (s.h > 5 && rng(1) > 0.5) {
+                if (s.h > 4 && rng(1) > 0.4) {
                     structures.push({
                         x: s.x + (rng(1) - 0.5) * s.w * 0.6,
                         z: s.z + (rng(1) - 0.5) * s.d * 0.6,
-                        w: 1.5 + rng(2),
-                        d: 1.5 + rng(2),
+                        w: 1.5 + rng(2.5),
+                        d: 1.5 + rng(2.5),
                         h: 0.2,
                         type: 5,
                         isPlatform: true,
@@ -278,11 +276,26 @@
                 }
             }
             
+            // Estruturas gigantes (raras)
+            if (rng(1) > 0.7) {
+                structures.push({
+                    x: center.x + (rng(1) - 0.5) * CONFIG.CHUNK_SIZE * 0.3,
+                    z: center.z + (rng(1) - 0.5) * CONFIG.CHUNK_SIZE * 0.3,
+                    w: 6 + rng(6),
+                    d: 6 + rng(6),
+                    h: 8 + rng(8),
+                    type: 0,
+                    hasRoof: true,
+                    colorVariant: Math.floor(rng(2)),
+                    isGiant: true
+                });
+            }
+            
             return structures;
         }
 
         // ============================================================
-        // 8. CONSTRUTOR DE ESTRUTURAS (com partes para fade)
+        // 8. CONSTRUTOR DE ESTRUTURAS
         // ============================================================
         function buildStructureMeshes(s) {
             const meshes = [];
@@ -294,20 +307,17 @@
                 const floor = new THREE.Mesh(geometries.box, matFloor);
                 floor.scale.set(s.w, 0.15, s.d);
                 floor.position.set(s.x, 0.1, s.z);
-                floor.userData.partWeight = 0.3;
                 meshes.push(floor);
                 
-                if (s.w < 3.5) {
+                if (s.w < 4) {
                     const wall1 = new THREE.Mesh(geometries.box, mat);
                     wall1.scale.set(s.w, s.h, 0.15);
                     wall1.position.set(s.x, s.h/2, s.z + s.d/2);
-                    wall1.userData.partWeight = 0.4;
                     meshes.push(wall1);
                     
                     const wall2 = new THREE.Mesh(geometries.box, mat);
                     wall2.scale.set(s.w, s.h, 0.15);
                     wall2.position.set(s.x, s.h/2, s.z - s.d/2);
-                    wall2.userData.partWeight = 0.4;
                     meshes.push(wall2);
                 }
                 return meshes;
@@ -317,7 +327,6 @@
                 const plat = new THREE.Mesh(geometries.box, matMetal);
                 plat.scale.set(s.w, 0.15, s.d);
                 plat.position.set(s.x, s.platformY || 2, s.z);
-                plat.userData.partWeight = 0.5;
                 meshes.push(plat);
                 
                 for (let i = -1; i <= 1; i += 2) {
@@ -329,7 +338,6 @@
                             (s.platformY || 2) / 2,
                             s.z + j * s.d * 0.3
                         );
-                        support.userData.partWeight = 0.3;
                         meshes.push(support);
                     }
                 }
@@ -344,7 +352,6 @@
             const floor = new THREE.Mesh(geometries.box, matFloor);
             floor.scale.set(w, 0.15, d);
             floor.position.set(x, 0.1, z);
-            floor.userData.partWeight = 0.2;
             meshes.push(floor);
             
             // Paredes
@@ -353,25 +360,21 @@
             const back = new THREE.Mesh(geometries.box, wallMat);
             back.scale.set(w, h, 0.15);
             back.position.set(x, h/2, z - d/2);
-            back.userData.partWeight = 0.3;
             meshes.push(back);
             
             const front = new THREE.Mesh(geometries.box, wallMat);
             front.scale.set(w, h, 0.15);
             front.position.set(x, h/2, z + d/2);
-            front.userData.partWeight = 0.3;
             meshes.push(front);
             
             const side1 = new THREE.Mesh(geometries.box, wallMat);
             side1.scale.set(0.15, h, d);
             side1.position.set(x - w/2, h/2, z);
-            side1.userData.partWeight = 0.3;
             meshes.push(side1);
             
             const side2 = new THREE.Mesh(geometries.box, wallMat);
             side2.scale.set(0.15, h, d);
             side2.position.set(x + w/2, h/2, z);
-            side2.userData.partWeight = 0.3;
             meshes.push(side2);
             
             // Teto
@@ -379,7 +382,6 @@
                 const roof = new THREE.Mesh(geometries.box, matFloor);
                 roof.scale.set(w, 0.15, d);
                 roof.position.set(x, h, z);
-                roof.userData.partWeight = 0.2;
                 meshes.push(roof);
             }
             
@@ -389,14 +391,26 @@
                     const beam = new THREE.Mesh(geometries.box, matMetal);
                     beam.scale.set(w + 0.3, 0.08, 0.08);
                     beam.position.set(x, 0.5 + i * 1.6, z - d/2 - 0.08);
-                    beam.userData.partWeight = 0.1;
                     meshes.push(beam);
                     
                     const beam2 = new THREE.Mesh(geometries.box, matMetal);
                     beam2.scale.set(w + 0.3, 0.08, 0.08);
                     beam2.position.set(x, 0.5 + i * 1.6, z + d/2 + 0.08);
-                    beam2.userData.partWeight = 0.1;
                     meshes.push(beam2);
+                }
+            }
+            
+            // Janelas (detalhe)
+            if (s.h > 4 && !s.isGiant) {
+                const windowMat = new THREE.MeshBasicMaterial({
+                    color: 0x88ccff,
+                    transparent: true,
+                    opacity: 0.1
+                });
+                for (let i = 0; i < Math.min(3, Math.floor(w / 2)); i++) {
+                    const win = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.4), windowMat);
+                    win.position.set(x - w/3 + i * 1.0, h * 0.5, z - d/2 - 0.05);
+                    meshes.push(win);
                 }
             }
             
@@ -404,15 +418,12 @@
         }
 
         // ============================================================
-        // 9. SISTEMA DE CHUNKS COM FADE
+        // 9. CRIAÇÃO DE CHUNKS (COM GERAÇÃO IMEDIATA)
         // ============================================================
         function createChunk(cx, cz) {
             const key = getChunkKey(cx, cz);
             
             if (chunks.has(key)) {
-                const data = chunks.get(key);
-                // Reseta o fade se o chunk ainda existe
-                data.fadeState = 1;
                 return;
             }
             
@@ -430,7 +441,6 @@
             floorMesh.position.set(center.x, 0, center.z);
             floorMesh.receiveShadow = true;
             floorMesh.userData.isCollider = true;
-            floorMesh.userData.partWeight = 0.1;
             group.add(floorMesh);
             objects.push(floorMesh);
             
@@ -441,7 +451,6 @@
                     mesh.castShadow = true;
                     mesh.receiveShadow = true;
                     mesh.userData.isCollider = true;
-                    if (!mesh.userData.partWeight) mesh.userData.partWeight = 0.3;
                     group.add(mesh);
                     objects.push(mesh);
                 }
@@ -452,20 +461,22 @@
                 group, 
                 objects, 
                 structures,
-                fadeState: 0, // 0 = invisível, 1 = visível, 2 = desaparecendo
-                fadeProgress: 0,
-                cx, cz
+                cx, cz,
+                visible: true
             });
+            
+            totalObjects += objects.length;
         }
 
+        // ============================================================
+        // 10. GERENCIADOR DE CHUNKS (SIMPLIFICADO)
+        // ============================================================
         function updateChunks(playerPos) {
             const cx = Math.floor(playerPos.x / CONFIG.CHUNK_SIZE);
             const cz = Math.floor(playerPos.z / CONFIG.CHUNK_SIZE);
             const radius = Math.ceil(CONFIG.VIEW_DISTANCE / CONFIG.CHUNK_SIZE);
             
-            const neededKeys = new Set();
-            
-            // Calcula chunks necessários
+            // Cria chunks necessários
             for (let dx = -radius; dx <= radius; dx++) {
                 for (let dz = -radius; dz <= radius; dz++) {
                     const dist = Math.sqrt(dx*dx + dz*dz) * CONFIG.CHUNK_SIZE;
@@ -474,52 +485,22 @@
                     const chunkX = cx + dx;
                     const chunkZ = cz + dz;
                     const key = getChunkKey(chunkX, chunkZ);
-                    neededKeys.add(key);
                     
-                    const distToPlayer = getDistanceToPlayer(chunkX, chunkZ, playerPos);
-                    
-                    // Cria chunks que estão no alcance
-                    if (distToPlayer < CONFIG.BIRTH_DISTANCE) {
-                        if (!chunks.has(key)) {
-                            createChunk(chunkX, chunkZ);
-                        } else {
-                            const data = chunks.get(key);
-                            // Se estava desaparecendo, traz de volta
-                            if (data.fadeState === 2) {
-                                data.fadeState = 1;
-                            }
-                        }
-                    }
-                }
-            }
-            
-            // Processa chunks existentes
-            const toRemove = [];
-            for (const [key, data] of chunks) {
-                const dist = getDistanceToPlayer(data.cx, data.cz, playerPos);
-                
-                if (dist > CONFIG.VIEW_DISTANCE + CONFIG.CHUNK_SIZE) {
-                    // Muito longe - remove imediatamente
-                    toRemove.push(key);
-                } else if (dist > CONFIG.FADE_DISTANCE) {
-                    // Distância de fade - começa a desaparecer
-                    if (data.fadeState !== 2) {
-                        data.fadeState = 2;
-                        data.fadeProgress = 1;
-                    }
-                } else {
-                    // Próximo - mantém visível
-                    if (data.fadeState === 2) {
-                        data.fadeState = 1;
-                        data.fadeProgress = 1;
-                    } else if (data.fadeState === 0) {
-                        data.fadeState = 1;
-                        data.fadeProgress = 0;
+                    if (!chunks.has(key)) {
+                        createChunk(chunkX, chunkZ);
                     }
                 }
             }
             
             // Remove chunks muito distantes
+            const toRemove = [];
+            for (const [key, data] of chunks) {
+                const dist = getDistanceToPlayer(data.cx, data.cz, playerPos);
+                if (dist > CONFIG.VIEW_DISTANCE + CONFIG.CHUNK_SIZE * 2) {
+                    toRemove.push(key);
+                }
+            }
+            
             for (const key of toRemove) {
                 const data = chunks.get(key);
                 scene.remove(data.group);
@@ -529,75 +510,13 @@
                 });
                 chunks.delete(key);
             }
-        }
-
-        // ============================================================
-        // 10. PROCESSADOR DE FADE
-        // ============================================================
-        function processFades() {
-            const fadeSpeed = 0.015;
             
+            // Atualiza debug
+            let totalObj = 0;
             for (const [key, data] of chunks) {
-                if (data.fadeState === 0) {
-                    // Nascendo
-                    data.fadeProgress = Math.min(1, data.fadeProgress + fadeSpeed);
-                    applyFade(data, data.fadeProgress);
-                    if (data.fadeProgress >= 1) {
-                        data.fadeState = 1;
-                    }
-                } else if (data.fadeState === 2) {
-                    // Desaparecendo
-                    data.fadeProgress = Math.max(0, data.fadeProgress - fadeSpeed);
-                    applyFade(data, data.fadeProgress);
-                    if (data.fadeProgress <= 0) {
-                        data.fadeState = 0;
-                        data.fadeProgress = 0;
-                        // Remove colliders quando invisível
-                        data.objects.forEach(obj => {
-                            obj.userData.isCollider = false;
-                        });
-                    }
-                } else if (data.fadeState === 1) {
-                    // Totalmente visível - garante que todos os colliders estão ativos
-                    if (data.fadeProgress < 1) {
-                        data.fadeProgress = 1;
-                        applyFade(data, 1);
-                    }
-                    data.objects.forEach(obj => {
-                        obj.userData.isCollider = true;
-                    });
-                }
+                totalObj += data.objects.length;
             }
-        }
-
-        function applyFade(data, progress) {
-            // Aplica opacidade baseada no progresso
-            // Objetos com maior partWeight desaparecem primeiro
-            for (const obj of data.objects) {
-                const weight = obj.userData.partWeight || 0.3;
-                const threshold = 1 - weight;
-                const visible = progress > threshold;
-                
-                // Para objetos com material, ajusta opacidade
-                if (obj.material) {
-                    if (Array.isArray(obj.material)) {
-                        for (const mat of obj.material) {
-                            if (mat.transparent !== undefined) {
-                                mat.transparent = true;
-                                mat.opacity = Math.max(0, (progress - threshold) / weight);
-                            }
-                        }
-                    } else {
-                        if (obj.material.transparent !== undefined) {
-                            obj.material.transparent = true;
-                            obj.material.opacity = Math.max(0, (progress - threshold) / weight);
-                        }
-                    }
-                }
-                
-                // Collider só ativo se visível
-                obj.userData.isCollider = visible && progress > 0.5;
-            }
+            debugInfoSpan.textContent = `Chunks: ${chunks.size} | Objetos: ${totalObj}`;
         }
 
         // ============================================================
@@ -624,11 +543,7 @@
         // 12. COLISÃO
         // ============================================================
         function checkCollision(pos, radius, height) {
-            const halfSize = CONFIG.CHUNK_SIZE / 2;
-            
             for (const [key, data] of chunks) {
-                if (data.fadeProgress < 0.5) continue; // Ignora chunks invisíveis
-                
                 const chunkPos = getChunkCenter(data.cx, data.cz);
                 const dxc = pos.x - chunkPos.x;
                 const dzc = pos.z - chunkPos.z;
@@ -729,7 +644,7 @@
             camera.rotation.y = player.yaw;
             camera.rotation.x = player.pitch;
 
-            // Atualiza chunks baseado na posição atual
+            // Atualiza chunks
             updateChunks(player.position);
             
             // Atualiza HUD
@@ -787,8 +702,10 @@
         // ============================================================
         // 15. LOOP PRINCIPAL
         // ============================================================
-        // Inicializa chunks ao redor do jogador
+        // GERA CHUNKS INICIAIS IMEDIATAMENTE
+        console.log('🏗️ Gerando chunks iniciais...');
         updateChunks(player.position);
+        console.log(`✅ ${chunks.size} chunks gerados com ${totalObjects} objetos`);
 
         let lastTime = 0;
 
@@ -797,7 +714,6 @@
             lastTime = time;
 
             updatePlayer(delta);
-            processFades();
 
             renderer.render(scene, camera);
             requestAnimationFrame(animate);
@@ -814,10 +730,9 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        console.log('🏭 Mundo Industrial MUTÁVEL carregado!');
-        console.log('📏 Alcance: 600m');
-        console.log('🔄 Estruturas surgem e desaparecem gradualmente');
-        console.log('✅ HUD limpa (tempo + posição)');
+        console.log('🏭 Mundo Industrial CORRIGIDO carregado!');
+        console.log('📊 Chunks visíveis:', chunks.size);
+        console.log('📊 Objetos totais:', totalObjects);
     </script>
 </body>
 </html>
