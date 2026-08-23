@@ -241,127 +241,166 @@ function mulberry32(a){
   };
 }
 
-/* ---------------- MATERIAL PALETTE ---------------- */
+/* ---------------- MATERIAL PALETTE (imundo / sujo / industrial) ---------------- */
 function grayColor(rng, lo, hi, tint){
   const l = lo + rng()*(hi-lo);
-  const hue = tint===undefined ? 0.58 + (rng()-0.5)*0.05 : tint;
-  const sat = 0.03 + rng()*0.05;
+  const hue = tint===undefined ? 0.58 + (rng()-0.5)*0.07 : tint;
+  const sat = 0.03 + rng()*0.06;
   const c = new THREE.Color();
   c.setHSL(hue, sat, l);
   return c;
 }
-function groundColor(rng){ return grayColor(rng, 0.11, 0.17); }
-function structColor(rng){ return grayColor(rng, 0.22, 0.55); }
+function groundColor(rng){ return grayColor(rng, 0.08, 0.15); }
+function structColor(rng){
+  // base metal/concreto, mas mais escuro e sujo que antes
+  const c = grayColor(rng, 0.14, 0.42);
+  if(rng() < 0.22){
+    // mancha de sujeira/oleo/ferrugem sobre a estrutura
+    return grimeColor(rng);
+  }
+  return c;
+}
+function grimeColor(rng){
+  const c = new THREE.Color();
+  const pick = rng();
+  if(pick < 0.4){ c.setHSL(0.08+rng()*0.04, 0.4+rng()*0.15, 0.16+rng()*0.14); }        // ferrugem
+  else if(pick < 0.7){ c.setHSL(0.24+rng()*0.05, 0.2+rng()*0.15, 0.10+rng()*0.10); }   // mofo/oleo esverdeado
+  else { c.setHSL(0.0, 0.0, 0.05+rng()*0.06); }                                        // fuligem preta
+  return c;
+}
 function accentColor(rng){
-  // occasional warm industrial rust/amber trims, still rare & muted
-  if(rng() < 0.08){ const c = new THREE.Color(); c.setHSL(0.09+rng()*0.03, 0.35, 0.32+rng()*0.15); return c; }
+  if(rng() < 0.22){ const c = new THREE.Color(); c.setHSL(0.09+rng()*0.03, 0.4, 0.26+rng()*0.16); return c; }
+  if(rng() < 0.30) return grimeColor(rng);
   return structColor(rng);
 }
 
-/* ---------------- CHUNK CONTENT GENERATION ---------------- */
-function pickType(rng, isSpawn){
-  if(isSpawn) return 'plaza';
-  const r = rng();
-  if(r<0.07) return 'megastructure';
-  if(r<0.17) return 'bridge';
-  if(r<0.28) return 'tunnel';
-  if(r<0.36) return 'wall';
-  if(r<0.44) return 'pillarfield';
-  if(r<0.52) return 'plaza';
-  return 'buildings';
-}
+/* ---------------- CHUNK CONTENT GENERATION ----------------
+   Cada chunk empilha VÁRIAS camadas (prédios + pilares + muros +
+   túneis + viadutos), com margens mínimas e sobreposição proposital,
+   além de "perfuradores": vigas/pistas retas que atravessam tudo sem
+   nenhuma lógica estrutural — ruas cruzando pilares, viadutos cravados
+   no meio de muralhas, prédios colados uns nos outros. */
 
-function genBuildings(boxes, ox, oz, rng){
-  const count = 1 + Math.floor(rng()*3);
+function genBuildings(boxes, ox, oz, rng, density){
+  const count = density + Math.floor(rng()*(density+2));
   for(let i=0;i<count;i++){
-    const w = 6 + rng()*14, d = 6 + rng()*14, h = 8 + rng()*34;
-    const x = ox + 8 + rng()*(CHUNK_SIZE-16-w);
-    const z = oz + 8 + rng()*(CHUNK_SIZE-16-d);
+    const w = 5 + rng()*16, d = 5 + rng()*16, h = 6 + rng()*40;
+    // margem quase nula: deixa empilhar e invadir os vizinhos
+    const x = ox - 4 + rng()*(CHUNK_SIZE+8-w);
+    const z = oz - 4 + rng()*(CHUNK_SIZE+8-d);
     boxes.push(box(x+w/2, h/2, z+d/2, w, h, d, structColor(rng)));
-    if(rng()<0.35){
-      boxes.push(box(x+w/2, h+5, z+d/2, w*0.35, 10, d*0.35, accentColor(rng)));
+    if(rng()<0.5){
+      boxes.push(box(x+w/2, h+4, z+d/2, w*(0.3+rng()*0.4), 6+rng()*10, d*(0.3+rng()*0.4), accentColor(rng)));
     }
-    if(rng()<0.25){
-      // side ledge / catwalk detail
-      boxes.push(box(x+w/2, h*0.6, z+d/2 + d*0.55, w*0.7, 0.6, 1.2, accentColor(rng)));
+    if(rng()<0.4){
+      boxes.push(box(x+w/2, h*(0.3+rng()*0.5), z+d/2 + d*0.5, w*0.8, 0.7, 1.4, accentColor(rng)));
+    }
+    if(rng()<0.3){
+      // um segundo volume colado/atravessado no primeiro, sem sentido nenhum
+      boxes.push(box(x+w/2 + (rng()-0.5)*w*0.6, h*(0.2+rng()*0.6), z+d/2 + (rng()-0.5)*d*0.6,
+        3+rng()*8, 3+rng()*8, 3+rng()*8, accentColor(rng)));
     }
   }
 }
 
 function genMegastructure(boxes, ox, oz, rng){
-  const w = 26 + rng()*20, d = 26 + rng()*20, h = 110 + rng()*160;
-  const x = ox + CHUNK_SIZE/2, z = oz + CHUNK_SIZE/2;
+  const w = 20 + rng()*26, d = 20 + rng()*26, h = 90 + rng()*180;
+  const x = ox + CHUNK_SIZE*(0.3+rng()*0.4), z = oz + CHUNK_SIZE*(0.3+rng()*0.4);
   boxes.push(box(x, h/2, z, w, h, d, structColor(rng)));
-  // cross-beams for scale readability
-  const beams = 3 + Math.floor(rng()*4);
+  const beams = 4 + Math.floor(rng()*6);
   for(let i=0;i<beams;i++){
-    const by = 20 + (h-40) * (i/(beams-1||1));
-    boxes.push(box(x, by, z, w+6, 2, d+6, accentColor(rng)));
+    const by = 10 + (h-30) * (i/(beams-1||1));
+    boxes.push(box(x, by, z, w+4+rng()*10, 1.6+rng()*2, d+4+rng()*10, accentColor(rng)));
   }
 }
 
 function genBridge(boxes, ox, oz, rng){
   const alongX = rng() < 0.5;
-  const y = 14 + rng()*26;
-  const thickness = 2.2, width = 6 + rng()*4;
+  const y = 6 + rng()*46; // qualquer altura, inclusive cravado dentro de prédios
+  const thickness = 1.8 + rng()*2.5, width = 5 + rng()*7;
+  const lateral = ox_lateral(ox, oz, alongX, rng);
   if(alongX){
-    boxes.push(box(ox+CHUNK_SIZE/2, y, oz+CHUNK_SIZE/2, CHUNK_SIZE, thickness, width, structColor(rng)));
-    boxes.push(box(ox+8, y/2, oz+CHUNK_SIZE/2, 4, y, 4, structColor(rng)));
-    boxes.push(box(ox+CHUNK_SIZE-8, y/2, oz+CHUNK_SIZE/2, 4, y, 4, structColor(rng)));
+    boxes.push(box(ox+CHUNK_SIZE/2, y, lateral, CHUNK_SIZE*1.15, thickness, width, structColor(rng)));
+    boxes.push(box(ox+4, Math.max(1,y/2), lateral, 3.5, Math.max(2,y), 3.5, structColor(rng)));
+    boxes.push(box(ox+CHUNK_SIZE-4, Math.max(1,y/2), lateral, 3.5, Math.max(2,y), 3.5, structColor(rng)));
   } else {
-    boxes.push(box(ox+CHUNK_SIZE/2, y, oz+CHUNK_SIZE/2, width, thickness, CHUNK_SIZE, structColor(rng)));
-    boxes.push(box(ox+CHUNK_SIZE/2, y/2, oz+8, 4, y, 4, structColor(rng)));
-    boxes.push(box(ox+CHUNK_SIZE/2, y/2, oz+CHUNK_SIZE-8, 4, y, 4, structColor(rng)));
+    boxes.push(box(lateral, y, oz+CHUNK_SIZE/2, width, thickness, CHUNK_SIZE*1.15, structColor(rng)));
+    boxes.push(box(lateral, Math.max(1,y/2), oz+4, 3.5, Math.max(2,y), 3.5, structColor(rng)));
+    boxes.push(box(lateral, Math.max(1,y/2), oz+CHUNK_SIZE-4, 3.5, Math.max(2,y), 3.5, structColor(rng)));
   }
+}
+function ox_lateral(ox, oz, alongX, rng){
+  return alongX ? (oz + 15 + rng()*(CHUNK_SIZE-30)) : (ox + 15 + rng()*(CHUNK_SIZE-30));
 }
 
 function genTunnel(boxes, ox, oz, rng){
   const alongX = rng() < 0.5;
-  const h = 8 + rng()*4, w = 9 + rng()*4, wallT = 1.4;
-  const cx = ox+CHUNK_SIZE/2, cz = oz+CHUNK_SIZE/2;
+  const h = 7 + rng()*5, w = 8 + rng()*5, wallT = 1.3;
+  const jx = (rng()-0.5)*30, jz = (rng()-0.5)*30; // fora do centro: colide com o resto
+  const cx = ox+CHUNK_SIZE/2+jx, cz = oz+CHUNK_SIZE/2+jz;
   if(alongX){
-    boxes.push(box(cx, h/2, cz - w/2, CHUNK_SIZE, h, wallT, structColor(rng)));
-    boxes.push(box(cx, h/2, cz + w/2, CHUNK_SIZE, h, wallT, structColor(rng)));
-    boxes.push(box(cx, h, cz, CHUNK_SIZE, wallT, w, structColor(rng)));
+    boxes.push(box(cx, h/2, cz - w/2, CHUNK_SIZE*1.1, h, wallT, structColor(rng)));
+    boxes.push(box(cx, h/2, cz + w/2, CHUNK_SIZE*1.1, h, wallT, structColor(rng)));
+    boxes.push(box(cx, h, cz, CHUNK_SIZE*1.1, wallT, w, structColor(rng)));
   } else {
-    boxes.push(box(cx - w/2, h/2, cz, wallT, h, CHUNK_SIZE, structColor(rng)));
-    boxes.push(box(cx + w/2, h/2, cz, wallT, h, CHUNK_SIZE, structColor(rng)));
-    boxes.push(box(cx, h, cz, w, wallT, CHUNK_SIZE, structColor(rng)));
+    boxes.push(box(cx - w/2, h/2, cz, wallT, h, CHUNK_SIZE*1.1, structColor(rng)));
+    boxes.push(box(cx + w/2, h/2, cz, wallT, h, CHUNK_SIZE*1.1, structColor(rng)));
+    boxes.push(box(cx, h, cz, w, wallT, CHUNK_SIZE*1.1, structColor(rng)));
   }
 }
 
 function genWall(boxes, ox, oz, rng){
   const alongX = rng() < 0.5;
-  const h = 18 + rng()*36, len = CHUNK_SIZE*0.55, thickness = 2.4;
-  const offsetFrac = 0.2 + rng()*0.15; // keeps a gap for passage
+  const h = 14 + rng()*44, len = CHUNK_SIZE*(0.6+rng()*0.35), thickness = 2 + rng()*2.5;
+  const offsetFrac = rng()*0.5; // sem preocupação de deixar passagem "limpa"
+  const lateralFrac = rng();
   if(alongX){
-    boxes.push(box(ox + CHUNK_SIZE*offsetFrac + len/2, h/2, oz + CHUNK_SIZE*0.25, len, h, thickness, structColor(rng)));
+    boxes.push(box(ox + CHUNK_SIZE*offsetFrac + len/2, h/2, oz + CHUNK_SIZE*lateralFrac, len, h, thickness, structColor(rng)));
   } else {
-    boxes.push(box(ox + CHUNK_SIZE*0.25, h/2, oz + CHUNK_SIZE*offsetFrac + len/2, thickness, h, len, structColor(rng)));
+    boxes.push(box(ox + CHUNK_SIZE*lateralFrac, h/2, oz + CHUNK_SIZE*offsetFrac + len/2, thickness, h, len, structColor(rng)));
   }
 }
 
 function genPillarfield(boxes, ox, oz, rng){
-  const gridN = 3, spacing = 15, pR = 1.4 + rng();
-  const h = 20 + rng()*32;
-  const cx = ox + CHUNK_SIZE/2 - spacing, cz = oz + CHUNK_SIZE/2 - spacing;
+  const gridN = 3 + Math.floor(rng()*2), spacing = 8 + rng()*6;
+  const cx = ox + CHUNK_SIZE*(0.2+rng()*0.5) - (gridN*spacing)/2;
+  const cz = oz + CHUNK_SIZE*(0.2+rng()*0.5) - (gridN*spacing)/2;
   for(let i=0;i<gridN;i++){
     for(let j=0;j<gridN;j++){
-      boxes.push(box(cx+i*spacing, h/2, cz+j*spacing, pR, h, pR, structColor(rng)));
+      const h = 12 + rng()*54; // alturas desiguais, grade torta e quebrada
+      const pR = 1.1 + rng()*1.6;
+      const jitterX = (rng()-0.5)*4, jitterZ = (rng()-0.5)*4;
+      boxes.push(box(cx+i*spacing+jitterX, h/2, cz+j*spacing+jitterZ, pR, h, pR, structColor(rng)));
     }
   }
-  if(rng()<0.5){
-    boxes.push(box(cx+spacing, h+1, cz+spacing, spacing*2+6, 2, spacing*2+6, accentColor(rng)));
+  if(rng()<0.6){
+    const platY = 10+rng()*40;
+    boxes.push(box(cx+(gridN*spacing)/2, platY, cz+(gridN*spacing)/2, gridN*spacing+8, 1.6+rng()*2, gridN*spacing+8, accentColor(rng)));
   }
 }
 
-function genPlaza(boxes, ox, oz, rng){
-  const propCount = Math.floor(rng()*4);
-  for(let i=0;i<propCount;i++){
-    const s = 1.5 + rng()*2.5;
-    const x = ox + 15 + rng()*(CHUNK_SIZE-30);
-    const z = oz + 15 + rng()*(CHUNK_SIZE-30);
-    boxes.push(box(x, s/2, z, s, s, s, accentColor(rng)));
+function genClutterAndPiercers(boxes, ox, oz, rng, count){
+  // tranqueira / entulho / dutos: pequenos volumes por toda parte
+  for(let i=0;i<count;i++){
+    const s = 1 + rng()*3.5;
+    const x = ox + rng()*CHUNK_SIZE, z = oz + rng()*CHUNK_SIZE;
+    const y = rng()*rng()*40; // mais provável perto do chão, mas pode estar suspenso
+    boxes.push(box(x, y+s/2, z, s*(0.5+rng()), s*(0.5+rng()*2), s*(0.5+rng()), grimeColor(rng)));
+  }
+  // perfuradores: vigas/vias retas que atravessam TUDO sem nenhum motivo —
+  // ruas cortando pilares, viadutos cravados em muralhas, dutos cruzados
+  const piercers = 1 + Math.floor(rng()*3);
+  for(let i=0;i<piercers;i++){
+    const alongX = rng()<0.5;
+    const y = 1.5 + rng()*55;
+    const thickness = 1.2 + rng()*3.2;
+    const width = 2.5 + rng()*7;
+    const pos = rng()*CHUNK_SIZE;
+    if(alongX){
+      boxes.push(box(ox+CHUNK_SIZE/2, y, oz+pos, CHUNK_SIZE*1.2, thickness, width, accentColor(rng)));
+    } else {
+      boxes.push(box(ox+pos, y, oz+CHUNK_SIZE/2, width, thickness, CHUNK_SIZE*1.2, accentColor(rng)));
+    }
   }
 }
 
@@ -370,16 +409,25 @@ function generateChunkBoxes(cx, cz, salt, isSpawn){
   const ox = cx*CHUNK_SIZE, oz = cz*CHUNK_SIZE;
   const boxes = [];
   boxes.push(box(ox+CHUNK_SIZE/2, -0.5, oz+CHUNK_SIZE/2, CHUNK_SIZE, 1, CHUNK_SIZE, groundColor(rng)));
-  const type = pickType(rng, isSpawn);
-  switch(type){
-    case 'megastructure': genMegastructure(boxes, ox, oz, rng); break;
-    case 'bridge': genBridge(boxes, ox, oz, rng); break;
-    case 'tunnel': genTunnel(boxes, ox, oz, rng); break;
-    case 'wall': genWall(boxes, ox, oz, rng); break;
-    case 'pillarfield': genPillarfield(boxes, ox, oz, rng); break;
-    case 'plaza': genPlaza(boxes, ox, oz, rng); break;
-    default: genBuildings(boxes, ox, oz, rng); break;
+
+  if(isSpawn){
+    // ponto de partida: ainda denso e sujo, mas um pouco mais respirável
+    genBuildings(boxes, ox, oz, rng, 2);
+    if(rng()<0.6) genPillarfield(boxes, ox, oz, rng);
+    genClutterAndPiercers(boxes, ox, oz, rng, 6);
+    return boxes;
   }
+
+  // caos: várias camadas empilhadas e sobrepostas no mesmo chunk
+  genBuildings(boxes, ox, oz, rng, 4);
+  if(rng()<0.6) genPillarfield(boxes, ox, oz, rng);
+  if(rng()<0.5) genWall(boxes, ox, oz, rng);
+  if(rng()<0.45) genTunnel(boxes, ox, oz, rng);
+  if(rng()<0.7) genBridge(boxes, ox, oz, rng);
+  if(rng()<0.75){ genBridge(boxes, ox, oz, rng); } // segundo viaduto cruzado, quase sempre
+  if(rng()<0.18) genMegastructure(boxes, ox, oz, rng);
+  genClutterAndPiercers(boxes, ox, oz, rng, 8 + Math.floor(rng()*14));
+
   return boxes;
 }
 
