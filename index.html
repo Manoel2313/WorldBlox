@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mundo Industrial Infinito</title>
+    <title>Mundo Industrial - Otimizado</title>
     <style>
         * { margin: 0; padding: 0; }
         body { overflow: hidden; background: #111; font-family: 'Segoe UI', Arial, sans-serif; }
@@ -13,33 +13,34 @@
             top: 20px;
             left: 20px;
             color: #aaa;
-            font-size: 14px;
+            font-size: 13px;
             font-family: monospace;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0,0,0,0.8);
             padding: 10px 16px;
             border-radius: 6px;
             pointer-events: none;
             user-select: none;
             z-index: 10;
             border: 1px solid rgba(255,255,255,0.05);
-            line-height: 1.5;
-            min-width: 180px;
+            line-height: 1.6;
+            min-width: 190px;
         }
         #info .title {
             color: #88ccff;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: bold;
             margin-bottom: 4px;
         }
         #info .highlight { color: #ffd93d; }
-        #info .dim { color: #666; font-size: 12px; }
+        #info .dim { color: #666; font-size: 11px; }
+        #info .fps { color: #4ecdc4; }
         
         #crosshair {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.12);
             font-size: 28px;
             font-weight: bold;
             pointer-events: none;
@@ -53,7 +54,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.85);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -78,38 +79,18 @@
         }
         #blocker.hidden { display: none; }
         
-        #minimap {
+        #loading {
             position: absolute;
             bottom: 20px;
             right: 20px;
-            width: 120px;
-            height: 120px;
-            background: rgba(0,0,0,0.5);
-            border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.05);
-            pointer-events: none;
-            user-select: none;
-            z-index: 10;
-            overflow: hidden;
-        }
-        #minimap canvas {
-            width: 100%;
-            height: 100%;
-            opacity: 0.4;
-        }
-        
-        #fps {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
             color: #444;
             font-size: 11px;
             font-family: monospace;
             pointer-events: none;
             user-select: none;
             z-index: 10;
-            background: rgba(0,0,0,0.3);
-            padding: 2px 8px;
+            background: rgba(0,0,0,0.5);
+            padding: 4px 10px;
             border-radius: 4px;
         }
     </style>
@@ -119,8 +100,9 @@
     <div id="info">
         <div class="title">⬡ MUNDO INDUSTRIAL</div>
         <div>Chunks: <span class="highlight" id="chunkCount">0</span></div>
-        <div>Estruturas: <span class="highlight" id="structureCount">0</span></div>
-        <div class="dim">Pos: <span id="playerPos">0, 0, 0</span></div>
+        <div>Polígonos: <span class="highlight" id="polyCount">0</span></div>
+        <div class="dim">Pos: <span id="playerPos">0, 0</span></div>
+        <div class="fps">FPS: <span id="fpsValue">60</span></div>
     </div>
 
     <div id="crosshair">+</div>
@@ -128,11 +110,10 @@
     <div id="blocker">
         🏭 Clique para Explorar
         <div class="sub">WASD · Mouse · ESPAÇO(pular) · Shift(correr)</div>
-        <div class="sub"><small>Mundo procedural infinito · Estruturas mutáveis</small></div>
+        <div class="sub"><small>Mundo procedural · Geração gradual · Colisão real</small></div>
     </div>
 
-    <div id="minimap"><canvas id="minimapCanvas"></canvas></div>
-    <div id="fps">FPS: <span id="fpsValue">60</span></div>
+    <div id="loading">Carregando... <span id="loadStatus">0%</span></div>
 
     <script type="importmap">
         {
@@ -149,16 +130,18 @@
         // 1. CONFIGURAÇÕES
         // ============================================================
         const CONFIG = {
-            CHUNK_SIZE: 32, // unidades por chunk
-            VIEW_DISTANCE: 5, // chunks de raio
-            MAX_STRUCTURES_PER_CHUNK: 12,
+            CHUNK_SIZE: 28,
+            VIEW_DISTANCE: 4,
+            MAX_STRUCTURES_PER_CHUNK: 8,
             PLAYER_HEIGHT: 1.6,
             PLAYER_SPEED: 6,
-            PLAYER_SPRINT: 12,
+            PLAYER_SPRINT: 11,
             JUMP_FORCE: 5,
-            GRAVITY: -15,
-            MAX_STRUCTURE_HEIGHT: 15,
+            GRAVITY: -16,
+            MAX_STRUCTURE_HEIGHT: 12,
             MIN_STRUCTURE_HEIGHT: 3,
+            GENERATE_PER_FRAME: 15, // objetos por frame
+            POOL_SIZE: 200,
         };
 
         // ============================================================
@@ -166,119 +149,129 @@
         // ============================================================
         const blocker = document.getElementById('blocker');
         const chunkCountSpan = document.getElementById('chunkCount');
-        const structureCountSpan = document.getElementById('structureCount');
+        const polyCountSpan = document.getElementById('polyCount');
         const playerPosSpan = document.getElementById('playerPos');
         const fpsSpan = document.getElementById('fpsValue');
+        const loadStatusSpan = document.getElementById('loadStatus');
 
         // ============================================================
-        // 3. CENA, CÂMERA, RENDER
+        // 3. CENA
         // ============================================================
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x1a1a2e);
-        scene.fog = new THREE.Fog(0x1a1a2e, 80, 150);
+        scene.fog = new THREE.Fog(0x1a1a2e, 60, 120);
 
         const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 200);
         camera.position.set(0, CONFIG.PLAYER_HEIGHT, 0);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        const renderer = new THREE.WebGLRenderer({ 
+            antialias: true, 
+            powerPreference: "high-performance" 
+        });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.5;
+        renderer.toneMappingExposure = 1.3;
         document.body.appendChild(renderer.domElement);
 
         // ============================================================
         // 4. LUZES
         // ============================================================
-        const ambient = new THREE.AmbientLight(0x445566, 0.6);
+        const ambient = new THREE.AmbientLight(0x445566, 0.5);
         scene.add(ambient);
 
-        const hemi = new THREE.HemisphereLight(0x8899bb, 0x443322, 0.5);
+        const hemi = new THREE.HemisphereLight(0x8899bb, 0x443322, 0.4);
         scene.add(hemi);
 
-        const sun = new THREE.DirectionalLight(0xffeedd, 1.8);
-        sun.position.set(50, 80, 30);
+        const sun = new THREE.DirectionalLight(0xffeedd, 1.6);
+        sun.position.set(40, 60, 30);
         sun.castShadow = true;
-        sun.shadow.mapSize.width = 2048;
-        sun.shadow.mapSize.height = 2048;
+        sun.shadow.mapSize.width = 1024;
+        sun.shadow.mapSize.height = 1024;
         sun.shadow.camera.near = 0.5;
-        sun.shadow.camera.far = 150;
-        sun.shadow.camera.left = -60;
-        sun.shadow.camera.right = 60;
-        sun.shadow.camera.top = 60;
-        sun.shadow.camera.bottom = -60;
+        sun.shadow.camera.far = 120;
+        sun.shadow.camera.left = -50;
+        sun.shadow.camera.right = 50;
+        sun.shadow.camera.top = 50;
+        sun.shadow.camera.bottom = -50;
         scene.add(sun);
 
-        const fill = new THREE.DirectionalLight(0x8888ff, 0.3);
+        const fill = new THREE.DirectionalLight(0x8888ff, 0.25);
         fill.position.set(-30, 20, -30);
         scene.add(fill);
 
-        // Luzes industriais (globais)
-        const lightMat = new THREE.MeshBasicMaterial({ color: 0xff8844, transparent: true, opacity: 0.3 });
-        for (let i = 0; i < 20; i++) {
-            const light = new THREE.Mesh(new THREE.SphereGeometry(0.5, 6, 6), lightMat);
-            light.position.set(
-                (Math.random() - 0.5) * 200,
-                10 + Math.random() * 30,
-                (Math.random() - 0.5) * 200
-            );
-            scene.add(light);
+        // ============================================================
+        // 5. POOL DE OBJETOS
+        // ============================================================
+        class ObjectPool {
+            constructor(createFn, size) {
+                this.pool = [];
+                this.createFn = createFn;
+                for (let i = 0; i < size; i++) {
+                    this.pool.push(this.createFn());
+                }
+            }
+            
+            get() {
+                for (const item of this.pool) {
+                    if (!item.active) {
+                        item.active = true;
+                        return item;
+                    }
+                }
+                // Cria mais se necessário
+                const newItem = this.createFn();
+                newItem.active = true;
+                this.pool.push(newItem);
+                return newItem;
+            }
+            
+            release(item) {
+                item.active = false;
+                if (item.parent) {
+                    item.parent.remove(item);
+                }
+            }
         }
 
         // ============================================================
-        // 5. CHUNK SYSTEM
+        // 6. MATERIAIS COMPARTILHADOS
+        // ============================================================
+        const materials = {
+            wall: new THREE.MeshStandardMaterial({ color: 0x6a7a8a, roughness: 0.7, metalness: 0.3 }),
+            wallDark: new THREE.MeshStandardMaterial({ color: 0x4a5a6a, roughness: 0.8, metalness: 0.2 }),
+            floor: new THREE.MeshStandardMaterial({ color: 0x5a6a7a, roughness: 0.9, metalness: 0.1 }),
+            floorDark: new THREE.MeshStandardMaterial({ color: 0x3a4a5a, roughness: 0.9, metalness: 0.1 }),
+            metal: new THREE.MeshStandardMaterial({ color: 0x8a9aaa, roughness: 0.4, metalness: 0.7 }),
+            metalDark: new THREE.MeshStandardMaterial({ color: 0x5a6a7a, roughness: 0.5, metalness: 0.6 }),
+        };
+
+        // ============================================================
+        // 7. GEOMETRIAS COMPARTILHADAS
+        // ============================================================
+        const geometries = {
+            box: new THREE.BoxGeometry(1, 1, 1),
+            cylinder: new THREE.CylinderGeometry(0.5, 0.5, 1, 6),
+            plane: new THREE.PlaneGeometry(1, 1),
+        };
+
+        // ============================================================
+        // 8. CHUNK SYSTEM
         // ============================================================
         const chunks = new Map();
-        const chunkMeshes = new Map();
         let totalStructures = 0;
+        let totalPolygons = 0;
+        let generationQueue = [];
+        let isGenerating = false;
 
-        // Materiais industriais
-        const matWall = new THREE.MeshStandardMaterial({
-            color: 0x6a7a8a,
-            roughness: 0.7,
-            metalness: 0.3
-        });
-        const matWallDark = new THREE.MeshStandardMaterial({
-            color: 0x4a5a6a,
-            roughness: 0.8,
-            metalness: 0.2
-        });
-        const matFloor = new THREE.MeshStandardMaterial({
-            color: 0x5a6a7a,
-            roughness: 0.9,
-            metalness: 0.1
-        });
-        const matFloorDark = new THREE.MeshStandardMaterial({
-            color: 0x3a4a5a,
-            roughness: 0.9,
-            metalness: 0.1
-        });
-        const matMetal = new THREE.MeshStandardMaterial({
-            color: 0x8a9aaa,
-            roughness: 0.4,
-            metalness: 0.7
-        });
-        const matMetalDark = new THREE.MeshStandardMaterial({
-            color: 0x5a6a7a,
-            roughness: 0.5,
-            metalness: 0.6
-        });
-        const matAccent = new THREE.MeshStandardMaterial({
-            color: 0x7a8a5a,
-            roughness: 0.6,
-            metalness: 0.4
-        });
-
-        function getChunkKey(x, z) {
-            const cx = Math.floor(x / CONFIG.CHUNK_SIZE);
-            const cz = Math.floor(z / CONFIG.CHUNK_SIZE);
+        function getChunkKey(cx, cz) {
             return `${cx},${cz}`;
         }
 
-        function getChunkCoord(chunkKey) {
-            const [cx, cz] = chunkKey.split(',').map(Number);
+        function getChunkCoord(key) {
+            const [cx, cz] = key.split(',').map(Number);
             return { cx, cz };
         }
 
@@ -290,86 +283,68 @@
         }
 
         // ============================================================
-        // 6. GERADOR PROCEDURAL DE ESTRUTURAS
+        // 9. GERADOR DE ESTRUTURAS (otimizado)
         // ============================================================
-        function generateChunkStructures(cx, cz, seed) {
+        function generateStructures(cx, cz) {
             const structures = [];
             const center = getChunkCenter(cx, cz);
-            const half = CONFIG.CHUNK_SIZE / 2;
+            const seed = (cx * 73856093 + cz * 19349663 + 83492791) & 0x7fffffff;
             
-            // Semente pseudo-aleatória baseada na posição
             const rng = (n) => {
                 const s = (seed * 9301 + 49297) % 233280;
                 seed = (s * 9301 + 49297) % 233280;
                 return (s / 233280) * n;
             };
 
-            const count = 3 + Math.floor(rng(CONFIG.MAX_STRUCTURES_PER_CHUNK - 2));
-            
-            // Garantir pelo menos uma estrutura central
-            const hasCore = rng(1) < 0.7;
+            const count = 2 + Math.floor(rng(CONFIG.MAX_STRUCTURES_PER_CHUNK - 1));
             
             for (let i = 0; i < count; i++) {
-                // Posição dentro do chunk
-                let x = center.x + (rng(1) - 0.5) * CONFIG.CHUNK_SIZE * 0.8;
-                let z = center.z + (rng(1) - 0.5) * CONFIG.CHUNK_SIZE * 0.8;
-                
-                // Se for a estrutura central, fica no centro
-                if (i === 0 && hasCore) {
-                    x = center.x + (rng(1) - 0.5) * CONFIG.CHUNK_SIZE * 0.2;
-                    z = center.z + (rng(1) - 0.5) * CONFIG.CHUNK_SIZE * 0.2;
-                }
-                
-                const width = 2 + rng(6);
-                const depth = 2 + rng(6);
-                const height = CONFIG.MIN_STRUCTURE_HEIGHT + rng(CONFIG.MAX_STRUCTURE_HEIGHT - CONFIG.MIN_STRUCTURE_HEIGHT);
-                
-                const type = Math.floor(rng(5));
+                const x = center.x + (rng(1) - 0.5) * CONFIG.CHUNK_SIZE * 0.75;
+                const z = center.z + (rng(1) - 0.5) * CONFIG.CHUNK_SIZE * 0.75;
+                const w = 1.5 + rng(4);
+                const d = 1.5 + rng(4);
+                const h = CONFIG.MIN_STRUCTURE_HEIGHT + rng(CONFIG.MAX_STRUCTURE_HEIGHT - CONFIG.MIN_STRUCTURE_HEIGHT);
+                const type = Math.floor(rng(4));
                 
                 structures.push({
-                    x, z,
-                    width, depth, height,
+                    x, z, w, d, h,
                     type,
-                    hasRoof: rng(1) > 0.3,
-                    hasWindows: rng(1) > 0.5,
-                    hasPlatforms: rng(1) > 0.4,
-                    colorVariant: Math.floor(rng(3))
+                    hasRoof: rng(1) > 0.4,
+                    hasWindows: rng(1) > 0.6,
+                    colorVariant: Math.floor(rng(2))
                 });
             }
             
-            // Adicionar conexões (corredores) entre estruturas
-            const connectionCount = Math.floor(rng(structures.length * 1.5));
-            for (let i = 0; i < connectionCount; i++) {
+            // Conexões (corredores)
+            const connCount = Math.floor(rng(structures.length));
+            for (let i = 0; i < connCount; i++) {
                 const a = Math.floor(rng(structures.length));
                 const b = Math.floor(rng(structures.length));
                 if (a !== b) {
                     structures.push({
-                        x: (structures[a].x + structures[b].x) / 2 + (rng(1) - 0.5) * 4,
-                        z: (structures[a].z + structures[b].z) / 2 + (rng(1) - 0.5) * 4,
-                        width: 1.5 + rng(2),
-                        depth: 1.5 + rng(2),
-                        height: 2 + rng(3),
-                        type: 4, // corredor
+                        x: (structures[a].x + structures[b].x) / 2 + (rng(1) - 0.5) * 2,
+                        z: (structures[a].z + structures[b].z) / 2 + (rng(1) - 0.5) * 2,
+                        w: 1.2 + rng(1.5),
+                        d: 1.2 + rng(1.5),
+                        h: 2 + rng(2),
+                        type: 4,
                         isCorridor: true,
-                        colorVariant: Math.floor(rng(3))
                     });
                 }
             }
             
-            // Adicionar verticalidade (plataformas/escadas)
+            // Plataformas
             for (const s of structures) {
-                if (s.height > 6 && rng(1) > 0.5) {
-                    const platformHeight = 2 + rng(s.height - 3);
+                if (s.h > 5 && rng(1) > 0.5) {
                     structures.push({
-                        x: s.x + (rng(1) - 0.5) * s.width * 0.8,
-                        z: s.z + (rng(1) - 0.5) * s.depth * 0.8,
-                        width: 2 + rng(3),
-                        depth: 2 + rng(3),
-                        height: 0.3,
-                        type: 5, // plataforma
+                        x: s.x + (rng(1) - 0.5) * s.w * 0.7,
+                        z: s.z + (rng(1) - 0.5) * s.d * 0.7,
+                        w: 1.5 + rng(2),
+                        d: 1.5 + rng(2),
+                        h: 0.2,
+                        type: 5,
                         isPlatform: true,
-                        platformY: platformHeight,
-                        colorVariant: Math.floor(rng(3))
+                        platformY: 2 + rng(s.h - 3)
                     });
                 }
             }
@@ -378,360 +353,256 @@
         }
 
         // ============================================================
-        // 7. CONSTRUTOR DE CHUNKS
+        // 10. CONSTRUTOR DE CHUNKS (com colisão)
         // ============================================================
         function buildChunk(cx, cz) {
-            const key = getChunkKey(cx * CONFIG.CHUNK_SIZE, cz * CONFIG.CHUNK_SIZE);
+            const key = getChunkKey(cx, cz);
             
-            // Remove chunk antigo se existir
-            if (chunkMeshes.has(key)) {
-                const group = chunkMeshes.get(key);
-                scene.remove(group);
-                // Dispose de geometrias e materiais
-                group.children.forEach(child => {
-                    if (child.geometry) child.geometry.dispose();
-                    if (child.material) child.material.dispose();
+            // Remove chunk antigo
+            if (chunks.has(key)) {
+                const data = chunks.get(key);
+                scene.remove(data.group);
+                data.objects.forEach(obj => {
+                    if (obj.geometry) obj.geometry.dispose();
+                    if (obj.material) obj.material.dispose();
                 });
-                chunkMeshes.delete(key);
+                chunks.delete(key);
             }
             
-            const seed = (cx * 73856093 + cz * 19349663 + 83492791) & 0x7fffffff;
-            const structures = generateChunkStructures(cx, cz, seed);
-            
+            const structures = generateStructures(cx, cz);
             const group = new THREE.Group();
             const center = getChunkCenter(cx, cz);
-            const half = CONFIG.CHUNK_SIZE / 2;
+            const objects = [];
             
-            // Chão base
-            const floorGeo = new THREE.PlaneGeometry(CONFIG.CHUNK_SIZE, CONFIG.CHUNK_SIZE);
-            const floorMat = (cx + cz) % 2 === 0 ? matFloor : matFloorDark;
-            const floor = new THREE.Mesh(floorGeo, floorMat);
-            floor.rotation.x = -Math.PI / 2;
-            floor.position.set(center.x, 0, center.z);
-            floor.receiveShadow = true;
-            group.add(floor);
+            // Chão do chunk
+            const floorMesh = new THREE.Mesh(
+                new THREE.PlaneGeometry(CONFIG.CHUNK_SIZE, CONFIG.CHUNK_SIZE),
+                (cx + cz) % 2 === 0 ? materials.floor : materials.floorDark
+            );
+            floorMesh.rotation.x = -Math.PI / 2;
+            floorMesh.position.set(center.x, 0, center.z);
+            floorMesh.receiveShadow = true;
+            floorMesh.userData.isCollider = true;
+            group.add(floorMesh);
+            objects.push(floorMesh);
             
-            // Construir estruturas
+            // Constrói estruturas
             for (const s of structures) {
-                const parts = buildStructure(s);
-                for (const part of parts) {
-                    group.add(part);
+                const meshes = buildStructureMeshes(s);
+                for (const mesh of meshes) {
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+                    mesh.userData.isCollider = true;
+                    group.add(mesh);
+                    objects.push(mesh);
                 }
             }
             
-            // Paredes externas do chunk (opcional, para dar sensação de continuidade)
-            // Pequenas vigas nos cantos
-            const corners = [
-                [-1, -1], [1, -1], [1, 1], [-1, 1]
-            ];
-            for (const [dx, dz] of corners) {
-                const x = center.x + dx * half;
-                const z = center.z + dz * half;
-                // Pilar
-                const pillar = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.3, 8, 0.3),
-                    matMetalDark
-                );
-                pillar.position.set(x, 4, z);
-                pillar.castShadow = true;
-                group.add(pillar);
-            }
-            
             scene.add(group);
-            chunkMeshes.set(key, group);
+            chunks.set(key, { group, objects, structures });
             
-            totalStructures += structures.length;
             return structures.length;
         }
 
         // ============================================================
-        // 8. CONSTRUTOR DE ESTRUTURAS INDIVIDUAIS
+        // 11. CONSTRUTOR DE ESTRUTURAS (com colisão)
         // ============================================================
-        function buildStructure(s) {
-            const parts = [];
-            
-            // Seleciona material base
-            let matMain, matSecondary, matDetail;
-            const variant = s.colorVariant || 0;
-            if (variant === 0) {
-                matMain = matWall;
-                matSecondary = matWallDark;
-                matDetail = matMetal;
-            } else if (variant === 1) {
-                matMain = matWallDark;
-                matSecondary = matWall;
-                matDetail = matMetalDark;
-            } else {
-                matMain = matMetal;
-                matSecondary = matWall;
-                matDetail = matMetalDark;
-            }
+        function buildStructureMeshes(s) {
+            const meshes = [];
+            const mat = s.colorVariant === 0 ? materials.wall : materials.wallDark;
+            const matFloor = s.colorVariant === 0 ? materials.floor : materials.floorDark;
+            const matMetal = s.colorVariant === 0 ? materials.metal : materials.metalDark;
             
             if (s.isCorridor) {
-                // Corredor
-                const w = s.width;
-                const d = s.depth;
-                const h = s.height;
-                const x = s.x;
-                const z = s.z;
-                
                 // Piso
-                const floor = new THREE.Mesh(
-                    new THREE.BoxGeometry(w, 0.2, d),
-                    matFloor
-                );
-                floor.position.set(x, 0.1, z);
-                floor.receiveShadow = true;
-                parts.push(floor);
+                const floor = new THREE.Mesh(geometries.box, matFloor);
+                floor.scale.set(s.w, 0.15, s.d);
+                floor.position.set(s.x, 0.1, s.z);
+                meshes.push(floor);
                 
-                // Paredes laterais (se não for muito largo)
-                if (w < 4) {
-                    const wallH = new THREE.Mesh(
-                        new THREE.BoxGeometry(w, h, 0.2),
-                        matMain
-                    );
-                    wallH.position.set(x, h/2, z + d/2);
-                    wallH.castShadow = true;
-                    parts.push(wallH);
+                // Paredes laterais
+                if (s.w < 3.5) {
+                    const wall1 = new THREE.Mesh(geometries.box, mat);
+                    wall1.scale.set(s.w, s.h, 0.15);
+                    wall1.position.set(s.x, s.h/2, s.z + s.d/2);
+                    meshes.push(wall1);
                     
-                    const wallH2 = new THREE.Mesh(
-                        new THREE.BoxGeometry(w, h, 0.2),
-                        matMain
-                    );
-                    wallH2.position.set(x, h/2, z - d/2);
-                    wallH2.castShadow = true;
-                    parts.push(wallH2);
+                    const wall2 = new THREE.Mesh(geometries.box, mat);
+                    wall2.scale.set(s.w, s.h, 0.15);
+                    wall2.position.set(s.x, s.h/2, s.z - s.d/2);
+                    meshes.push(wall2);
                 }
-                
-                // Teto (aberto, mas com vigas)
-                if (h > 2) {
-                    const beam = new THREE.Mesh(
-                        new THREE.BoxGeometry(w, 0.1, 0.1),
-                        matMetal
-                    );
-                    beam.position.set(x, h, z);
-                    parts.push(beam);
-                }
-                
-                return parts;
+                return meshes;
             }
             
             if (s.isPlatform) {
-                // Plataforma
-                const w = s.width;
-                const d = s.depth;
-                const y = s.platformY || 2;
-                
-                const plat = new THREE.Mesh(
-                    new THREE.BoxGeometry(w, 0.2, d),
-                    matMetal
-                );
-                plat.position.set(s.x, y, s.z);
-                plat.castShadow = true;
-                plat.receiveShadow = true;
-                parts.push(plat);
+                const plat = new THREE.Mesh(geometries.box, matMetal);
+                plat.scale.set(s.w, 0.15, s.d);
+                plat.position.set(s.x, s.platformY || 2, s.z);
+                meshes.push(plat);
                 
                 // Suportes
                 for (let i = -1; i <= 1; i += 2) {
                     for (let j = -1; j <= 1; j += 2) {
-                        const support = new THREE.Mesh(
-                            new THREE.CylinderGeometry(0.08, 0.08, y, 4),
-                            matMetalDark
+                        const support = new THREE.Mesh(geometries.cylinder, materials.metalDark);
+                        support.scale.set(1, s.platformY || 2, 1);
+                        support.position.set(
+                            s.x + i * s.w * 0.3,
+                            (s.platformY || 2) / 2,
+                            s.z + j * s.d * 0.3
                         );
-                        support.position.set(s.x + i * w * 0.35, y/2, s.z + j * d * 0.35);
-                        parts.push(support);
+                        meshes.push(support);
                     }
                 }
-                
-                // Escadas (se for alta)
-                if (y > 3) {
-                    for (let step = 0; step < Math.min(6, Math.floor(y)); step++) {
-                        const stepY = 0.5 + step * 0.6;
-                        const stepX = s.x + 0.5 + step * 0.3;
-                        const stair = new THREE.Mesh(
-                            new THREE.BoxGeometry(0.6, 0.1, 0.8),
-                            matWallDark
-                        );
-                        stair.position.set(stepX, stepY, s.z + 0.8);
-                        parts.push(stair);
-                    }
-                }
-                
-                return parts;
+                return meshes;
             }
             
-            // Estrutura principal (sala/prédio)
-            const w = s.width;
-            const d = s.depth;
-            const h = s.height;
-            const x = s.x;
-            const z = s.z;
+            // Estrutura principal
+            const w = s.w, d = s.d, h = s.h;
+            const x = s.x, z = s.z;
             
             // Piso
-            const floor = new THREE.Mesh(
-                new THREE.BoxGeometry(w, 0.2, d),
-                matFloor
-            );
+            const floor = new THREE.Mesh(geometries.box, matFloor);
+            floor.scale.set(w, 0.15, d);
             floor.position.set(x, 0.1, z);
-            floor.receiveShadow = true;
-            parts.push(floor);
+            meshes.push(floor);
             
             // Paredes
-            const wallMat = s.type === 0 ? matMain : matSecondary;
+            const wallMat = s.type === 0 ? mat : materials.wallDark;
             
             // Parede traseira
-            const backWall = new THREE.Mesh(
-                new THREE.BoxGeometry(w, h, 0.2),
-                wallMat
-            );
-            backWall.position.set(x, h/2, z - d/2);
-            backWall.castShadow = true;
-            parts.push(backWall);
+            const back = new THREE.Mesh(geometries.box, wallMat);
+            back.scale.set(w, h, 0.15);
+            back.position.set(x, h/2, z - d/2);
+            meshes.push(back);
             
-            // Parede frontal (com entrada)
-            if (s.type !== 2) {
-                const frontWall = new THREE.Mesh(
-                    new THREE.BoxGeometry(w, h, 0.2),
-                    wallMat
-                );
-                frontWall.position.set(x, h/2, z + d/2);
-                frontWall.castShadow = true;
-                parts.push(frontWall);
-                
-                // "Porta" - só um detalhe visual
-                if (w > 2) {
-                    const door = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.6, 0.8, 0.1),
-                        matMetalDark
-                    );
-                    door.position.set(x, 0.4, z + d/2 + 0.15);
-                    parts.push(door);
-                }
-            }
+            // Parede frontal
+            const front = new THREE.Mesh(geometries.box, wallMat);
+            front.scale.set(w, h, 0.15);
+            front.position.set(x, h/2, z + d/2);
+            meshes.push(front);
             
             // Paredes laterais
-            const side1 = new THREE.Mesh(
-                new THREE.BoxGeometry(0.2, h, d),
-                wallMat
-            );
+            const side1 = new THREE.Mesh(geometries.box, wallMat);
+            side1.scale.set(0.15, h, d);
             side1.position.set(x - w/2, h/2, z);
-            side1.castShadow = true;
-            parts.push(side1);
+            meshes.push(side1);
             
-            const side2 = new THREE.Mesh(
-                new THREE.BoxGeometry(0.2, h, d),
-                wallMat
-            );
+            const side2 = new THREE.Mesh(geometries.box, wallMat);
+            side2.scale.set(0.15, h, d);
             side2.position.set(x + w/2, h/2, z);
-            side2.castShadow = true;
-            parts.push(side2);
+            meshes.push(side2);
             
-            // Teto (se tiver)
+            // Teto
             if (s.hasRoof && h > 2) {
-                const roof = new THREE.Mesh(
-                    new THREE.BoxGeometry(w, 0.2, d),
-                    matFloorDark
-                );
+                const roof = new THREE.Mesh(geometries.box, matFloor);
+                roof.scale.set(w, 0.15, d);
                 roof.position.set(x, h, z);
-                roof.castShadow = true;
-                parts.push(roof);
+                meshes.push(roof);
             }
             
-            // Janelas (detalhes)
-            if (s.hasWindows && h > 3) {
-                const windowMat = new THREE.MeshBasicMaterial({
-                    color: 0x88ccff,
-                    transparent: true,
-                    opacity: 0.15
-                });
-                for (let i = 0; i < Math.floor(w / 2); i++) {
-                    const win = new THREE.Mesh(
-                        new THREE.PlaneGeometry(0.5, 0.5),
-                        windowMat
-                    );
-                    win.position.set(x - w/3 + i * 1.2, h * 0.5, z - d/2 - 0.05);
-                    parts.push(win);
-                }
-            }
-            
-            // Detalhes estruturais (vigas)
-            if (h > 4) {
-                for (let i = 0; i < Math.floor(h / 2); i++) {
-                    const beam = new THREE.Mesh(
-                        new THREE.BoxGeometry(w + 0.4, 0.1, 0.1),
-                        matMetal
-                    );
-                    beam.position.set(x, 1 + i * 1.8, z - d/2 - 0.1);
-                    parts.push(beam);
+            // Vigas
+            if (h > 3) {
+                for (let i = 0; i < Math.min(3, Math.floor(h / 2)); i++) {
+                    const beam = new THREE.Mesh(geometries.box, matMetal);
+                    beam.scale.set(w + 0.3, 0.08, 0.08);
+                    beam.position.set(x, 0.5 + i * 1.6, z - d/2 - 0.08);
+                    meshes.push(beam);
                     
-                    const beam2 = new THREE.Mesh(
-                        new THREE.BoxGeometry(w + 0.4, 0.1, 0.1),
-                        matMetal
-                    );
-                    beam2.position.set(x, 1 + i * 1.8, z + d/2 + 0.1);
-                    parts.push(beam2);
+                    const beam2 = new THREE.Mesh(geometries.box, matMetal);
+                    beam2.scale.set(w + 0.3, 0.08, 0.08);
+                    beam2.position.set(x, 0.5 + i * 1.6, z + d/2 + 0.08);
+                    meshes.push(beam2);
                 }
             }
             
-            return parts;
+            return meshes;
         }
 
         // ============================================================
-        // 9. GERENCIADOR DE CHUNKS
+        // 12. GERENCIADOR DE CHUNKS (com geração gradual)
         // ============================================================
+        let chunksLoading = new Set();
+        let chunksToLoad = [];
+
         function updateChunks(playerX, playerZ) {
             const cx = Math.floor(playerX / CONFIG.CHUNK_SIZE);
             const cz = Math.floor(playerZ / CONFIG.CHUNK_SIZE);
-            
             const radius = CONFIG.VIEW_DISTANCE;
-            const loadedKeys = new Set();
-            let totalStructuresInChunks = 0;
             
+            const neededKeys = new Set();
+            const toLoad = [];
+            
+            // Calcula quais chunks são necessários
             for (let dx = -radius; dx <= radius; dx++) {
                 for (let dz = -radius; dz <= radius; dz++) {
-                    // Carrega em círculo (não quadrado)
-                    if (dx*dx + dz*dz > radius*radius + 2) continue;
-                    
+                    if (dx*dx + dz*dz > radius*radius + 1) continue;
                     const chunkX = cx + dx;
                     const chunkZ = cz + dz;
-                    const key = getChunkKey(chunkX * CONFIG.CHUNK_SIZE, chunkZ * CONFIG.CHUNK_SIZE);
-                    loadedKeys.add(key);
+                    const key = getChunkKey(chunkX, chunkZ);
+                    neededKeys.add(key);
                     
-                    if (!chunkMeshes.has(key)) {
-                        const count = buildChunk(chunkX, chunkZ);
-                        totalStructuresInChunks += count;
-                    } else {
-                        // Conta estruturas já existentes
-                        const group = chunkMeshes.get(key);
-                        totalStructuresInChunks += group.children.length;
+                    if (!chunks.has(key) && !chunksLoading.has(key)) {
+                        toLoad.push({ cx: chunkX, cz: chunkZ, key });
                     }
                 }
             }
             
             // Remove chunks distantes
             const toRemove = [];
-            for (const [key, group] of chunkMeshes) {
-                if (!loadedKeys.has(key)) {
+            for (const [key, data] of chunks) {
+                if (!neededKeys.has(key)) {
                     toRemove.push(key);
                 }
             }
             
             for (const key of toRemove) {
-                const group = chunkMeshes.get(key);
-                scene.remove(group);
-                group.children.forEach(child => {
-                    if (child.geometry) child.geometry.dispose();
-                    if (child.material) child.material.dispose();
+                const data = chunks.get(key);
+                scene.remove(data.group);
+                data.objects.forEach(obj => {
+                    if (obj.geometry) obj.geometry.dispose();
+                    if (obj.material) obj.material.dispose();
                 });
-                chunkMeshes.delete(key);
+                chunks.delete(key);
             }
             
-            chunkCountSpan.textContent = chunkMeshes.size;
-            structureCountSpan.textContent = totalStructuresInChunks;
+            // Adiciona chunks à fila de geração
+            for (const load of toLoad) {
+                if (!chunksLoading.has(load.key)) {
+                    chunksLoading.add(load.key);
+                    generationQueue.push(load);
+                }
+            }
+            
+            chunkCountSpan.textContent = chunks.size;
         }
 
         // ============================================================
-        // 10. JOGADOR
+        // 13. PROCESSADOR DE FILA DE GERAÇÃO (gradual)
+        // ============================================================
+        function processGenerationQueue() {
+            if (generationQueue.length === 0) {
+                loadStatusSpan.textContent = '100%';
+                return;
+            }
+            
+            let processed = 0;
+            while (generationQueue.length > 0 && processed < CONFIG.GENERATE_PER_FRAME) {
+                const load = generationQueue.shift();
+                chunksLoading.delete(load.key);
+                
+                const count = buildChunk(load.cx, load.cz);
+                totalStructures += count;
+                processed++;
+            }
+            
+            const total = generationQueue.length + chunksLoading.size;
+            const progress = chunks.size / (chunks.size + total) * 100;
+            loadStatusSpan.textContent = Math.round(Math.min(progress, 100)) + '%';
+        }
+
+        // ============================================================
+        // 14. JOGADOR (com colisão)
         // ============================================================
         const player = {
             position: new THREE.Vector3(0, CONFIG.PLAYER_HEIGHT, 0),
@@ -742,6 +613,8 @@
             speed: CONFIG.PLAYER_SPEED,
             sprintMultiplier: 1.8,
             isSprinting: false,
+            radius: 0.3,
+            height: CONFIG.PLAYER_HEIGHT,
         };
 
         camera.position.copy(player.position);
@@ -749,7 +622,152 @@
         const keys = { w: false, a: false, s: false, d: false, space: false, shift: false };
 
         // ============================================================
-        // 11. CONTROLES
+        // 15. COLISÃO (simplificada e otimizada)
+        // ============================================================
+        function checkCollision(pos, radius, height) {
+            const halfSize = CONFIG.CHUNK_SIZE / 2;
+            
+            // Verifica contra todos os objetos com colisor
+            for (const [key, data] of chunks) {
+                const chunkPos = getChunkCenter(...key.split(',').map(Number));
+                // Skip rápido (distância do chunk)
+                const dxc = pos.x - chunkPos.x;
+                const dzc = pos.z - chunkPos.z;
+                if (Math.abs(dxc) > CONFIG.CHUNK_SIZE / 2 + 2 || 
+                    Math.abs(dzc) > CONFIG.CHUNK_SIZE / 2 + 2) continue;
+                
+                for (const obj of data.objects) {
+                    if (!obj.userData.isCollider) continue;
+                    
+                    // Collider simplificado baseado no bounding box
+                    const box = new THREE.Box3().setFromObject(obj);
+                    const center = new THREE.Vector3();
+                    const size = new THREE.Vector3();
+                    box.getCenter(center);
+                    box.getSize(size);
+                    
+                    const halfW = size.x / 2 + radius;
+                    const halfD = size.z / 2 + radius;
+                    const halfH = size.y / 2 + height / 2;
+                    
+                    const dx = pos.x - center.x;
+                    const dz = pos.z - center.z;
+                    const dy = pos.y - center.y;
+                    
+                    if (Math.abs(dx) < halfW && Math.abs(dz) < halfD && Math.abs(dy) < halfH) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function moveWithCollision(entity, dx, dy, dz) {
+            // Move X
+            const testX = new THREE.Vector3(entity.position.x + dx, entity.position.y, entity.position.z);
+            if (!checkCollision(testX, entity.radius, entity.height)) {
+                entity.position.x += dx;
+            }
+            
+            // Move Y
+            const testY = new THREE.Vector3(entity.position.x, entity.position.y + dy, entity.position.z);
+            if (!checkCollision(testY, entity.radius, entity.height)) {
+                entity.position.y += dy;
+            } else {
+                entity.velocity.y = 0;
+                entity.isGrounded = true;
+            }
+            
+            // Move Z
+            const testZ = new THREE.Vector3(entity.position.x, entity.position.y, entity.position.z + dz);
+            if (!checkCollision(testZ, entity.radius, entity.height)) {
+                entity.position.z += dz;
+            }
+        }
+
+        // ============================================================
+        // 16. MOVIMENTO DO JOGADOR
+        // ============================================================
+        function updatePlayer(delta) {
+            player.isSprinting = keys.shift && keys.w;
+            const speed = player.isSprinting ? CONFIG.PLAYER_SPEED * player.sprintMultiplier : CONFIG.PLAYER_SPEED;
+
+            // Pulo
+            if (keys.space && player.isGrounded) {
+                player.velocity.y = CONFIG.JUMP_FORCE;
+                player.isGrounded = false;
+            }
+
+            // Gravidade
+            player.velocity.y += CONFIG.GRAVITY * delta;
+            
+            // Movimento horizontal
+            const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            forward.y = 0;
+            forward.normalize();
+
+            const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+            right.y = 0;
+            right.normalize();
+
+            const moveX = (keys.d ? 1 : 0) - (keys.a ? 1 : 0);
+            const moveZ = (keys.s ? 1 : 0) - (keys.w ? 1 : 0);
+            
+            let moveDir = new THREE.Vector3();
+            if (moveX !== 0 || moveZ !== 0) {
+                moveDir.add(right.clone().multiplyScalar(moveX));
+                moveDir.add(forward.clone().multiplyScalar(-moveZ));
+                moveDir.normalize().multiplyScalar(speed * delta);
+            }
+
+            // Aplica movimento com colisão
+            const dx = moveDir.x;
+            const dz = moveDir.z;
+            const dy = player.velocity.y * delta;
+            
+            moveWithCollision(player, dx, dy, dz);
+
+            // Chão (se cair muito, volta)
+            if (player.position.y < -10) {
+                player.position.y = CONFIG.PLAYER_HEIGHT;
+                player.velocity.y = 0;
+                player.isGrounded = true;
+            }
+
+            // Atualiza câmera
+            camera.position.copy(player.position);
+            camera.rotation.order = 'YXZ';
+            camera.rotation.y = player.yaw;
+            camera.rotation.x = player.pitch;
+
+            // Atualiza chunks (com antecipação)
+            const lookAhead = 20;
+            const lookDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            lookDir.y = 0;
+            lookDir.normalize();
+            const aheadX = player.position.x + lookDir.x * lookAhead;
+            const aheadZ = player.position.z + lookDir.z * lookAhead;
+            
+            updateChunks(aheadX, aheadZ);
+
+            // Atualiza HUD
+            playerPosSpan.textContent = `${Math.round(player.position.x)}, ${Math.round(player.position.z)}`;
+            
+            // Conta polígonos (aproximado)
+            let polys = 0;
+            for (const [key, data] of chunks) {
+                for (const obj of data.objects) {
+                    if (obj.geometry) {
+                        const pos = obj.geometry.attributes.position;
+                        if (pos) polys += pos.count / 3;
+                    }
+                }
+            }
+            polyCountSpan.textContent = (polys / 1000).toFixed(1) + 'k';
+        }
+
+        // ============================================================
+        // 17. CONTROLES
         // ============================================================
         document.addEventListener('mousemove', (e) => {
             if (document.pointerLockElement !== renderer.domElement) return;
@@ -791,122 +809,16 @@
         });
 
         // ============================================================
-        // 12. MOVIMENTO DO JOGADOR
-        // ============================================================
-        function updatePlayer(delta) {
-            // Sprint
-            player.isSprinting = keys.shift && keys.w;
-            const speed = player.isSprinting ? CONFIG.PLAYER_SPEED * player.sprintMultiplier : CONFIG.PLAYER_SPEED;
-
-            // Pulo
-            if (keys.space && player.isGrounded) {
-                player.velocity.y = CONFIG.JUMP_FORCE;
-                player.isGrounded = false;
-            }
-
-            // Gravidade
-            player.velocity.y += CONFIG.GRAVITY * delta;
-            
-            // Movimento horizontal
-            const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-            forward.y = 0;
-            forward.normalize();
-
-            const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
-            right.y = 0;
-            right.normalize();
-
-            const moveInput = new THREE.Vector3(0, 0, 0);
-            if (keys.w) moveInput.add(forward);
-            if (keys.s) moveInput.sub(forward);
-            if (keys.d) moveInput.add(right);
-            if (keys.a) moveInput.sub(right);
-
-            if (moveInput.lengthSq() > 0) {
-                moveInput.normalize().multiplyScalar(speed * delta);
-            }
-
-            // Aplica movimento
-            player.position.x += moveInput.x;
-            player.position.z += moveInput.z;
-            player.position.y += player.velocity.y * delta;
-
-            // Chão (simplificado - sem colisão com estruturas, apenas mantém no chão)
-            if (player.position.y <= CONFIG.PLAYER_HEIGHT) {
-                player.position.y = CONFIG.PLAYER_HEIGHT;
-                player.velocity.y = 0;
-                player.isGrounded = true;
-            }
-
-            // Atualiza câmera
-            camera.position.copy(player.position);
-            camera.rotation.order = 'YXZ';
-            camera.rotation.y = player.yaw;
-            camera.rotation.x = player.pitch;
-
-            // Atualiza chunks
-            updateChunks(player.position.x, player.position.z);
-
-            // Atualiza HUD
-            playerPosSpan.textContent = `${Math.round(player.position.x)}, ${Math.round(player.position.z)}`;
-        }
-
-        // ============================================================
-        // 13. MINIMAPA (simplificado)
-        // ============================================================
-        const minimapCanvas = document.getElementById('minimapCanvas');
-        const minimapCtx = minimapCanvas.getContext('2d');
-        minimapCanvas.width = 120;
-        minimapCanvas.height = 120;
-
-        function updateMinimap() {
-            minimapCtx.fillStyle = 'rgba(0,0,0,0.3)';
-            minimapCtx.fillRect(0, 0, 120, 120);
-            
-            const scale = 0.5;
-            const cx = 60;
-            const cy = 60;
-            
-            // Desenha chunks próximos
-            for (const [key] of chunkMeshes) {
-                const { cx: chunkX, cz: chunkZ } = getChunkCoord(key);
-                const px = cx + (chunkX * CONFIG.CHUNK_SIZE - player.position.x) * scale;
-                const py = cy + (chunkZ * CONFIG.CHUNK_SIZE - player.position.z) * scale;
-                if (px > 0 && px < 120 && py > 0 && py < 120) {
-                    minimapCtx.fillStyle = 'rgba(255,255,255,0.05)';
-                    minimapCtx.fillRect(px - 2, py - 2, 4, 4);
-                }
-            }
-            
-            // Jogador
-            minimapCtx.fillStyle = '#88ccff';
-            minimapCtx.beginPath();
-            minimapCtx.arc(cx, cy, 3, 0, Math.PI * 2);
-            minimapCtx.fill();
-            
-            // Direção do jogador
-            minimapCtx.strokeStyle = '#88ccff';
-            minimapCtx.lineWidth = 1;
-            minimapCtx.beginPath();
-            minimapCtx.moveTo(cx, cy);
-            minimapCtx.lineTo(
-                cx + Math.sin(-player.yaw) * 10,
-                cy + Math.cos(-player.yaw) * 10
-            );
-            minimapCtx.stroke();
-        }
-
-        // ============================================================
-        // 14. FPS
+        // 18. FPS
         // ============================================================
         let frameCount = 0;
         let fpsTime = 0;
         let currentFPS = 60;
 
         // ============================================================
-        // 15. LOOP PRINCIPAL
+        // 19. LOOP PRINCIPAL
         // ============================================================
-        // Gera chunks iniciais
+        // Geração inicial
         updateChunks(0, 0);
 
         let lastTime = 0;
@@ -925,7 +837,7 @@
             }
 
             updatePlayer(delta);
-            updateMinimap();
+            processGenerationQueue();
 
             renderer.render(scene, camera);
             requestAnimationFrame(animate);
@@ -934,7 +846,7 @@
         animate(0);
 
         // ============================================================
-        // 16. REDIMENSIONAR
+        // 20. REDIMENSIONAR
         // ============================================================
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
@@ -942,10 +854,11 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        console.log('🏭 Mundo Industrial Infinito carregado!');
-        console.log('📋 Chunks: geração procedural com A*');
-        console.log('🔄 Regiões mutáveis (mudam ao revisitar)');
-        console.log('⬆️ Verticalidade: plataformas e escadas');
+        console.log('🏭 Mundo Industrial OTIMIZADO carregado!');
+        console.log('✅ Colisão real implementada');
+        console.log('✅ Geração gradual (sem congelamentos)');
+        console.log('✅ Descarregamento de chunks');
+        console.log('✅ Materiais/geometrias compartilhados');
     </script>
 </body>
 </html>
