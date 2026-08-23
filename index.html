@@ -3,40 +3,60 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Arena de Zumbis 3D - CORRIGIDO</title>
+    <title>Arena de Zumbis 2D</title>
     <style>
         * { margin: 0; padding: 0; }
-        body { overflow: hidden; background: #000; font-family: Arial, sans-serif; }
+        body {
+            overflow: hidden;
+            background: #1a1a2e;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        
+        #gameContainer {
+            position: relative;
+            border: 3px solid #4a5a6a;
+            border-radius: 4px;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8);
+            cursor: crosshair;
+        }
+        
+        canvas {
+            display: block;
+            background: #2a2a3e;
+        }
         
         #hud {
             position: absolute;
-            top: 20px;
-            left: 20px;
+            top: 10px;
+            left: 10px;
             color: white;
-            font-size: 22px;
+            font-size: 16px;
             font-weight: bold;
             text-shadow: 0 0 10px rgba(0,0,0,0.9);
             background: rgba(0,0,0,0.7);
-            padding: 12px 20px;
-            border-radius: 8px;
+            padding: 8px 14px;
+            border-radius: 6px;
             pointer-events: none;
             user-select: none;
             z-index: 10;
-            min-width: 180px;
-            line-height: 1.6;
+            min-width: 140px;
+            line-height: 1.5;
         }
         #hud .hp { color: #ff6b6b; }
-        #hud .zumbis { color: #ffd93d; font-size: 18px; }
-        #hud .status { color: #4ecdc4; font-size: 16px; }
-        #hud .debug-info { color: #aaa; font-size: 12px; font-family: monospace; margin-top: 4px; }
+        #hud .zumbis { color: #ffd93d; font-size: 14px; }
+        #hud .status { color: #4ecdc4; font-size: 13px; }
         
         #crosshair {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: rgba(255,255,255,0.9);
-            font-size: 36px;
+            color: rgba(255,255,255,0.7);
+            font-size: 28px;
             font-weight: bold;
             text-shadow: 0 0 8px rgba(0,0,0,0.9);
             pointer-events: none;
@@ -57,138 +77,86 @@
             z-index: 20;
             cursor: pointer;
             color: white;
-            font-size: 28px;
+            font-size: 24px;
             font-weight: bold;
             flex-direction: column;
             text-shadow: 0 0 20px black;
+            border-radius: 4px;
         }
         #blocker small {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: normal;
-            margin-top: 12px;
+            margin-top: 10px;
             opacity: 0.8;
         }
         #blocker.hidden { display: none; }
         
-        #debug {
+        #controls-hint {
             position: absolute;
-            bottom: 20px;
-            left: 20px;
-            color: #aaa;
-            font-size: 12px;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.3);
+            font-size: 11px;
             font-family: monospace;
-            background: rgba(0,0,0,0.5);
-            padding: 4px 10px;
-            border-radius: 4px;
             pointer-events: none;
+            user-select: none;
             z-index: 10;
+            background: rgba(0,0,0,0.4);
+            padding: 2px 10px;
+            border-radius: 4px;
         }
     </style>
 </head>
 <body>
 
-    <div id="hud">
-        <div class="hp">❤️ HP: <span id="hpValue">100</span></div>
-        <div class="zumbis">🧟 Zumbis: <span id="zombieCount">0</span></div>
-        <div class="status" id="statusText">🔴 VIVO</div>
-        <div class="debug-info" id="debugInfo"></div>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="hud">
+            <div class="hp">❤️ HP: <span id="hpValue">100</span></div>
+            <div class="zumbis">🧟 Zumbis: <span id="zombieCount">0</span></div>
+            <div class="status" id="statusText">🔴 VIVO</div>
+        </div>
+        
+        <div id="crosshair">✚</div>
+        
+        <div id="blocker">
+            🧟 Clique para Jogar
+            <small>WASD · Mouse · ESPAÇO(pular) · C(agachar) · Clique esquerdo(atirar)</small>
+        </div>
+        
+        <div id="controls-hint">WASD mover · Mouse mirar · Espaço pular · C agachar · Clique atirar</div>
     </div>
 
-    <div id="crosshair">+</div>
-
-    <div id="blocker">
-        🧟 Clique para Jogar
-        <small>WASD · Mouse · ESPAÇO(pular) · C(agachar) · Segurar esquerdo(atirar)</small>
-    </div>
-
-    <div id="debug">Projéteis: <span id="bulletCount">0</span></div>
-
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
-            }
-        }
-    </script>
-
-    <script type="module">
-        import * as THREE from 'three';
-
+    <script>
         // ============================================================
         // 1. CONFIGURAÇÕES
         // ============================================================
-        const PLAYER_SPEED = 5;
-        const JUMP_FORCE = 6;
-        const GRAVITY = -18;
-        const FIRE_RATE = 0.12;
-        const BULLET_SPEED = 45;
-        const BULLET_LIFETIME = 2.5;
-        const DAMAGE_PER_BULLET = 10;
-        const PLAYER_MAX_HP = 100;
-        const ZOMBIE_MAX_HP = 100;
-        const ZOMBIE_ATTACK_DAMAGE = 20;
-        const ZOMBIE_ATTACK_RANGE = 1.3;
-        const ZOMBIE_ATTACK_COOLDOWN = 1.5;
-        const ZOMBIE_SPEED = 2.5;
-        const ZOMBIE_RESPAWN_TIME = 5;
-        const TILE_SIZE = 1.5;
-        const ZOMBIE_LIMIT = 6;
+        const CONFIG = {
+            PLAYER_SPEED: 2.5,
+            JUMP_FORCE: 4,
+            GRAVITY: 0.4,
+            FIRE_RATE: 8, // tiros por segundo
+            BULLET_SPEED: 6,
+            BULLET_LIFETIME: 60,
+            DAMAGE_PER_BULLET: 10,
+            PLAYER_MAX_HP: 100,
+            ZOMBIE_MAX_HP: 100,
+            ZOMBIE_ATTACK_DAMAGE: 20,
+            ZOMBIE_ATTACK_RANGE: 20,
+            ZOMBIE_ATTACK_COOLDOWN: 30,
+            ZOMBIE_SPEED: 1.2,
+            ZOMBIE_RESPAWN_TIME: 300,
+            ZOMBIE_LIMIT: 6,
+            TILE_SIZE: 32,
+            PLAYER_SIZE: 16,
+            ZOMBIE_SIZE: 18,
+            BULLET_SIZE: 4,
+        };
 
         // ============================================================
-        // 2. DOM
-        // ============================================================
-        const blocker = document.getElementById('blocker');
-        const hpSpan = document.getElementById('hpValue');
-        const zombieCountSpan = document.getElementById('zombieCount');
-        const statusText = document.getElementById('statusText');
-        const bulletCountSpan = document.getElementById('bulletCount');
-        const debugInfo = document.getElementById('debugInfo');
-
-        // ============================================================
-        // 3. CENA, CÂMERA, RENDER
-        // ============================================================
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x1a1a2e);
-        scene.fog = new THREE.Fog(0x1a1a2e, 20, 40);
-
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.2;
-        document.body.appendChild(renderer.domElement);
-
-        // ============================================================
-        // 4. LUZES
-        // ============================================================
-        const ambient = new THREE.AmbientLight(0x334466, 0.6);
-        scene.add(ambient);
-
-        const sun = new THREE.DirectionalLight(0xffeedd, 1.5);
-        sun.position.set(10, 20, 8);
-        sun.castShadow = true;
-        sun.shadow.mapSize.width = 2048;
-        sun.shadow.mapSize.height = 2048;
-        sun.shadow.camera.near = 0.5;
-        sun.shadow.camera.far = 40;
-        sun.shadow.camera.left = -15;
-        sun.shadow.camera.right = 15;
-        sun.shadow.camera.top = 15;
-        sun.shadow.camera.bottom = -15;
-        scene.add(sun);
-
-        const fill = new THREE.DirectionalLight(0x8888ff, 0.3);
-        fill.position.set(-10, 5, -10);
-        scene.add(fill);
-
-        const hemi = new THREE.HemisphereLight(0x6688cc, 0x444422, 0.6);
-        scene.add(hemi);
-
-        // ============================================================
-        // 5. MAPA
+        // 2. MAPA
         // ============================================================
         const MAP = [
             "1111111111",
@@ -202,122 +170,90 @@
 
         // 1 = parede, 2 = chão, 3 = spawn zumbi, 4 = spawn jogador
 
-        const MAP_OFFSET_X = - (MAP[0].length / 2) * TILE_SIZE + TILE_SIZE / 2;
-        const MAP_OFFSET_Z = - (MAP.length / 2) * TILE_SIZE + TILE_SIZE / 2;
+        const TILE = CONFIG.TILE_SIZE;
+        const COLS = MAP[0].length;
+        const ROWS = MAP.length;
+        const MAP_WIDTH = COLS * TILE;
+        const MAP_HEIGHT = ROWS * TILE;
 
-        const wallColor = 0x4a5a6a;
-        const floorColor = 0x3a3a4a;
-        const floorColorAlt = 0x44445a;
+        // ============================================================
+        // 3. CANVAS
+        // ============================================================
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Ajusta o canvas para caber na tela
+        const maxWidth = window.innerWidth - 20;
+        const maxHeight = window.innerHeight - 20;
+        const scaleX = maxWidth / MAP_WIDTH;
+        const scaleY = maxHeight / MAP_HEIGHT;
+        const scale = Math.min(scaleX, scaleY, 1.2);
+        
+        canvas.width = MAP_WIDTH * scale;
+        canvas.height = MAP_HEIGHT * scale;
+        canvas.style.width = canvas.width + 'px';
+        canvas.style.height = canvas.height + 'px';
 
-        let grid = [];
+        // ============================================================
+        // 4. DOM
+        // ============================================================
+        const blocker = document.getElementById('blocker');
+        const hpSpan = document.getElementById('hpValue');
+        const zombieCountSpan = document.getElementById('zombieCount');
+        const statusText = document.getElementById('statusText');
+
+        // ============================================================
+        // 5. ESTADO DO MAPA
+        // ============================================================
+        let walls = [];
         let walkableTiles = [];
-        let wallMeshes = [];
         let zombieSpawnPoints = [];
-        let playerSpawnPoint = new THREE.Vector3(0, 1.7, 0);
+        let playerSpawnPoint = { x: 0, y: 0 };
+        let grid = [];
 
-        // ============================================================
-        // 6. CONSTRUÇÃO DO MAPA
-        // ============================================================
-        function buildMap() {
-            const floorMat = new THREE.MeshStandardMaterial({ 
-                color: floorColor, 
-                roughness: 0.9,
-                metalness: 0.1
-            });
-            
-            for (let r = 0; r < MAP.length; r++) {
-                for (let c = 0; c < MAP[r].length; c++) {
+        function buildMapData() {
+            walls = [];
+            walkableTiles = [];
+            zombieSpawnPoints = [];
+            grid = [];
+
+            for (let r = 0; r < ROWS; r++) {
+                grid[r] = [];
+                for (let c = 0; c < COLS; c++) {
                     const tile = MAP[r][c];
-                    const x = c * TILE_SIZE + MAP_OFFSET_X;
-                    const z = r * TILE_SIZE + MAP_OFFSET_Z;
+                    const x = c * TILE + TILE / 2;
+                    const y = r * TILE + TILE / 2;
+                    const isWalkable = (tile === '2' || tile === '3' || tile === '4');
+                    
+                    grid[r][c] = {
+                        walkable: isWalkable,
+                        x: x,
+                        y: y,
+                        row: r,
+                        col: c
+                    };
                     
                     if (tile === '1') {
-                        // Parede
-                        const wallMat = new THREE.MeshStandardMaterial({ 
-                            color: wallColor, 
-                            roughness: 0.7,
-                            metalness: 0.2
-                        });
-                        const wall = new THREE.Mesh(new THREE.BoxGeometry(TILE_SIZE, 2.5, TILE_SIZE), wallMat);
-                        wall.position.set(x, 1.25, z);
-                        wall.castShadow = true;
-                        wall.receiveShadow = true;
-                        wall.userData.isWall = true;
-                        scene.add(wall);
-                        wallMeshes.push(wall);
+                        walls.push({ x, y, w: TILE, h: TILE });
                     } else {
-                        // Chão
-                        const isAlt = (r + c) % 2 === 0;
-                        const mat = new THREE.MeshStandardMaterial({
-                            color: isAlt ? floorColor : floorColorAlt,
-                            roughness: 0.9
-                        });
-                        const floorTile = new THREE.Mesh(new THREE.PlaneGeometry(TILE_SIZE * 0.98, TILE_SIZE * 0.98), mat);
-                        floorTile.rotation.x = -Math.PI / 2;
-                        floorTile.position.set(x, 0.01, z);
-                        floorTile.receiveShadow = true;
-                        scene.add(floorTile);
-                        
-                        // Spawn do jogador (posição 4)
-                        if (tile === '4') {
-                            playerSpawnPoint.set(x, 1.7, z);
-                            console.log(`📍 Player spawn definido: (${x.toFixed(2)}, ${z.toFixed(2)})`);
-                            // Marca visual
-                            const marker = new THREE.Mesh(
-                                new THREE.RingGeometry(0.3, 0.5, 16),
-                                new THREE.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.4 })
-                            );
-                            marker.rotation.x = -Math.PI / 2;
-                            marker.position.set(x, 0.02, z);
-                            scene.add(marker);
-                        }
-                        
-                        // Spawn de zumbis (posição 3)
+                        walkableTiles.push({ x, y });
                         if (tile === '3') {
-                            zombieSpawnPoints.push(new THREE.Vector3(x, 0, z));
-                            console.log(`📍 Zombie spawn definido: (${x.toFixed(2)}, ${z.toFixed(2)})`);
-                            const marker = new THREE.Mesh(
-                                new THREE.RingGeometry(0.3, 0.5, 16),
-                                new THREE.MeshBasicMaterial({ color: 0xff4444, transparent: true, opacity: 0.4 })
-                            );
-                            marker.rotation.x = -Math.PI / 2;
-                            marker.position.set(x, 0.02, z);
-                            scene.add(marker);
+                            zombieSpawnPoints.push({ x, y });
+                        }
+                        if (tile === '4') {
+                            playerSpawnPoint = { x, y };
                         }
                     }
                 }
             }
             
-            buildGrid();
+            console.log('✅ Mapa 2D construído');
+            console.log(`📍 Player spawn: (${playerSpawnPoint.x}, ${playerSpawnPoint.y})`);
+            console.log(`📍 Zombie spawns: ${zombieSpawnPoints.length}`);
         }
 
         // ============================================================
-        // 7. GRID PARA PATHFINDING
-        // ============================================================
-        function buildGrid() {
-            const cols = MAP[0].length;
-            const rows = MAP.length;
-            grid = [];
-            
-            for (let r = 0; r < rows; r++) {
-                grid[r] = [];
-                for (let c = 0; c < cols; c++) {
-                    const tile = MAP[r][c];
-                    const isWalkable = (tile === '2' || tile === '3' || tile === '4');
-                    grid[r][c] = {
-                        walkable: isWalkable,
-                        x: c * TILE_SIZE + MAP_OFFSET_X,
-                        z: r * TILE_SIZE + MAP_OFFSET_Z,
-                        row: r,
-                        col: c
-                    };
-                }
-            }
-            console.log('✅ Grid de navegação construída');
-        }
-
-        // ============================================================
-        // 8. PATHFINDING (A*)
+        // 6. PATHFINDING (A* 2D)
         // ============================================================
         function getNeighbors(node) {
             const neighbors = [];
@@ -325,11 +261,10 @@
                 [0, 1], [0, -1], [1, 0], [-1, 0],
                 [1, 1], [1, -1], [-1, 1], [-1, -1]
             ];
-            
             for (const [dr, dc] of dirs) {
                 const nr = node.row + dr;
                 const nc = node.col + dc;
-                if (nr >= 0 && nr < grid.length && nc >= 0 && nc < grid[0].length) {
+                if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
                     if (grid[nr][nc].walkable) {
                         neighbors.push(grid[nr][nc]);
                     }
@@ -339,12 +274,12 @@
         }
 
         function heuristic(a, b) {
-            return Math.abs(a.x - b.x) + Math.abs(a.z - b.z);
+            return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
         }
 
-        function findPath(startWorld, endWorld) {
-            const start = findClosestNode(startWorld);
-            const end = findClosestNode(endWorld);
+        function findPath2D(startPos, endPos) {
+            const start = findClosestNode(startPos);
+            const end = findClosestNode(endPos);
             
             if (!start || !end || !start.walkable || !end.walkable) {
                 return null;
@@ -372,7 +307,7 @@
                     const path = [];
                     let node = current;
                     while (node) {
-                        path.push(new THREE.Vector3(node.x, 0, node.z));
+                        path.push({ x: node.x, y: node.y });
                         node = cameFrom.get(node);
                     }
                     return path.reverse();
@@ -392,23 +327,19 @@
                     }
                 }
             }
-            
             return null;
         }
 
-        function findClosestNode(worldPos) {
-            const cols = MAP[0].length;
-            const rows = MAP.length;
+        function findClosestNode(pos) {
             let closest = null;
             let closestDist = Infinity;
-            
-            for (let r = 0; r < rows; r++) {
-                for (let c = 0; c < cols; c++) {
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
                     const node = grid[r][c];
                     if (node && node.walkable) {
-                        const dx = node.x - worldPos.x;
-                        const dz = node.z - worldPos.z;
-                        const dist = dx*dx + dz*dz;
+                        const dx = node.x - pos.x;
+                        const dy = node.y - pos.y;
+                        const dist = dx*dx + dy*dy;
                         if (dist < closestDist) {
                             closestDist = dist;
                             closest = node;
@@ -420,519 +351,347 @@
         }
 
         // ============================================================
-        // 9. FUNÇÃO DE COLISÃO COM PAREDES
+        // 7. COLISÃO 2D
         // ============================================================
-        function isWallAt(x, z) {
-            for (const wall of wallMeshes) {
-                const half = TILE_SIZE / 2 - 0.1;
-                const dx = Math.abs(x - wall.position.x);
-                const dz = Math.abs(z - wall.position.z);
-                if (dx < half && dz < half) {
+        function isWallAt(x, y) {
+            for (const wall of walls) {
+                const half = TILE / 2 - 2;
+                if (Math.abs(x - wall.x) < half && Math.abs(y - wall.y) < half) {
                     return true;
                 }
             }
             return false;
         }
 
+        function rectCollide(ax, ay, aw, ah, bx, by, bw, bh) {
+            return ax < bx + bw && ax + aw > bx &&
+                   ay < by + bh && ay + ah > by;
+        }
+
+        function isWallRect(x, y, w, h) {
+            for (const wall of walls) {
+                if (rectCollide(x, y, w, h, wall.x - TILE/2, wall.y - TILE/2, TILE, TILE)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function moveWithCollision(entity, dx, dy, size) {
+            // Move em X
+            const newX = entity.x + dx;
+            if (!isWallRect(newX - size/2, entity.y - size/2, size, size)) {
+                entity.x = newX;
+            }
+            // Move em Y
+            const newY = entity.y + dy;
+            if (!isWallRect(entity.x - size/2, newY - size/2, size, size)) {
+                entity.y = newY;
+            }
+        }
+
         // ============================================================
-        // 10. PLAYER
+        // 8. JOGADOR
         // ============================================================
         const player = {
-            position: playerSpawnPoint.clone(),
-            yaw: 0,
-            pitch: 0,
-            velocity: new THREE.Vector3(0, 0, 0),
+            x: playerSpawnPoint.x,
+            y: playerSpawnPoint.y,
+            size: CONFIG.PLAYER_SIZE,
+            speed: CONFIG.PLAYER_SPEED,
+            hp: CONFIG.PLAYER_MAX_HP,
+            isAlive: true,
+            vy: 0,
             isGrounded: false,
             isCrouching: false,
-            height: 1.7,
-            crouchHeight: 0.9,
-            speed: PLAYER_SPEED,
-            hp: PLAYER_MAX_HP,
-            isAlive: true
+            height: CONFIG.PLAYER_SIZE,
+            crouchHeight: CONFIG.PLAYER_SIZE * 0.6,
+            angle: 0 // direção da mira
         };
-        camera.position.copy(player.position);
-
-        const keys = { w: false, a: false, s: false, d: false, space: false, c: false };
 
         // ============================================================
-        // 11. ARMA (FPS Viewmodel)
+        // 9. ARMA (2D - acompanha o mouse)
         // ============================================================
-        const gunGroup = new THREE.Group();
-        const gunMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.7, roughness: 0.3 });
-        const gunBody = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.15, 0.25), gunMat);
-        gunBody.position.set(0, 0.02, 0.1);
-        gunGroup.add(gunBody);
-
-        const barrelMat = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.8, roughness: 0.2 });
-        const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.035, 0.35, 8), barrelMat);
-        barrel.rotation.x = Math.PI / 2;
-        barrel.position.set(0, 0.04, -0.15);
-        gunGroup.add(barrel);
-
-        const gripMat = new THREE.MeshStandardMaterial({ color: 0x1a0a05, roughness: 0.9 });
-        const grip = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.14, 0.06), gripMat);
-        grip.position.set(0, -0.08, 0.15);
-        gunGroup.add(grip);
-
-        const magMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: 0.3 });
-        const mag = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.08, 0.04), magMat);
-        mag.position.set(0, -0.05, 0.08);
-        gunGroup.add(mag);
-
-        const sightMat = new THREE.MeshStandardMaterial({ color: 0x444444 });
-        const sight = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.03, 0.01), sightMat);
-        sight.position.set(0, 0.1, 0.18);
-        gunGroup.add(sight);
-
-        const muzzleMat = new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0 });
-        const muzzle = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6), muzzleMat);
-        muzzle.position.set(0, 0.04, -0.32);
-        gunGroup.add(muzzle);
-
-        gunGroup.position.set(0.35, -0.2, -0.45);
-        scene.add(gunGroup);
+        let mouseX = player.x + 50;
+        let mouseY = player.y;
 
         // ============================================================
-        // 12. PROJÉTEIS
+        // 10. PROJÉTEIS
         // ============================================================
-        const bullets = [];
+        let bullets = [];
 
-        function createBullet(origin, direction) {
-            const bulletMat = new THREE.MeshStandardMaterial({
-                color: 0xffdd44,
-                emissive: 0xff8800,
-                emissiveIntensity: 0.4,
-                metalness: 0.5,
-                roughness: 0.2
-            });
-            const bullet = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6), bulletMat);
-            bullet.position.copy(origin);
-            bullet.castShadow = true;
-            scene.add(bullet);
-
-            const trailMat = new THREE.MeshBasicMaterial({
-                color: 0xffaa00,
-                transparent: true,
-                opacity: 0.25
-            });
-            const trail = new THREE.Mesh(new THREE.SphereGeometry(0.07, 6, 6), trailMat);
-            trail.position.copy(origin);
-            scene.add(trail);
-
-            const data = {
-                mesh: bullet,
-                trail: trail,
-                velocity: direction.clone().multiplyScalar(BULLET_SPEED),
-                lifetime: BULLET_LIFETIME,
+        function createBullet() {
+            const angle = player.angle;
+            const spawnDist = player.size / 2 + 4;
+            const bullet = {
+                x: player.x + Math.cos(angle) * spawnDist,
+                y: player.y + Math.sin(angle) * spawnDist,
+                vx: Math.cos(angle) * CONFIG.BULLET_SPEED,
+                vy: Math.sin(angle) * CONFIG.BULLET_SPEED,
+                size: CONFIG.BULLET_SIZE,
+                lifetime: CONFIG.BULLET_LIFETIME,
                 age: 0,
                 alive: true
             };
-            bullets.push(data);
-            bulletCountSpan.textContent = bullets.filter(b => b.alive).length;
-            return data;
+            bullets.push(bullet);
+            return bullet;
         }
 
-        function updateBullets(delta) {
+        function updateBullets() {
             for (let i = bullets.length - 1; i >= 0; i--) {
                 const b = bullets[i];
                 if (!b.alive) continue;
-
-                b.age += delta;
-                b.mesh.position.add(b.velocity.clone().multiplyScalar(delta));
-                b.trail.position.copy(b.mesh.position);
-
-                // Verifica colisão com zumbis
-                let hitZombie = false;
-                for (const zombie of zombies) {
-                    if (!zombie.alive) continue;
-                    const dist = b.mesh.position.distanceTo(zombie.mesh.position);
-                    if (dist < 0.6) {
-                        zombie.takeDamage(DAMAGE_PER_BULLET);
-                        hitZombie = true;
-                        break;
-                    }
-                }
-
-                if (hitZombie) {
+                
+                b.x += b.vx;
+                b.y += b.vy;
+                b.age++;
+                
+                // Colisão com paredes
+                if (isWallRect(b.x - b.size/2, b.y - b.size/2, b.size, b.size)) {
                     b.alive = false;
-                    scene.remove(b.mesh);
-                    scene.remove(b.trail);
                     bullets.splice(i, 1);
                     continue;
                 }
-
-                if (b.alive) {
-                    if (b.age > b.lifetime ||
-                        Math.abs(b.mesh.position.x) > 12 ||
-                        Math.abs(b.mesh.position.z) > 10 ||
-                        b.mesh.position.y < -1) {
-                        b.alive = false;
-                        scene.remove(b.mesh);
-                        scene.remove(b.trail);
-                        bullets.splice(i, 1);
+                
+                // Colisão com zumbis
+                let hit = false;
+                for (const zombie of zombies) {
+                    if (!zombie.alive) continue;
+                    if (rectCollide(b.x - b.size/2, b.y - b.size/2, b.size, b.size,
+                                    zombie.x - zombie.size/2, zombie.y - zombie.size/2, zombie.size, zombie.size)) {
+                        zombie.takeDamage(CONFIG.DAMAGE_PER_BULLET);
+                        hit = true;
+                        break;
                     }
                 }
+                if (hit) {
+                    b.alive = false;
+                    bullets.splice(i, 1);
+                    continue;
+                }
+                
+                if (b.age > b.lifetime || b.x < 0 || b.x > MAP_WIDTH || b.y < 0 || b.y > MAP_HEIGHT) {
+                    b.alive = false;
+                    bullets.splice(i, 1);
+                }
             }
-            bulletCountSpan.textContent = bullets.filter(b => b.alive).length;
         }
 
         // ============================================================
-        // 13. ZUMBIS
+        // 11. ZUMBIS
         // ============================================================
         let zombies = [];
         let zombieCount = 0;
 
-        class Zombie {
+        class Zombie2D {
             constructor(spawnPos) {
+                this.x = spawnPos.x;
+                this.y = spawnPos.y;
+                this.size = CONFIG.ZOMBIE_SIZE;
                 this.alive = true;
-                this.hp = ZOMBIE_MAX_HP;
+                this.hp = CONFIG.ZOMBIE_MAX_HP;
+                this.speed = CONFIG.ZOMBIE_SPEED;
                 this.attackCooldown = 0;
                 this.path = [];
                 this.pathIndex = 0;
                 this.recalcTimer = 0;
-                this.spawnPos = spawnPos.clone();
-                this.lastKnownPlayerPos = null;
-
-                // Visual
-                this.group = new THREE.Group();
-                this.group.position.copy(spawnPos);
-                this.group.position.y = 0;
-
-                // Corpo
-                const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2d5a27, roughness: 0.9 });
-                const body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.7, 0.3), bodyMat);
-                body.position.y = 0.75;
-                body.castShadow = true;
-                this.group.add(body);
-
-                // Cabeça
-                const headMat = new THREE.MeshStandardMaterial({ color: 0x4a7a44, roughness: 0.8 });
-                const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), headMat);
-                head.position.y = 1.2;
-                head.castShadow = true;
-                this.group.add(head);
-
-                // Olhos vermelhos
-                const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-                const eyeGeo = new THREE.SphereGeometry(0.04, 6, 6);
-                const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
-                eyeL.position.set(-0.1, 1.25, 0.15);
-                this.group.add(eyeL);
-                const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
-                eyeR.position.set(0.1, 1.25, 0.15);
-                this.group.add(eyeR);
-
-                // Braços
-                const armMat = new THREE.MeshStandardMaterial({ color: 0x3a6a34, roughness: 0.9 });
-                const armGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.4);
-                const armL = new THREE.Mesh(armGeo, armMat);
-                armL.position.set(-0.3, 0.85, 0.2);
-                armL.rotation.x = -0.3;
-                armL.rotation.z = 0.2;
-                this.group.add(armL);
-                const armR = new THREE.Mesh(armGeo, armMat);
-                armR.position.set(0.3, 0.85, 0.2);
-                armR.rotation.x = -0.3;
-                armR.rotation.z = -0.2;
-                this.group.add(armR);
-
-                // Pernas
-                const legMat = new THREE.MeshStandardMaterial({ color: 0x1a3a1a, roughness: 0.9 });
-                const legGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.35);
-                const legL = new THREE.Mesh(legGeo, legMat);
-                legL.position.set(-0.15, 0.25, 0);
-                legL.castShadow = true;
-                this.group.add(legL);
-                const legR = new THREE.Mesh(legGeo, legMat);
-                legR.position.set(0.15, 0.25, 0);
-                legR.castShadow = true;
-                this.group.add(legR);
-
-                scene.add(this.group);
-                this.mesh = this.group;
-                this.mesh.userData.isZombie = true;
-
+                this.spawnPos = { x: spawnPos.x, y: spawnPos.y };
+                
                 zombieCount++;
                 zombieCountSpan.textContent = zombieCount;
-
-                console.log(`🧟 Zumbi spawnado em (${this.group.position.x.toFixed(2)}, ${this.group.position.z.toFixed(2)})`);
                 
                 // Calcula caminho inicial
                 setTimeout(() => {
-                    this.recalcPath(player.position);
+                    this.recalcPath({ x: player.x, y: player.y });
                 }, 100);
             }
-
+            
             recalcPath(targetPos) {
                 if (!this.alive) return;
-                this.lastKnownPlayerPos = targetPos.clone();
-                const path = findPath(this.group.position, targetPos);
+                const path = findPath2D({ x: this.x, y: this.y }, targetPos);
                 if (path && path.length > 1) {
                     this.path = path;
                     this.pathIndex = 1;
-                    if (this.path.length > 0) {
-                        // Debug: mostra o caminho (opcional)
-                        // console.log(`🧟 Caminho encontrado: ${this.path.length} nós`);
-                    }
                 } else {
-                    // Fallback: tenta andar em linha reta (mas com colisão)
                     this.path = [];
                     this.pathIndex = 0;
-                    // Guarda o target para movimento direto
-                    this.fallbackTarget = targetPos.clone();
                 }
             }
-
-            update(delta, playerPos) {
+            
+            update() {
                 if (!this.alive) return;
-
-                // Cooldown de ataque
+                
                 if (this.attackCooldown > 0) {
-                    this.attackCooldown -= delta;
+                    this.attackCooldown--;
                 }
-
-                const distToPlayer = this.group.position.distanceTo(playerPos);
-
-                // Se está perto, ataca
-                if (distToPlayer < ZOMBIE_ATTACK_RANGE) {
+                
+                const dx = player.x - this.x;
+                const dy = player.y - this.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                // Ataca se estiver perto
+                if (dist < CONFIG.ZOMBIE_ATTACK_RANGE) {
                     if (this.attackCooldown <= 0 && player.isAlive) {
-                        player.takeDamage(ZOMBIE_ATTACK_DAMAGE);
-                        this.attackCooldown = ZOMBIE_ATTACK_COOLDOWN;
-                        console.log(`🧟 Zumbi atacou! Player HP: ${player.hp}`);
-                        
-                        // Feedback visual
-                        this.group.children.forEach(child => {
-                            if (child.type === 'Mesh' && child.material && child.material.color) {
-                                child.material.color.setHex(0xff0000);
-                                setTimeout(() => {
-                                    if (child.material && child.material.color && this.alive) {
-                                        child.material.color.setHex(0x2d5a27);
-                                    }
-                                }, 150);
-                            }
-                        });
+                        playerTakeDamage(CONFIG.ZOMBIE_ATTACK_DAMAGE);
+                        this.attackCooldown = CONFIG.ZOMBIE_ATTACK_COOLDOWN;
                     }
                     return;
                 }
-
-                // Recalcula caminho periodicamente
-                this.recalcTimer += delta;
-                if (this.recalcTimer > 0.5 || this.path.length === 0) {
+                
+                // Recalcula caminho
+                this.recalcTimer++;
+                if (this.recalcTimer > 30 || this.path.length === 0) {
                     this.recalcTimer = 0;
-                    this.recalcPath(playerPos);
+                    this.recalcPath({ x: player.x, y: player.y });
                 }
-
-                // Segue o caminho do pathfinding
+                
+                // Segue o caminho
                 let moved = false;
                 if (this.path.length > 0 && this.pathIndex < this.path.length) {
-                    const targetNode = this.path[this.pathIndex];
-                    const dx = targetNode.x - this.group.position.x;
-                    const dz = targetNode.z - this.group.position.z;
-                    const dist = Math.sqrt(dx*dx + dz*dz);
-
-                    if (dist < 0.3) {
+                    const target = this.path[this.pathIndex];
+                    const dx2 = target.x - this.x;
+                    const dy2 = target.y - this.y;
+                    const dist2 = Math.sqrt(dx2*dx2 + dy2*dy2);
+                    
+                    if (dist2 < 3) {
                         this.pathIndex++;
                     } else {
-                        const speed = ZOMBIE_SPEED * delta;
-                        const moveX = (dx / dist) * speed;
-                        const moveZ = (dz / dist) * speed;
-                        
-                        // Testa colisão com paredes
-                        const newX = this.group.position.x + moveX;
-                        const newZ = this.group.position.z + moveZ;
-                        if (!isWallAt(newX, this.group.position.z)) {
-                            this.group.position.x = newX;
-                            moved = true;
-                        }
-                        if (!isWallAt(this.group.position.x, newZ)) {
-                            this.group.position.z = newZ;
-                            moved = true;
-                        }
+                        const speed = this.speed;
+                        const moveX = (dx2 / dist2) * speed;
+                        const moveY = (dy2 / dist2) * speed;
+                        moveWithCollision(this, moveX, moveY, this.size);
+                        moved = true;
                     }
                 } else {
                     // Fallback: movimento direto com colisão
-                    const dx = playerPos.x - this.group.position.x;
-                    const dz = playerPos.z - this.group.position.z;
-                    const dist = Math.sqrt(dx*dx + dz*dz);
-                    if (dist > 0.1) {
-                        const speed = ZOMBIE_SPEED * delta;
-                        const moveX = (dx / dist) * speed;
-                        const moveZ = (dz / dist) * speed;
-                        
-                        const newX = this.group.position.x + moveX;
-                        const newZ = this.group.position.z + moveZ;
-                        if (!isWallAt(newX, this.group.position.z)) {
-                            this.group.position.x = newX;
-                            moved = true;
-                        }
-                        if (!isWallAt(this.group.position.x, newZ)) {
-                            this.group.position.z = newZ;
-                            moved = true;
-                        }
+                    const dist2 = Math.sqrt(dx*dx + dy*dy);
+                    if (dist2 > 1) {
+                        const speed = this.speed;
+                        const moveX = (dx / dist2) * speed;
+                        const moveY = (dy / dist2) * speed;
+                        moveWithCollision(this, moveX, moveY, this.size);
+                        moved = true;
                     }
                 }
-
-                // Rotaciona para o jogador
-                const lookAngle = Math.atan2(
-                    playerPos.x - this.group.position.x,
-                    playerPos.z - this.group.position.z
-                );
-                this.group.rotation.y = lookAngle;
-
-                // Mantém no chão
-                this.group.position.y = 0;
             }
-
+            
             takeDamage(damage) {
                 if (!this.alive) return;
                 this.hp -= damage;
-                console.log(`🧟 Zumbi tomou dano! HP: ${this.hp}`);
-                
-                // Feedback visual
-                this.group.children.forEach(child => {
-                    if (child.type === 'Mesh' && child.material && child.material.color) {
-                        child.material.color.setHex(0xff4444);
-                        setTimeout(() => {
-                            if (child.material && child.material.color && this.alive) {
-                                child.material.color.setHex(0x2d5a27);
-                            }
-                        }, 100);
-                    }
-                });
-
                 if (this.hp <= 0) {
                     this.die();
                 }
             }
-
+            
             die() {
                 if (!this.alive) return;
                 this.alive = false;
                 zombieCount--;
                 zombieCountSpan.textContent = zombieCount;
-                console.log('💀 Zumbi morreu!');
-                
-                // Efeito de morte
-                this.group.rotation.x = Math.PI / 2;
-                this.group.position.y = -0.2;
                 
                 setTimeout(() => {
-                    scene.remove(this.group);
                     // Respawn após 5 segundos
                     setTimeout(() => {
-                        if (zombieCount < ZOMBIE_LIMIT) {
+                        if (zombieCount < CONFIG.ZOMBIE_LIMIT) {
                             const spawn = zombieSpawnPoints[Math.floor(Math.random() * zombieSpawnPoints.length)];
                             if (spawn) {
-                                new Zombie(spawn);
+                                new Zombie2D(spawn);
                             }
                         }
-                    }, ZOMBIE_RESPAWN_TIME * 1000);
+                    }, CONFIG.ZOMBIE_RESPAWN_TIME * 1000 / 60);
                 }, 500);
             }
         }
 
         // ============================================================
-        // 14. JOGADOR - DANO E MORTE
+        // 12. JOGADOR - DANO E MORTE
         // ============================================================
-        player.takeDamage = function(damage) {
-            if (!this.isAlive) return;
-            this.hp = Math.max(0, this.hp - damage);
-            hpSpan.textContent = this.hp;
+        function playerTakeDamage(damage) {
+            if (!player.isAlive) return;
+            player.hp = Math.max(0, player.hp - damage);
+            hpSpan.textContent = player.hp;
             
-            // Feedback visual (tela vermelha)
-            document.body.style.backgroundColor = 'rgba(255,0,0,0.15)';
-            setTimeout(() => {
-                document.body.style.backgroundColor = 'transparent';
-            }, 150);
-
-            if (this.hp <= 0) {
-                this.isAlive = false;
+            if (player.hp <= 0) {
+                player.isAlive = false;
                 statusText.textContent = '💀 MORTO';
                 statusText.style.color = '#ff0000';
-                gunGroup.visible = false;
-                console.log('💀 Jogador morreu!');
-            }
-        };
-
-        // ============================================================
-        // 15. TIRO
-        // ============================================================
-        let isFiring = false;
-        let fireTimeout = null;
-
-        function shoot() {
-            if (!isFiring || document.pointerLockElement !== renderer.domElement || !player.isAlive) return;
-
-            const barrelPos = new THREE.Vector3(0.35, -0.15, -0.6);
-            const worldPos = barrelPos.clone().applyMatrix4(gunGroup.matrixWorld);
-            const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-
-            createBullet(worldPos, dir);
-
-            // Flash no cano
-            const muzzle = gunGroup.children.find(c => c.type === 'Mesh' && c.geometry.type === 'SphereGeometry');
-            if (muzzle) {
-                muzzle.material.opacity = 0.8;
-                setTimeout(() => { muzzle.material.opacity = 0; }, 50);
-            }
-
-            // Recuo
-            gunGroup.position.x += 0.015;
-            setTimeout(() => { gunGroup.position.x = 0.35; }, 50);
-
-            if (isFiring) {
-                fireTimeout = setTimeout(shoot, FIRE_RATE * 1000);
             }
         }
 
         // ============================================================
-        // 16. CONTROLES
+        // 13. TIRO
         // ============================================================
-        document.addEventListener('mousemove', (e) => {
-            if (document.pointerLockElement !== renderer.domElement || !player.isAlive) return;
-            const sens = 0.002;
-            player.yaw -= e.movementX * sens;
-            player.pitch -= e.movementY * sens;
-            player.pitch = Math.max(-1.2, Math.min(1.2, player.pitch));
+        let isFiring = false;
+        let fireCounter = 0;
+
+        function handleShooting() {
+            if (!player.isAlive) return;
+            
+            if (isFiring) {
+                fireCounter++;
+                if (fireCounter >= 60 / CONFIG.FIRE_RATE) {
+                    fireCounter = 0;
+                    createBullet();
+                }
+            } else {
+                fireCounter = 0;
+            }
+        }
+
+        // ============================================================
+        // 14. CONTROLES
+        // ============================================================
+        const keys = { w: false, a: false, s: false, d: false, space: false, c: false };
+
+        // Mouse move
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX2 = canvas.width / rect.width;
+            const scaleY2 = canvas.height / rect.height;
+            mouseX = (e.clientX - rect.left) * scaleX2;
+            mouseY = (e.clientY - rect.top) * scaleY2;
+            
+            // Atualiza ângulo do jogador
+            if (player.isAlive) {
+                player.angle = Math.atan2(mouseY - player.y, mouseX - player.x);
+            }
         });
 
-        blocker.addEventListener('click', () => renderer.domElement.requestPointerLock());
+        // Clique para travar o mouse (e atirar)
+        canvas.addEventListener('mousedown', (e) => {
+            if (e.button === 0) {
+                e.preventDefault();
+                if (document.pointerLockElement !== canvas) {
+                    canvas.requestPointerLock();
+                }
+                if (player.isAlive) {
+                    isFiring = true;
+                }
+            }
+        });
 
+        canvas.addEventListener('mouseup', (e) => {
+            if (e.button === 0) {
+                isFiring = false;
+            }
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            isFiring = false;
+        });
+
+        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // Pointer lock
         document.addEventListener('pointerlockchange', () => {
-            if (document.pointerLockElement === renderer.domElement) {
+            if (document.pointerLockElement === canvas) {
                 blocker.classList.add('hidden');
             } else {
                 blocker.classList.remove('hidden');
-                if (isFiring) {
-                    isFiring = false;
-                    if (fireTimeout) clearTimeout(fireTimeout);
-                }
-            }
-        });
-
-        renderer.domElement.addEventListener('mousedown', (e) => {
-            if (e.button === 0 && document.pointerLockElement === renderer.domElement && player.isAlive) {
-                e.preventDefault();
-                if (!isFiring) {
-                    isFiring = true;
-                    shoot();
-                }
-            }
-        });
-
-        renderer.domElement.addEventListener('mouseup', (e) => {
-            if (e.button === 0) {
                 isFiring = false;
-                if (fireTimeout) {
-                    clearTimeout(fireTimeout);
-                    fireTimeout = null;
-                }
             }
         });
 
-        renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
-
-        // Teclas
+        // Teclado
         document.addEventListener('keydown', (e) => {
             switch (e.code) {
                 case 'KeyW': keys.w = true; e.preventDefault(); break;
@@ -955,174 +714,322 @@
         });
 
         // ============================================================
-        // 17. MOVIMENTO DO PLAYER
+        // 15. MOVIMENTO DO JOGADOR
         // ============================================================
-        function updatePlayer(delta) {
+        function updatePlayer() {
             if (!player.isAlive) return;
-
+            
             // Agachamento
-            const targetHeight = keys.c ? player.crouchHeight : 1.7;
+            const targetHeight = keys.c ? player.crouchHeight : CONFIG.PLAYER_SIZE;
             player.height += (targetHeight - player.height) * 0.1;
             player.isCrouching = keys.c;
-
-            // Pulo
-            if (keys.space && player.isGrounded && !player.isCrouching) {
-                player.velocity.y = JUMP_FORCE;
-                player.isGrounded = false;
-            }
-
-            // Gravidade
-            player.velocity.y += GRAVITY * delta;
-
-            // Movimento horizontal
-            const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-            forward.y = 0;
-            forward.normalize();
-
-            const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
-            right.y = 0;
-            right.normalize();
-
-            const moveInput = new THREE.Vector3(0, 0, 0);
-            if (keys.w) moveInput.add(forward);
-            if (keys.s) moveInput.sub(forward);
-            if (keys.d) moveInput.add(right);
-            if (keys.a) moveInput.sub(right);
-
-            let speed = player.speed;
-            if (player.isCrouching) speed *= 0.5;
-
-            if (moveInput.lengthSq() > 0) {
-                moveInput.normalize().multiplyScalar(speed * delta);
-            }
-
-            // Aplica movimento com colisão
-            const newX = player.position.x + moveInput.x;
-            const newZ = player.position.z + moveInput.z;
             
-            if (!isWallAt(newX, player.position.z)) {
-                player.position.x = newX;
-            }
-            if (!isWallAt(player.position.x, newZ)) {
-                player.position.z = newZ;
-            }
-
-            player.position.y += player.velocity.y * delta;
-
-            // Chão
-            const groundY = player.height;
-            if (player.position.y <= groundY) {
-                player.position.y = groundY;
-                player.velocity.y = 0;
-                player.isGrounded = true;
-            } else {
+            // Pulo (em 2D, pulo é visual - sobe e desce)
+            if (keys.space && player.isGrounded && !player.isCrouching) {
+                player.vy = -CONFIG.JUMP_FORCE;
                 player.isGrounded = false;
             }
-
-            // Atualiza câmera
-            camera.position.copy(player.position);
-            camera.position.y = player.position.y - player.height + 1.7;
-
-            // Rotação da câmera
-            camera.rotation.order = 'YXZ';
-            camera.rotation.y = player.yaw;
-            camera.rotation.x = player.pitch;
-
-            // Arma
-            const gunOffset = new THREE.Vector3(0.35, -0.2, -0.45);
-            const worldGunPos = gunOffset.clone().applyQuaternion(camera.quaternion);
-            gunGroup.position.copy(camera.position);
-            gunGroup.position.add(worldGunPos);
-            gunGroup.quaternion.copy(camera.quaternion);
-            const extraRot = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.05, 0, 0.05));
-            gunGroup.quaternion.multiply(extraRot);
-        }
-
-        // ============================================================
-        // 18. DEBUG INFO
-        // ============================================================
-        function updateDebugInfo() {
-            let info = '';
-            const aliveZombies = zombies.filter(z => z.alive);
-            if (aliveZombies.length > 0) {
-                const z = aliveZombies[0];
-                info = `Zumbi HP: ${z.hp} | Distância: ${z.group.position.distanceTo(player.position).toFixed(1)}m`;
-                if (z.path && z.path.length > 0) {
-                    info += ` | Path: ${z.pathIndex}/${z.path.length}`;
-                }
+            
+            // Gravidade
+            player.vy += CONFIG.GRAVITY;
+            const moveY = player.vy;
+            if (!isWallRect(player.x - player.size/2, player.y + moveY - player.size/2, player.size, player.size)) {
+                player.y += moveY;
             } else {
-                info = 'Aguardando zumbis...';
+                player.vy = 0;
+                player.isGrounded = true;
             }
-            debugInfo.textContent = info;
+            
+            // Chão
+            if (player.y + player.size/2 > MAP_HEIGHT) {
+                player.y = MAP_HEIGHT - player.size/2;
+                player.vy = 0;
+                player.isGrounded = true;
+            }
+            
+            // Movimento horizontal
+            let dx = 0, dy = 0;
+            const speed = player.isCrouching ? player.speed * 0.5 : player.speed;
+            if (keys.w) dy = -speed;
+            if (keys.s) dy = speed;
+            if (keys.a) dx = -speed;
+            if (keys.d) dx = speed;
+            
+            // Normaliza diagonal
+            if (dx !== 0 && dy !== 0) {
+                dx *= 0.707;
+                dy *= 0.707;
+            }
+            
+            moveWithCollision(player, dx, dy, player.size);
+            
+            // Limites do mapa
+            player.x = Math.max(player.size/2, Math.min(MAP_WIDTH - player.size/2, player.x));
+            player.y = Math.max(player.size/2, Math.min(MAP_HEIGHT - player.size/2, player.y));
+            
+            // Atualiza ângulo com o mouse (se o mouse não estiver dentro, mantém o último)
+            const dxMouse = mouseX - player.x;
+            const dyMouse = mouseY - player.y;
+            if (Math.abs(dxMouse) > 1 || Math.abs(dyMouse) > 1) {
+                player.angle = Math.atan2(dyMouse, dxMouse);
+            }
         }
 
         // ============================================================
-        // 19. SPAWN INICIAL DOS ZUMBIS
+        // 16. DESENHO 2D
+        // ============================================================
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Aplica scale
+            ctx.save();
+            ctx.scale(scale, scale);
+            
+            // --- Chão ---
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const tile = MAP[r][c];
+                    if (tile !== '1') {
+                        const isAlt = (r + c) % 2 === 0;
+                        ctx.fillStyle = isAlt ? '#3a3a4a' : '#44445a';
+                        ctx.fillRect(c * TILE, r * TILE, TILE, TILE);
+                    }
+                }
+            }
+            
+            // --- Paredes ---
+            for (const wall of walls) {
+                ctx.fillStyle = '#4a5a6a';
+                ctx.shadowColor = 'rgba(0,0,0,0.3)';
+                ctx.shadowBlur = 4;
+                ctx.fillRect(wall.x - TILE/2, wall.y - TILE/2, TILE, TILE);
+                ctx.shadowBlur = 0;
+                // Borda
+                ctx.strokeStyle = '#3a4a5a';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(wall.x - TILE/2, wall.y - TILE/2, TILE, TILE);
+            }
+            
+            // --- Marcadores de spawn ---
+            // Player spawn (4)
+            ctx.fillStyle = 'rgba(0,255,136,0.15)';
+            ctx.beginPath();
+            ctx.arc(playerSpawnPoint.x, playerSpawnPoint.y, TILE/2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(0,255,136,0.3)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.arc(playerSpawnPoint.x, playerSpawnPoint.y, TILE/2, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Zombie spawns (3)
+            for (const spawn of zombieSpawnPoints) {
+                ctx.fillStyle = 'rgba(255,68,68,0.15)';
+                ctx.beginPath();
+                ctx.arc(spawn.x, spawn.y, TILE/2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,68,68,0.3)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.arc(spawn.x, spawn.y, TILE/2, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            
+            // --- Projéteis ---
+            for (const b of bullets) {
+                if (!b.alive) continue;
+                // Brilho
+                const grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.size * 3);
+                grad.addColorStop(0, 'rgba(255,220,68,1)');
+                grad.addColorStop(0.3, 'rgba(255,180,0,0.8)');
+                grad.addColorStop(1, 'rgba(255,100,0,0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.size * 3, 0, Math.PI * 2);
+                ctx.fill();
+                // Núcleo
+                ctx.fillStyle = '#ffdd44';
+                ctx.shadowColor = '#ff8800';
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+            
+            // --- Zumbis ---
+            for (const zombie of zombies) {
+                if (!zombie.alive) continue;
+                const z = zombie;
+                // Corpo
+                ctx.fillStyle = '#2d5a27';
+                ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                ctx.shadowBlur = 6;
+                ctx.beginPath();
+                ctx.arc(z.x, z.y, z.size/2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                // Olhos
+                const eyeOff = z.size * 0.25;
+                const eyeAngle = Math.atan2(player.y - z.y, player.x - z.x);
+                ctx.fillStyle = '#ff0000';
+                ctx.beginPath();
+                ctx.arc(z.x + Math.cos(eyeAngle - 0.4) * eyeOff, z.y + Math.sin(eyeAngle - 0.4) * eyeOff, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(z.x + Math.cos(eyeAngle + 0.4) * eyeOff, z.y + Math.sin(eyeAngle + 0.4) * eyeOff, 3, 0, Math.PI * 2);
+                ctx.fill();
+                // HP bar
+                const hpWidth = z.size;
+                const hpHeight = 3;
+                const hpX = z.x - hpWidth/2;
+                const hpY = z.y - z.size/2 - 6;
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.fillRect(hpX, hpY, hpWidth, hpHeight);
+                ctx.fillStyle = z.hp > 50 ? '#4ecdc4' : '#ff6b6b';
+                ctx.fillRect(hpX, hpY, hpWidth * (z.hp / CONFIG.ZOMBIE_MAX_HP), hpHeight);
+            }
+            
+            // --- Jogador ---
+            if (player.isAlive) {
+                const p = player;
+                // Corpo
+                ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                ctx.shadowBlur = 8;
+                ctx.fillStyle = '#4a8af4';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size/2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                // Seta de direção (mira)
+                const aimLen = p.size * 0.7;
+                ctx.strokeStyle = '#ffdd44';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(p.x, p.y);
+                ctx.lineTo(p.x + Math.cos(p.angle) * aimLen, p.y + Math.sin(p.angle) * aimLen);
+                ctx.stroke();
+                // Olhos
+                const eyeOff2 = p.size * 0.2;
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(p.x + Math.cos(p.angle - 0.3) * eyeOff2, p.y + Math.sin(p.angle - 0.3) * eyeOff2, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(p.x + Math.cos(p.angle + 0.3) * eyeOff2, p.y + Math.sin(p.angle + 0.3) * eyeOff2, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#222';
+                ctx.beginPath();
+                ctx.arc(p.x + Math.cos(p.angle - 0.3) * eyeOff2 + Math.cos(p.angle) * 1.5, 
+                        p.y + Math.sin(p.angle - 0.3) * eyeOff2 + Math.sin(p.angle) * 1.5, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(p.x + Math.cos(p.angle + 0.3) * eyeOff2 + Math.cos(p.angle) * 1.5, 
+                        p.y + Math.sin(p.angle + 0.3) * eyeOff2 + Math.sin(p.angle) * 1.5, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Arma (metralhadora)
+                const gunLen = p.size * 0.8;
+                const gunX = p.x + Math.cos(p.angle) * (p.size/2);
+                const gunY = p.y + Math.sin(p.angle) * (p.size/2);
+                ctx.strokeStyle = '#444';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(gunX, gunY);
+                ctx.lineTo(gunX + Math.cos(p.angle) * gunLen, gunY + Math.sin(p.angle) * gunLen);
+                ctx.stroke();
+                // Detalhe do cano
+                ctx.strokeStyle = '#666';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(gunX + Math.cos(p.angle) * gunLen * 0.7, gunY + Math.sin(p.angle) * gunLen * 0.7);
+                ctx.lineTo(gunX + Math.cos(p.angle) * gunLen, gunY + Math.sin(p.angle) * gunLen);
+                ctx.stroke();
+                
+                // HP bar do player
+                const hpWidth2 = p.size * 1.2;
+                const hpHeight2 = 4;
+                const hpX2 = p.x - hpWidth2/2;
+                const hpY2 = p.y + p.size/2 + 6;
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.fillRect(hpX2, hpY2, hpWidth2, hpHeight2);
+                ctx.fillStyle = player.hp > 50 ? '#4ecdc4' : '#ff6b6b';
+                ctx.fillRect(hpX2, hpY2, hpWidth2 * (player.hp / CONFIG.PLAYER_MAX_HP), hpHeight2);
+            }
+            
+            ctx.restore();
+        }
+
+        // ============================================================
+        // 17. SPAWN INICIAL DOS ZUMBIS
         // ============================================================
         function spawnInitialZombies() {
-            const count = Math.min(ZOMBIE_LIMIT, zombieSpawnPoints.length);
+            const count = Math.min(CONFIG.ZOMBIE_LIMIT, zombieSpawnPoints.length);
             for (let i = 0; i < count; i++) {
                 const spawn = zombieSpawnPoints[i % zombieSpawnPoints.length];
                 setTimeout(() => {
-                    new Zombie(spawn);
-                }, i * 300); // Pequeno atraso entre spawns
+                    new Zombie2D(spawn);
+                }, i * 200);
             }
         }
 
         // ============================================================
-        // 20. LOOP PRINCIPAL
+        // 18. LOOP PRINCIPAL
         // ============================================================
-        buildMap();
+        buildMapData();
         
-        // Verifica se o player spawn foi definido
-        if (playerSpawnPoint.x === 0 && playerSpawnPoint.z === 0) {
-            console.warn('⚠️ Player spawn não encontrado! Usando posição padrão.');
-            playerSpawnPoint.set(0, 1.7, 0);
+        // Posiciona o jogador no spawn
+        if (playerSpawnPoint.x !== 0 || playerSpawnPoint.y !== 0) {
+            player.x = playerSpawnPoint.x;
+            player.y = playerSpawnPoint.y;
         }
-        player.position.copy(playerSpawnPoint);
-        camera.position.copy(player.position);
-
-        console.log(`🎯 Player spawn: (${playerSpawnPoint.x.toFixed(2)}, ${playerSpawnPoint.z.toFixed(2)})`);
-        console.log(`🧟 Zombie spawns: ${zombieSpawnPoints.length}`);
-
+        
         spawnInitialZombies();
 
-        let lastTime = 0;
-
-        function animate(time) {
-            const delta = Math.min((time - lastTime) / 1000, 0.05);
-            lastTime = time;
-
-            updatePlayer(delta);
-            updateBullets(delta);
-
+        function gameLoop() {
+            // Atualiza
+            updatePlayer();
+            updateBullets();
+            handleShooting();
+            
             // Atualiza zumbis
             for (const zombie of zombies) {
                 if (zombie.alive) {
-                    zombie.update(delta, player.position);
+                    zombie.update();
                 }
             }
-            // Limpa zumbis mortos da lista (mas mantém os que vão respawnar)
-            zombies = zombies.filter(z => z.alive || z.group.parent);
-
-            updateDebugInfo();
-
-            renderer.render(scene, camera);
-            requestAnimationFrame(animate);
+            zombies = zombies.filter(z => z.alive);
+            
+            // Desenha
+            draw();
+            
+            requestAnimationFrame(gameLoop);
         }
 
-        animate(0);
+        gameLoop();
 
         // Redimensionar
         window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            const maxW = window.innerWidth - 20;
+            const maxH = window.innerHeight - 20;
+            const sX = maxW / MAP_WIDTH;
+            const sY = maxH / MAP_HEIGHT;
+            const newScale = Math.min(sX, sY, 1.2);
+            canvas.width = MAP_WIDTH * newScale;
+            canvas.height = MAP_HEIGHT * newScale;
+            canvas.style.width = canvas.width + 'px';
+            canvas.style.height = canvas.height + 'px';
+            // Atualiza a referência da escala
+            window.scale = newScale;
         });
 
-        console.log('🧟 Jogo de Zumbis CORRIGIDO carregado!');
-        console.log('✅ Bug 1 - Player spawn corrigido');
-        console.log('✅ Bug 2 - Zumbis agora funcionam (pathfinding, dano, ataque, respawn)');
+        console.log('🧟 Jogo 2D carregado!');
+        console.log('✅ Todas as mecânicas foram mantidas');
+        console.log('📋 Mapa:', MAP.join('\n'));
     </script>
 </body>
 </html>
