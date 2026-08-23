@@ -3,62 +3,45 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Arena de Zumbis 2D</title>
+    <title>Mundo Industrial Infinito</title>
     <style>
         * { margin: 0; padding: 0; }
-        body {
-            overflow: hidden;
-            background: #1a1a2e;
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
+        body { overflow: hidden; background: #111; font-family: 'Segoe UI', Arial, sans-serif; }
         
-        #gameContainer {
-            position: relative;
-            border: 3px solid #4a5a6a;
-            border-radius: 4px;
-            box-shadow: 0 0 40px rgba(0,0,0,0.8);
-            cursor: crosshair;
-        }
-        
-        canvas {
-            display: block;
-            background: #2a2a3e;
-        }
-        
-        #hud {
+        #info {
             position: absolute;
-            top: 10px;
-            left: 10px;
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-            text-shadow: 0 0 10px rgba(0,0,0,0.9);
+            top: 20px;
+            left: 20px;
+            color: #aaa;
+            font-size: 14px;
+            font-family: monospace;
             background: rgba(0,0,0,0.7);
-            padding: 8px 14px;
+            padding: 10px 16px;
             border-radius: 6px;
             pointer-events: none;
             user-select: none;
             z-index: 10;
-            min-width: 140px;
+            border: 1px solid rgba(255,255,255,0.05);
             line-height: 1.5;
+            min-width: 180px;
         }
-        #hud .hp { color: #ff6b6b; }
-        #hud .zumbis { color: #ffd93d; font-size: 14px; }
-        #hud .status { color: #4ecdc4; font-size: 13px; }
+        #info .title {
+            color: #88ccff;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        #info .highlight { color: #ffd93d; }
+        #info .dim { color: #666; font-size: 12px; }
         
         #crosshair {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: rgba(255,255,255,0.7);
+            color: rgba(255,255,255,0.15);
             font-size: 28px;
             font-weight: bold;
-            text-shadow: 0 0 8px rgba(0,0,0,0.9);
             pointer-events: none;
             user-select: none;
             z-index: 10;
@@ -70,628 +53,722 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0,0,0,0.8);
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 20;
             cursor: pointer;
             color: white;
-            font-size: 24px;
+            font-size: 26px;
             font-weight: bold;
             flex-direction: column;
-            text-shadow: 0 0 20px black;
-            border-radius: 4px;
+            text-shadow: 0 0 30px rgba(0,0,0,0.9);
         }
-        #blocker small {
-            font-size: 14px;
+        #blocker .sub {
+            font-size: 16px;
             font-weight: normal;
-            margin-top: 10px;
-            opacity: 0.8;
+            margin-top: 12px;
+            opacity: 0.6;
+            font-family: monospace;
+        }
+        #blocker .sub small {
+            font-size: 13px;
+            opacity: 0.5;
         }
         #blocker.hidden { display: none; }
         
-        #controls-hint {
+        #minimap {
             position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: rgba(255,255,255,0.3);
+            bottom: 20px;
+            right: 20px;
+            width: 120px;
+            height: 120px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.05);
+            pointer-events: none;
+            user-select: none;
+            z-index: 10;
+            overflow: hidden;
+        }
+        #minimap canvas {
+            width: 100%;
+            height: 100%;
+            opacity: 0.4;
+        }
+        
+        #fps {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: #444;
             font-size: 11px;
             font-family: monospace;
             pointer-events: none;
             user-select: none;
             z-index: 10;
-            background: rgba(0,0,0,0.4);
-            padding: 2px 10px;
+            background: rgba(0,0,0,0.3);
+            padding: 2px 8px;
             border-radius: 4px;
         }
     </style>
 </head>
 <body>
 
-    <div id="gameContainer">
-        <canvas id="gameCanvas"></canvas>
-        
-        <div id="hud">
-            <div class="hp">❤️ HP: <span id="hpValue">100</span></div>
-            <div class="zumbis">🧟 Zumbis: <span id="zombieCount">0</span></div>
-            <div class="status" id="statusText">🔴 VIVO</div>
-        </div>
-        
-        <div id="crosshair">✚</div>
-        
-        <div id="blocker">
-            🧟 Clique para Jogar
-            <small>WASD · Mouse · ESPAÇO(pular) · C(agachar) · Clique esquerdo(atirar)</small>
-        </div>
-        
-        <div id="controls-hint">WASD mover · Mouse mirar · Espaço pular · C agachar · Clique atirar</div>
+    <div id="info">
+        <div class="title">⬡ MUNDO INDUSTRIAL</div>
+        <div>Chunks: <span class="highlight" id="chunkCount">0</span></div>
+        <div>Estruturas: <span class="highlight" id="structureCount">0</span></div>
+        <div class="dim">Pos: <span id="playerPos">0, 0, 0</span></div>
     </div>
 
-    <script>
+    <div id="crosshair">+</div>
+
+    <div id="blocker">
+        🏭 Clique para Explorar
+        <div class="sub">WASD · Mouse · ESPAÇO(pular) · Shift(correr)</div>
+        <div class="sub"><small>Mundo procedural infinito · Estruturas mutáveis</small></div>
+    </div>
+
+    <div id="minimap"><canvas id="minimapCanvas"></canvas></div>
+    <div id="fps">FPS: <span id="fpsValue">60</span></div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
         // ============================================================
         // 1. CONFIGURAÇÕES
         // ============================================================
         const CONFIG = {
-            PLAYER_SPEED: 2.5,
-            JUMP_FORCE: 4,
-            GRAVITY: 0.4,
-            FIRE_RATE: 8, // tiros por segundo
-            BULLET_SPEED: 6,
-            BULLET_LIFETIME: 60,
-            DAMAGE_PER_BULLET: 10,
-            PLAYER_MAX_HP: 100,
-            ZOMBIE_MAX_HP: 100,
-            ZOMBIE_ATTACK_DAMAGE: 20,
-            ZOMBIE_ATTACK_RANGE: 20,
-            ZOMBIE_ATTACK_COOLDOWN: 30,
-            ZOMBIE_SPEED: 1.2,
-            ZOMBIE_RESPAWN_TIME: 300,
-            ZOMBIE_LIMIT: 6,
-            TILE_SIZE: 32,
-            PLAYER_SIZE: 16,
-            ZOMBIE_SIZE: 18,
-            BULLET_SIZE: 4,
+            CHUNK_SIZE: 32, // unidades por chunk
+            VIEW_DISTANCE: 5, // chunks de raio
+            MAX_STRUCTURES_PER_CHUNK: 12,
+            PLAYER_HEIGHT: 1.6,
+            PLAYER_SPEED: 6,
+            PLAYER_SPRINT: 12,
+            JUMP_FORCE: 5,
+            GRAVITY: -15,
+            MAX_STRUCTURE_HEIGHT: 15,
+            MIN_STRUCTURE_HEIGHT: 3,
         };
 
         // ============================================================
-        // 2. MAPA
-        // ============================================================
-        const MAP = [
-            "1111111111",
-            "1422222221",
-            "1222112221",
-            "1222112221",
-            "1222112221",
-            "1222222231",
-            "1111111111"
-        ];
-
-        // 1 = parede, 2 = chão, 3 = spawn zumbi, 4 = spawn jogador
-
-        const TILE = CONFIG.TILE_SIZE;
-        const COLS = MAP[0].length;
-        const ROWS = MAP.length;
-        const MAP_WIDTH = COLS * TILE;
-        const MAP_HEIGHT = ROWS * TILE;
-
-        // ============================================================
-        // 3. CANVAS
-        // ============================================================
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        
-        // Ajusta o canvas para caber na tela
-        const maxWidth = window.innerWidth - 20;
-        const maxHeight = window.innerHeight - 20;
-        const scaleX = maxWidth / MAP_WIDTH;
-        const scaleY = maxHeight / MAP_HEIGHT;
-        const scale = Math.min(scaleX, scaleY, 1.2);
-        
-        canvas.width = MAP_WIDTH * scale;
-        canvas.height = MAP_HEIGHT * scale;
-        canvas.style.width = canvas.width + 'px';
-        canvas.style.height = canvas.height + 'px';
-
-        // ============================================================
-        // 4. DOM
+        // 2. DOM
         // ============================================================
         const blocker = document.getElementById('blocker');
-        const hpSpan = document.getElementById('hpValue');
-        const zombieCountSpan = document.getElementById('zombieCount');
-        const statusText = document.getElementById('statusText');
+        const chunkCountSpan = document.getElementById('chunkCount');
+        const structureCountSpan = document.getElementById('structureCount');
+        const playerPosSpan = document.getElementById('playerPos');
+        const fpsSpan = document.getElementById('fpsValue');
 
         // ============================================================
-        // 5. ESTADO DO MAPA
+        // 3. CENA, CÂMERA, RENDER
         // ============================================================
-        let walls = [];
-        let walkableTiles = [];
-        let zombieSpawnPoints = [];
-        let playerSpawnPoint = { x: 0, y: 0 };
-        let grid = [];
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1a2e);
+        scene.fog = new THREE.Fog(0x1a1a2e, 80, 150);
 
-        function buildMapData() {
-            walls = [];
-            walkableTiles = [];
-            zombieSpawnPoints = [];
-            grid = [];
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 200);
+        camera.position.set(0, CONFIG.PLAYER_HEIGHT, 0);
 
-            for (let r = 0; r < ROWS; r++) {
-                grid[r] = [];
-                for (let c = 0; c < COLS; c++) {
-                    const tile = MAP[r][c];
-                    const x = c * TILE + TILE / 2;
-                    const y = r * TILE + TILE / 2;
-                    const isWalkable = (tile === '2' || tile === '3' || tile === '4');
-                    
-                    grid[r][c] = {
-                        walkable: isWalkable,
-                        x: x,
-                        y: y,
-                        row: r,
-                        col: c
-                    };
-                    
-                    if (tile === '1') {
-                        walls.push({ x, y, w: TILE, h: TILE });
-                    } else {
-                        walkableTiles.push({ x, y });
-                        if (tile === '3') {
-                            zombieSpawnPoints.push({ x, y });
-                        }
-                        if (tile === '4') {
-                            playerSpawnPoint = { x, y };
-                        }
-                    }
-                }
-            }
-            
-            console.log('✅ Mapa 2D construído');
-            console.log(`📍 Player spawn: (${playerSpawnPoint.x}, ${playerSpawnPoint.y})`);
-            console.log(`📍 Zombie spawns: ${zombieSpawnPoints.length}`);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.5;
+        document.body.appendChild(renderer.domElement);
+
+        // ============================================================
+        // 4. LUZES
+        // ============================================================
+        const ambient = new THREE.AmbientLight(0x445566, 0.6);
+        scene.add(ambient);
+
+        const hemi = new THREE.HemisphereLight(0x8899bb, 0x443322, 0.5);
+        scene.add(hemi);
+
+        const sun = new THREE.DirectionalLight(0xffeedd, 1.8);
+        sun.position.set(50, 80, 30);
+        sun.castShadow = true;
+        sun.shadow.mapSize.width = 2048;
+        sun.shadow.mapSize.height = 2048;
+        sun.shadow.camera.near = 0.5;
+        sun.shadow.camera.far = 150;
+        sun.shadow.camera.left = -60;
+        sun.shadow.camera.right = 60;
+        sun.shadow.camera.top = 60;
+        sun.shadow.camera.bottom = -60;
+        scene.add(sun);
+
+        const fill = new THREE.DirectionalLight(0x8888ff, 0.3);
+        fill.position.set(-30, 20, -30);
+        scene.add(fill);
+
+        // Luzes industriais (globais)
+        const lightMat = new THREE.MeshBasicMaterial({ color: 0xff8844, transparent: true, opacity: 0.3 });
+        for (let i = 0; i < 20; i++) {
+            const light = new THREE.Mesh(new THREE.SphereGeometry(0.5, 6, 6), lightMat);
+            light.position.set(
+                (Math.random() - 0.5) * 200,
+                10 + Math.random() * 30,
+                (Math.random() - 0.5) * 200
+            );
+            scene.add(light);
         }
 
         // ============================================================
-        // 6. PATHFINDING (A* 2D)
+        // 5. CHUNK SYSTEM
         // ============================================================
-        function getNeighbors(node) {
-            const neighbors = [];
-            const dirs = [
-                [0, 1], [0, -1], [1, 0], [-1, 0],
-                [1, 1], [1, -1], [-1, 1], [-1, -1]
+        const chunks = new Map();
+        const chunkMeshes = new Map();
+        let totalStructures = 0;
+
+        // Materiais industriais
+        const matWall = new THREE.MeshStandardMaterial({
+            color: 0x6a7a8a,
+            roughness: 0.7,
+            metalness: 0.3
+        });
+        const matWallDark = new THREE.MeshStandardMaterial({
+            color: 0x4a5a6a,
+            roughness: 0.8,
+            metalness: 0.2
+        });
+        const matFloor = new THREE.MeshStandardMaterial({
+            color: 0x5a6a7a,
+            roughness: 0.9,
+            metalness: 0.1
+        });
+        const matFloorDark = new THREE.MeshStandardMaterial({
+            color: 0x3a4a5a,
+            roughness: 0.9,
+            metalness: 0.1
+        });
+        const matMetal = new THREE.MeshStandardMaterial({
+            color: 0x8a9aaa,
+            roughness: 0.4,
+            metalness: 0.7
+        });
+        const matMetalDark = new THREE.MeshStandardMaterial({
+            color: 0x5a6a7a,
+            roughness: 0.5,
+            metalness: 0.6
+        });
+        const matAccent = new THREE.MeshStandardMaterial({
+            color: 0x7a8a5a,
+            roughness: 0.6,
+            metalness: 0.4
+        });
+
+        function getChunkKey(x, z) {
+            const cx = Math.floor(x / CONFIG.CHUNK_SIZE);
+            const cz = Math.floor(z / CONFIG.CHUNK_SIZE);
+            return `${cx},${cz}`;
+        }
+
+        function getChunkCoord(chunkKey) {
+            const [cx, cz] = chunkKey.split(',').map(Number);
+            return { cx, cz };
+        }
+
+        function getChunkCenter(cx, cz) {
+            return {
+                x: cx * CONFIG.CHUNK_SIZE + CONFIG.CHUNK_SIZE / 2,
+                z: cz * CONFIG.CHUNK_SIZE + CONFIG.CHUNK_SIZE / 2
+            };
+        }
+
+        // ============================================================
+        // 6. GERADOR PROCEDURAL DE ESTRUTURAS
+        // ============================================================
+        function generateChunkStructures(cx, cz, seed) {
+            const structures = [];
+            const center = getChunkCenter(cx, cz);
+            const half = CONFIG.CHUNK_SIZE / 2;
+            
+            // Semente pseudo-aleatória baseada na posição
+            const rng = (n) => {
+                const s = (seed * 9301 + 49297) % 233280;
+                seed = (s * 9301 + 49297) % 233280;
+                return (s / 233280) * n;
+            };
+
+            const count = 3 + Math.floor(rng(CONFIG.MAX_STRUCTURES_PER_CHUNK - 2));
+            
+            // Garantir pelo menos uma estrutura central
+            const hasCore = rng(1) < 0.7;
+            
+            for (let i = 0; i < count; i++) {
+                // Posição dentro do chunk
+                let x = center.x + (rng(1) - 0.5) * CONFIG.CHUNK_SIZE * 0.8;
+                let z = center.z + (rng(1) - 0.5) * CONFIG.CHUNK_SIZE * 0.8;
+                
+                // Se for a estrutura central, fica no centro
+                if (i === 0 && hasCore) {
+                    x = center.x + (rng(1) - 0.5) * CONFIG.CHUNK_SIZE * 0.2;
+                    z = center.z + (rng(1) - 0.5) * CONFIG.CHUNK_SIZE * 0.2;
+                }
+                
+                const width = 2 + rng(6);
+                const depth = 2 + rng(6);
+                const height = CONFIG.MIN_STRUCTURE_HEIGHT + rng(CONFIG.MAX_STRUCTURE_HEIGHT - CONFIG.MIN_STRUCTURE_HEIGHT);
+                
+                const type = Math.floor(rng(5));
+                
+                structures.push({
+                    x, z,
+                    width, depth, height,
+                    type,
+                    hasRoof: rng(1) > 0.3,
+                    hasWindows: rng(1) > 0.5,
+                    hasPlatforms: rng(1) > 0.4,
+                    colorVariant: Math.floor(rng(3))
+                });
+            }
+            
+            // Adicionar conexões (corredores) entre estruturas
+            const connectionCount = Math.floor(rng(structures.length * 1.5));
+            for (let i = 0; i < connectionCount; i++) {
+                const a = Math.floor(rng(structures.length));
+                const b = Math.floor(rng(structures.length));
+                if (a !== b) {
+                    structures.push({
+                        x: (structures[a].x + structures[b].x) / 2 + (rng(1) - 0.5) * 4,
+                        z: (structures[a].z + structures[b].z) / 2 + (rng(1) - 0.5) * 4,
+                        width: 1.5 + rng(2),
+                        depth: 1.5 + rng(2),
+                        height: 2 + rng(3),
+                        type: 4, // corredor
+                        isCorridor: true,
+                        colorVariant: Math.floor(rng(3))
+                    });
+                }
+            }
+            
+            // Adicionar verticalidade (plataformas/escadas)
+            for (const s of structures) {
+                if (s.height > 6 && rng(1) > 0.5) {
+                    const platformHeight = 2 + rng(s.height - 3);
+                    structures.push({
+                        x: s.x + (rng(1) - 0.5) * s.width * 0.8,
+                        z: s.z + (rng(1) - 0.5) * s.depth * 0.8,
+                        width: 2 + rng(3),
+                        depth: 2 + rng(3),
+                        height: 0.3,
+                        type: 5, // plataforma
+                        isPlatform: true,
+                        platformY: platformHeight,
+                        colorVariant: Math.floor(rng(3))
+                    });
+                }
+            }
+            
+            return structures;
+        }
+
+        // ============================================================
+        // 7. CONSTRUTOR DE CHUNKS
+        // ============================================================
+        function buildChunk(cx, cz) {
+            const key = getChunkKey(cx * CONFIG.CHUNK_SIZE, cz * CONFIG.CHUNK_SIZE);
+            
+            // Remove chunk antigo se existir
+            if (chunkMeshes.has(key)) {
+                const group = chunkMeshes.get(key);
+                scene.remove(group);
+                // Dispose de geometrias e materiais
+                group.children.forEach(child => {
+                    if (child.geometry) child.geometry.dispose();
+                    if (child.material) child.material.dispose();
+                });
+                chunkMeshes.delete(key);
+            }
+            
+            const seed = (cx * 73856093 + cz * 19349663 + 83492791) & 0x7fffffff;
+            const structures = generateChunkStructures(cx, cz, seed);
+            
+            const group = new THREE.Group();
+            const center = getChunkCenter(cx, cz);
+            const half = CONFIG.CHUNK_SIZE / 2;
+            
+            // Chão base
+            const floorGeo = new THREE.PlaneGeometry(CONFIG.CHUNK_SIZE, CONFIG.CHUNK_SIZE);
+            const floorMat = (cx + cz) % 2 === 0 ? matFloor : matFloorDark;
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.set(center.x, 0, center.z);
+            floor.receiveShadow = true;
+            group.add(floor);
+            
+            // Construir estruturas
+            for (const s of structures) {
+                const parts = buildStructure(s);
+                for (const part of parts) {
+                    group.add(part);
+                }
+            }
+            
+            // Paredes externas do chunk (opcional, para dar sensação de continuidade)
+            // Pequenas vigas nos cantos
+            const corners = [
+                [-1, -1], [1, -1], [1, 1], [-1, 1]
             ];
-            for (const [dr, dc] of dirs) {
-                const nr = node.row + dr;
-                const nc = node.col + dc;
-                if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
-                    if (grid[nr][nc].walkable) {
-                        neighbors.push(grid[nr][nc]);
-                    }
-                }
-            }
-            return neighbors;
-        }
-
-        function heuristic(a, b) {
-            return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
-        }
-
-        function findPath2D(startPos, endPos) {
-            const start = findClosestNode(startPos);
-            const end = findClosestNode(endPos);
-            
-            if (!start || !end || !start.walkable || !end.walkable) {
-                return null;
+            for (const [dx, dz] of corners) {
+                const x = center.x + dx * half;
+                const z = center.z + dz * half;
+                // Pilar
+                const pillar = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.3, 8, 0.3),
+                    matMetalDark
+                );
+                pillar.position.set(x, 4, z);
+                pillar.castShadow = true;
+                group.add(pillar);
             }
             
-            const openSet = [start];
-            const cameFrom = new Map();
-            const gScore = new Map();
-            const fScore = new Map();
+            scene.add(group);
+            chunkMeshes.set(key, group);
             
-            gScore.set(start, 0);
-            fScore.set(start, heuristic(start, end));
-            
-            while (openSet.length > 0) {
-                let current = openSet[0];
-                let currentIdx = 0;
-                for (let i = 1; i < openSet.length; i++) {
-                    if (fScore.get(openSet[i]) < fScore.get(current)) {
-                        current = openSet[i];
-                        currentIdx = i;
-                    }
-                }
-                
-                if (current === end) {
-                    const path = [];
-                    let node = current;
-                    while (node) {
-                        path.push({ x: node.x, y: node.y });
-                        node = cameFrom.get(node);
-                    }
-                    return path.reverse();
-                }
-                
-                openSet.splice(currentIdx, 1);
-                
-                for (const neighbor of getNeighbors(current)) {
-                    const tentativeG = gScore.get(current) + heuristic(current, neighbor);
-                    if (!gScore.has(neighbor) || tentativeG < gScore.get(neighbor)) {
-                        cameFrom.set(neighbor, current);
-                        gScore.set(neighbor, tentativeG);
-                        fScore.set(neighbor, tentativeG + heuristic(neighbor, end));
-                        if (!openSet.includes(neighbor)) {
-                            openSet.push(neighbor);
-                        }
-                    }
-                }
-            }
-            return null;
-        }
-
-        function findClosestNode(pos) {
-            let closest = null;
-            let closestDist = Infinity;
-            for (let r = 0; r < ROWS; r++) {
-                for (let c = 0; c < COLS; c++) {
-                    const node = grid[r][c];
-                    if (node && node.walkable) {
-                        const dx = node.x - pos.x;
-                        const dy = node.y - pos.y;
-                        const dist = dx*dx + dy*dy;
-                        if (dist < closestDist) {
-                            closestDist = dist;
-                            closest = node;
-                        }
-                    }
-                }
-            }
-            return closest;
+            totalStructures += structures.length;
+            return structures.length;
         }
 
         // ============================================================
-        // 7. COLISÃO 2D
+        // 8. CONSTRUTOR DE ESTRUTURAS INDIVIDUAIS
         // ============================================================
-        function isWallAt(x, y) {
-            for (const wall of walls) {
-                const half = TILE / 2 - 2;
-                if (Math.abs(x - wall.x) < half && Math.abs(y - wall.y) < half) {
-                    return true;
+        function buildStructure(s) {
+            const parts = [];
+            
+            // Seleciona material base
+            let matMain, matSecondary, matDetail;
+            const variant = s.colorVariant || 0;
+            if (variant === 0) {
+                matMain = matWall;
+                matSecondary = matWallDark;
+                matDetail = matMetal;
+            } else if (variant === 1) {
+                matMain = matWallDark;
+                matSecondary = matWall;
+                matDetail = matMetalDark;
+            } else {
+                matMain = matMetal;
+                matSecondary = matWall;
+                matDetail = matMetalDark;
+            }
+            
+            if (s.isCorridor) {
+                // Corredor
+                const w = s.width;
+                const d = s.depth;
+                const h = s.height;
+                const x = s.x;
+                const z = s.z;
+                
+                // Piso
+                const floor = new THREE.Mesh(
+                    new THREE.BoxGeometry(w, 0.2, d),
+                    matFloor
+                );
+                floor.position.set(x, 0.1, z);
+                floor.receiveShadow = true;
+                parts.push(floor);
+                
+                // Paredes laterais (se não for muito largo)
+                if (w < 4) {
+                    const wallH = new THREE.Mesh(
+                        new THREE.BoxGeometry(w, h, 0.2),
+                        matMain
+                    );
+                    wallH.position.set(x, h/2, z + d/2);
+                    wallH.castShadow = true;
+                    parts.push(wallH);
+                    
+                    const wallH2 = new THREE.Mesh(
+                        new THREE.BoxGeometry(w, h, 0.2),
+                        matMain
+                    );
+                    wallH2.position.set(x, h/2, z - d/2);
+                    wallH2.castShadow = true;
+                    parts.push(wallH2);
+                }
+                
+                // Teto (aberto, mas com vigas)
+                if (h > 2) {
+                    const beam = new THREE.Mesh(
+                        new THREE.BoxGeometry(w, 0.1, 0.1),
+                        matMetal
+                    );
+                    beam.position.set(x, h, z);
+                    parts.push(beam);
+                }
+                
+                return parts;
+            }
+            
+            if (s.isPlatform) {
+                // Plataforma
+                const w = s.width;
+                const d = s.depth;
+                const y = s.platformY || 2;
+                
+                const plat = new THREE.Mesh(
+                    new THREE.BoxGeometry(w, 0.2, d),
+                    matMetal
+                );
+                plat.position.set(s.x, y, s.z);
+                plat.castShadow = true;
+                plat.receiveShadow = true;
+                parts.push(plat);
+                
+                // Suportes
+                for (let i = -1; i <= 1; i += 2) {
+                    for (let j = -1; j <= 1; j += 2) {
+                        const support = new THREE.Mesh(
+                            new THREE.CylinderGeometry(0.08, 0.08, y, 4),
+                            matMetalDark
+                        );
+                        support.position.set(s.x + i * w * 0.35, y/2, s.z + j * d * 0.35);
+                        parts.push(support);
+                    }
+                }
+                
+                // Escadas (se for alta)
+                if (y > 3) {
+                    for (let step = 0; step < Math.min(6, Math.floor(y)); step++) {
+                        const stepY = 0.5 + step * 0.6;
+                        const stepX = s.x + 0.5 + step * 0.3;
+                        const stair = new THREE.Mesh(
+                            new THREE.BoxGeometry(0.6, 0.1, 0.8),
+                            matWallDark
+                        );
+                        stair.position.set(stepX, stepY, s.z + 0.8);
+                        parts.push(stair);
+                    }
+                }
+                
+                return parts;
+            }
+            
+            // Estrutura principal (sala/prédio)
+            const w = s.width;
+            const d = s.depth;
+            const h = s.height;
+            const x = s.x;
+            const z = s.z;
+            
+            // Piso
+            const floor = new THREE.Mesh(
+                new THREE.BoxGeometry(w, 0.2, d),
+                matFloor
+            );
+            floor.position.set(x, 0.1, z);
+            floor.receiveShadow = true;
+            parts.push(floor);
+            
+            // Paredes
+            const wallMat = s.type === 0 ? matMain : matSecondary;
+            
+            // Parede traseira
+            const backWall = new THREE.Mesh(
+                new THREE.BoxGeometry(w, h, 0.2),
+                wallMat
+            );
+            backWall.position.set(x, h/2, z - d/2);
+            backWall.castShadow = true;
+            parts.push(backWall);
+            
+            // Parede frontal (com entrada)
+            if (s.type !== 2) {
+                const frontWall = new THREE.Mesh(
+                    new THREE.BoxGeometry(w, h, 0.2),
+                    wallMat
+                );
+                frontWall.position.set(x, h/2, z + d/2);
+                frontWall.castShadow = true;
+                parts.push(frontWall);
+                
+                // "Porta" - só um detalhe visual
+                if (w > 2) {
+                    const door = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.6, 0.8, 0.1),
+                        matMetalDark
+                    );
+                    door.position.set(x, 0.4, z + d/2 + 0.15);
+                    parts.push(door);
                 }
             }
-            return false;
-        }
-
-        function rectCollide(ax, ay, aw, ah, bx, by, bw, bh) {
-            return ax < bx + bw && ax + aw > bx &&
-                   ay < by + bh && ay + ah > by;
-        }
-
-        function isWallRect(x, y, w, h) {
-            for (const wall of walls) {
-                if (rectCollide(x, y, w, h, wall.x - TILE/2, wall.y - TILE/2, TILE, TILE)) {
-                    return true;
+            
+            // Paredes laterais
+            const side1 = new THREE.Mesh(
+                new THREE.BoxGeometry(0.2, h, d),
+                wallMat
+            );
+            side1.position.set(x - w/2, h/2, z);
+            side1.castShadow = true;
+            parts.push(side1);
+            
+            const side2 = new THREE.Mesh(
+                new THREE.BoxGeometry(0.2, h, d),
+                wallMat
+            );
+            side2.position.set(x + w/2, h/2, z);
+            side2.castShadow = true;
+            parts.push(side2);
+            
+            // Teto (se tiver)
+            if (s.hasRoof && h > 2) {
+                const roof = new THREE.Mesh(
+                    new THREE.BoxGeometry(w, 0.2, d),
+                    matFloorDark
+                );
+                roof.position.set(x, h, z);
+                roof.castShadow = true;
+                parts.push(roof);
+            }
+            
+            // Janelas (detalhes)
+            if (s.hasWindows && h > 3) {
+                const windowMat = new THREE.MeshBasicMaterial({
+                    color: 0x88ccff,
+                    transparent: true,
+                    opacity: 0.15
+                });
+                for (let i = 0; i < Math.floor(w / 2); i++) {
+                    const win = new THREE.Mesh(
+                        new THREE.PlaneGeometry(0.5, 0.5),
+                        windowMat
+                    );
+                    win.position.set(x - w/3 + i * 1.2, h * 0.5, z - d/2 - 0.05);
+                    parts.push(win);
                 }
             }
-            return false;
-        }
-
-        function moveWithCollision(entity, dx, dy, size) {
-            // Move em X
-            const newX = entity.x + dx;
-            if (!isWallRect(newX - size/2, entity.y - size/2, size, size)) {
-                entity.x = newX;
+            
+            // Detalhes estruturais (vigas)
+            if (h > 4) {
+                for (let i = 0; i < Math.floor(h / 2); i++) {
+                    const beam = new THREE.Mesh(
+                        new THREE.BoxGeometry(w + 0.4, 0.1, 0.1),
+                        matMetal
+                    );
+                    beam.position.set(x, 1 + i * 1.8, z - d/2 - 0.1);
+                    parts.push(beam);
+                    
+                    const beam2 = new THREE.Mesh(
+                        new THREE.BoxGeometry(w + 0.4, 0.1, 0.1),
+                        matMetal
+                    );
+                    beam2.position.set(x, 1 + i * 1.8, z + d/2 + 0.1);
+                    parts.push(beam2);
+                }
             }
-            // Move em Y
-            const newY = entity.y + dy;
-            if (!isWallRect(entity.x - size/2, newY - size/2, size, size)) {
-                entity.y = newY;
-            }
+            
+            return parts;
         }
 
         // ============================================================
-        // 8. JOGADOR
+        // 9. GERENCIADOR DE CHUNKS
+        // ============================================================
+        function updateChunks(playerX, playerZ) {
+            const cx = Math.floor(playerX / CONFIG.CHUNK_SIZE);
+            const cz = Math.floor(playerZ / CONFIG.CHUNK_SIZE);
+            
+            const radius = CONFIG.VIEW_DISTANCE;
+            const loadedKeys = new Set();
+            let totalStructuresInChunks = 0;
+            
+            for (let dx = -radius; dx <= radius; dx++) {
+                for (let dz = -radius; dz <= radius; dz++) {
+                    // Carrega em círculo (não quadrado)
+                    if (dx*dx + dz*dz > radius*radius + 2) continue;
+                    
+                    const chunkX = cx + dx;
+                    const chunkZ = cz + dz;
+                    const key = getChunkKey(chunkX * CONFIG.CHUNK_SIZE, chunkZ * CONFIG.CHUNK_SIZE);
+                    loadedKeys.add(key);
+                    
+                    if (!chunkMeshes.has(key)) {
+                        const count = buildChunk(chunkX, chunkZ);
+                        totalStructuresInChunks += count;
+                    } else {
+                        // Conta estruturas já existentes
+                        const group = chunkMeshes.get(key);
+                        totalStructuresInChunks += group.children.length;
+                    }
+                }
+            }
+            
+            // Remove chunks distantes
+            const toRemove = [];
+            for (const [key, group] of chunkMeshes) {
+                if (!loadedKeys.has(key)) {
+                    toRemove.push(key);
+                }
+            }
+            
+            for (const key of toRemove) {
+                const group = chunkMeshes.get(key);
+                scene.remove(group);
+                group.children.forEach(child => {
+                    if (child.geometry) child.geometry.dispose();
+                    if (child.material) child.material.dispose();
+                });
+                chunkMeshes.delete(key);
+            }
+            
+            chunkCountSpan.textContent = chunkMeshes.size;
+            structureCountSpan.textContent = totalStructuresInChunks;
+        }
+
+        // ============================================================
+        // 10. JOGADOR
         // ============================================================
         const player = {
-            x: playerSpawnPoint.x,
-            y: playerSpawnPoint.y,
-            size: CONFIG.PLAYER_SIZE,
-            speed: CONFIG.PLAYER_SPEED,
-            hp: CONFIG.PLAYER_MAX_HP,
-            isAlive: true,
-            vy: 0,
+            position: new THREE.Vector3(0, CONFIG.PLAYER_HEIGHT, 0),
+            yaw: 0,
+            pitch: 0,
+            velocity: new THREE.Vector3(0, 0, 0),
             isGrounded: false,
-            isCrouching: false,
-            height: CONFIG.PLAYER_SIZE,
-            crouchHeight: CONFIG.PLAYER_SIZE * 0.6,
-            angle: 0 // direção da mira
+            speed: CONFIG.PLAYER_SPEED,
+            sprintMultiplier: 1.8,
+            isSprinting: false,
         };
 
-        // ============================================================
-        // 9. ARMA (2D - acompanha o mouse)
-        // ============================================================
-        let mouseX = player.x + 50;
-        let mouseY = player.y;
+        camera.position.copy(player.position);
+
+        const keys = { w: false, a: false, s: false, d: false, space: false, shift: false };
 
         // ============================================================
-        // 10. PROJÉTEIS
+        // 11. CONTROLES
         // ============================================================
-        let bullets = [];
-
-        function createBullet() {
-            const angle = player.angle;
-            const spawnDist = player.size / 2 + 4;
-            const bullet = {
-                x: player.x + Math.cos(angle) * spawnDist,
-                y: player.y + Math.sin(angle) * spawnDist,
-                vx: Math.cos(angle) * CONFIG.BULLET_SPEED,
-                vy: Math.sin(angle) * CONFIG.BULLET_SPEED,
-                size: CONFIG.BULLET_SIZE,
-                lifetime: CONFIG.BULLET_LIFETIME,
-                age: 0,
-                alive: true
-            };
-            bullets.push(bullet);
-            return bullet;
-        }
-
-        function updateBullets() {
-            for (let i = bullets.length - 1; i >= 0; i--) {
-                const b = bullets[i];
-                if (!b.alive) continue;
-                
-                b.x += b.vx;
-                b.y += b.vy;
-                b.age++;
-                
-                // Colisão com paredes
-                if (isWallRect(b.x - b.size/2, b.y - b.size/2, b.size, b.size)) {
-                    b.alive = false;
-                    bullets.splice(i, 1);
-                    continue;
-                }
-                
-                // Colisão com zumbis
-                let hit = false;
-                for (const zombie of zombies) {
-                    if (!zombie.alive) continue;
-                    if (rectCollide(b.x - b.size/2, b.y - b.size/2, b.size, b.size,
-                                    zombie.x - zombie.size/2, zombie.y - zombie.size/2, zombie.size, zombie.size)) {
-                        zombie.takeDamage(CONFIG.DAMAGE_PER_BULLET);
-                        hit = true;
-                        break;
-                    }
-                }
-                if (hit) {
-                    b.alive = false;
-                    bullets.splice(i, 1);
-                    continue;
-                }
-                
-                if (b.age > b.lifetime || b.x < 0 || b.x > MAP_WIDTH || b.y < 0 || b.y > MAP_HEIGHT) {
-                    b.alive = false;
-                    bullets.splice(i, 1);
-                }
-            }
-        }
-
-        // ============================================================
-        // 11. ZUMBIS
-        // ============================================================
-        let zombies = [];
-        let zombieCount = 0;
-
-        class Zombie2D {
-            constructor(spawnPos) {
-                this.x = spawnPos.x;
-                this.y = spawnPos.y;
-                this.size = CONFIG.ZOMBIE_SIZE;
-                this.alive = true;
-                this.hp = CONFIG.ZOMBIE_MAX_HP;
-                this.speed = CONFIG.ZOMBIE_SPEED;
-                this.attackCooldown = 0;
-                this.path = [];
-                this.pathIndex = 0;
-                this.recalcTimer = 0;
-                this.spawnPos = { x: spawnPos.x, y: spawnPos.y };
-                
-                zombieCount++;
-                zombieCountSpan.textContent = zombieCount;
-                
-                // Calcula caminho inicial
-                setTimeout(() => {
-                    this.recalcPath({ x: player.x, y: player.y });
-                }, 100);
-            }
-            
-            recalcPath(targetPos) {
-                if (!this.alive) return;
-                const path = findPath2D({ x: this.x, y: this.y }, targetPos);
-                if (path && path.length > 1) {
-                    this.path = path;
-                    this.pathIndex = 1;
-                } else {
-                    this.path = [];
-                    this.pathIndex = 0;
-                }
-            }
-            
-            update() {
-                if (!this.alive) return;
-                
-                if (this.attackCooldown > 0) {
-                    this.attackCooldown--;
-                }
-                
-                const dx = player.x - this.x;
-                const dy = player.y - this.y;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-                
-                // Ataca se estiver perto
-                if (dist < CONFIG.ZOMBIE_ATTACK_RANGE) {
-                    if (this.attackCooldown <= 0 && player.isAlive) {
-                        playerTakeDamage(CONFIG.ZOMBIE_ATTACK_DAMAGE);
-                        this.attackCooldown = CONFIG.ZOMBIE_ATTACK_COOLDOWN;
-                    }
-                    return;
-                }
-                
-                // Recalcula caminho
-                this.recalcTimer++;
-                if (this.recalcTimer > 30 || this.path.length === 0) {
-                    this.recalcTimer = 0;
-                    this.recalcPath({ x: player.x, y: player.y });
-                }
-                
-                // Segue o caminho
-                let moved = false;
-                if (this.path.length > 0 && this.pathIndex < this.path.length) {
-                    const target = this.path[this.pathIndex];
-                    const dx2 = target.x - this.x;
-                    const dy2 = target.y - this.y;
-                    const dist2 = Math.sqrt(dx2*dx2 + dy2*dy2);
-                    
-                    if (dist2 < 3) {
-                        this.pathIndex++;
-                    } else {
-                        const speed = this.speed;
-                        const moveX = (dx2 / dist2) * speed;
-                        const moveY = (dy2 / dist2) * speed;
-                        moveWithCollision(this, moveX, moveY, this.size);
-                        moved = true;
-                    }
-                } else {
-                    // Fallback: movimento direto com colisão
-                    const dist2 = Math.sqrt(dx*dx + dy*dy);
-                    if (dist2 > 1) {
-                        const speed = this.speed;
-                        const moveX = (dx / dist2) * speed;
-                        const moveY = (dy / dist2) * speed;
-                        moveWithCollision(this, moveX, moveY, this.size);
-                        moved = true;
-                    }
-                }
-            }
-            
-            takeDamage(damage) {
-                if (!this.alive) return;
-                this.hp -= damage;
-                if (this.hp <= 0) {
-                    this.die();
-                }
-            }
-            
-            die() {
-                if (!this.alive) return;
-                this.alive = false;
-                zombieCount--;
-                zombieCountSpan.textContent = zombieCount;
-                
-                setTimeout(() => {
-                    // Respawn após 5 segundos
-                    setTimeout(() => {
-                        if (zombieCount < CONFIG.ZOMBIE_LIMIT) {
-                            const spawn = zombieSpawnPoints[Math.floor(Math.random() * zombieSpawnPoints.length)];
-                            if (spawn) {
-                                new Zombie2D(spawn);
-                            }
-                        }
-                    }, CONFIG.ZOMBIE_RESPAWN_TIME * 1000 / 60);
-                }, 500);
-            }
-        }
-
-        // ============================================================
-        // 12. JOGADOR - DANO E MORTE
-        // ============================================================
-        function playerTakeDamage(damage) {
-            if (!player.isAlive) return;
-            player.hp = Math.max(0, player.hp - damage);
-            hpSpan.textContent = player.hp;
-            
-            if (player.hp <= 0) {
-                player.isAlive = false;
-                statusText.textContent = '💀 MORTO';
-                statusText.style.color = '#ff0000';
-            }
-        }
-
-        // ============================================================
-        // 13. TIRO
-        // ============================================================
-        let isFiring = false;
-        let fireCounter = 0;
-
-        function handleShooting() {
-            if (!player.isAlive) return;
-            
-            if (isFiring) {
-                fireCounter++;
-                if (fireCounter >= 60 / CONFIG.FIRE_RATE) {
-                    fireCounter = 0;
-                    createBullet();
-                }
-            } else {
-                fireCounter = 0;
-            }
-        }
-
-        // ============================================================
-        // 14. CONTROLES
-        // ============================================================
-        const keys = { w: false, a: false, s: false, d: false, space: false, c: false };
-
-        // Mouse move
-        canvas.addEventListener('mousemove', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const scaleX2 = canvas.width / rect.width;
-            const scaleY2 = canvas.height / rect.height;
-            mouseX = (e.clientX - rect.left) * scaleX2;
-            mouseY = (e.clientY - rect.top) * scaleY2;
-            
-            // Atualiza ângulo do jogador
-            if (player.isAlive) {
-                player.angle = Math.atan2(mouseY - player.y, mouseX - player.x);
-            }
+        document.addEventListener('mousemove', (e) => {
+            if (document.pointerLockElement !== renderer.domElement) return;
+            const sens = 0.002;
+            player.yaw -= e.movementX * sens;
+            player.pitch -= e.movementY * sens;
+            player.pitch = Math.max(-1.2, Math.min(1.2, player.pitch));
         });
 
-        // Clique para travar o mouse (e atirar)
-        canvas.addEventListener('mousedown', (e) => {
-            if (e.button === 0) {
-                e.preventDefault();
-                if (document.pointerLockElement !== canvas) {
-                    canvas.requestPointerLock();
-                }
-                if (player.isAlive) {
-                    isFiring = true;
-                }
-            }
-        });
+        blocker.addEventListener('click', () => renderer.domElement.requestPointerLock());
 
-        canvas.addEventListener('mouseup', (e) => {
-            if (e.button === 0) {
-                isFiring = false;
-            }
-        });
-
-        canvas.addEventListener('mouseleave', () => {
-            isFiring = false;
-        });
-
-        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-
-        // Pointer lock
         document.addEventListener('pointerlockchange', () => {
-            if (document.pointerLockElement === canvas) {
+            if (document.pointerLockElement === renderer.domElement) {
                 blocker.classList.add('hidden');
             } else {
                 blocker.classList.remove('hidden');
-                isFiring = false;
             }
         });
 
-        // Teclado
         document.addEventListener('keydown', (e) => {
             switch (e.code) {
                 case 'KeyW': keys.w = true; e.preventDefault(); break;
@@ -699,7 +776,7 @@
                 case 'KeyS': keys.s = true; e.preventDefault(); break;
                 case 'KeyD': keys.d = true; e.preventDefault(); break;
                 case 'Space': keys.space = true; e.preventDefault(); break;
-                case 'KeyC': keys.c = true; e.preventDefault(); break;
+                case 'ShiftLeft': keys.shift = true; e.preventDefault(); break;
             }
         });
         document.addEventListener('keyup', (e) => {
@@ -709,327 +786,166 @@
                 case 'KeyS': keys.s = false; e.preventDefault(); break;
                 case 'KeyD': keys.d = false; e.preventDefault(); break;
                 case 'Space': keys.space = false; e.preventDefault(); break;
-                case 'KeyC': keys.c = false; e.preventDefault(); break;
+                case 'ShiftLeft': keys.shift = false; e.preventDefault(); break;
             }
         });
 
         // ============================================================
-        // 15. MOVIMENTO DO JOGADOR
+        // 12. MOVIMENTO DO JOGADOR
         // ============================================================
-        function updatePlayer() {
-            if (!player.isAlive) return;
-            
-            // Agachamento
-            const targetHeight = keys.c ? player.crouchHeight : CONFIG.PLAYER_SIZE;
-            player.height += (targetHeight - player.height) * 0.1;
-            player.isCrouching = keys.c;
-            
-            // Pulo (em 2D, pulo é visual - sobe e desce)
-            if (keys.space && player.isGrounded && !player.isCrouching) {
-                player.vy = -CONFIG.JUMP_FORCE;
+        function updatePlayer(delta) {
+            // Sprint
+            player.isSprinting = keys.shift && keys.w;
+            const speed = player.isSprinting ? CONFIG.PLAYER_SPEED * player.sprintMultiplier : CONFIG.PLAYER_SPEED;
+
+            // Pulo
+            if (keys.space && player.isGrounded) {
+                player.velocity.y = CONFIG.JUMP_FORCE;
                 player.isGrounded = false;
             }
-            
+
             // Gravidade
-            player.vy += CONFIG.GRAVITY;
-            const moveY = player.vy;
-            if (!isWallRect(player.x - player.size/2, player.y + moveY - player.size/2, player.size, player.size)) {
-                player.y += moveY;
-            } else {
-                player.vy = 0;
-                player.isGrounded = true;
-            }
-            
-            // Chão
-            if (player.y + player.size/2 > MAP_HEIGHT) {
-                player.y = MAP_HEIGHT - player.size/2;
-                player.vy = 0;
-                player.isGrounded = true;
-            }
+            player.velocity.y += CONFIG.GRAVITY * delta;
             
             // Movimento horizontal
-            let dx = 0, dy = 0;
-            const speed = player.isCrouching ? player.speed * 0.5 : player.speed;
-            if (keys.w) dy = -speed;
-            if (keys.s) dy = speed;
-            if (keys.a) dx = -speed;
-            if (keys.d) dx = speed;
-            
-            // Normaliza diagonal
-            if (dx !== 0 && dy !== 0) {
-                dx *= 0.707;
-                dy *= 0.707;
+            const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            forward.y = 0;
+            forward.normalize();
+
+            const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+            right.y = 0;
+            right.normalize();
+
+            const moveInput = new THREE.Vector3(0, 0, 0);
+            if (keys.w) moveInput.add(forward);
+            if (keys.s) moveInput.sub(forward);
+            if (keys.d) moveInput.add(right);
+            if (keys.a) moveInput.sub(right);
+
+            if (moveInput.lengthSq() > 0) {
+                moveInput.normalize().multiplyScalar(speed * delta);
             }
-            
-            moveWithCollision(player, dx, dy, player.size);
-            
-            // Limites do mapa
-            player.x = Math.max(player.size/2, Math.min(MAP_WIDTH - player.size/2, player.x));
-            player.y = Math.max(player.size/2, Math.min(MAP_HEIGHT - player.size/2, player.y));
-            
-            // Atualiza ângulo com o mouse (se o mouse não estiver dentro, mantém o último)
-            const dxMouse = mouseX - player.x;
-            const dyMouse = mouseY - player.y;
-            if (Math.abs(dxMouse) > 1 || Math.abs(dyMouse) > 1) {
-                player.angle = Math.atan2(dyMouse, dxMouse);
+
+            // Aplica movimento
+            player.position.x += moveInput.x;
+            player.position.z += moveInput.z;
+            player.position.y += player.velocity.y * delta;
+
+            // Chão (simplificado - sem colisão com estruturas, apenas mantém no chão)
+            if (player.position.y <= CONFIG.PLAYER_HEIGHT) {
+                player.position.y = CONFIG.PLAYER_HEIGHT;
+                player.velocity.y = 0;
+                player.isGrounded = true;
             }
+
+            // Atualiza câmera
+            camera.position.copy(player.position);
+            camera.rotation.order = 'YXZ';
+            camera.rotation.y = player.yaw;
+            camera.rotation.x = player.pitch;
+
+            // Atualiza chunks
+            updateChunks(player.position.x, player.position.z);
+
+            // Atualiza HUD
+            playerPosSpan.textContent = `${Math.round(player.position.x)}, ${Math.round(player.position.z)}`;
         }
 
         // ============================================================
-        // 16. DESENHO 2D
+        // 13. MINIMAPA (simplificado)
         // ============================================================
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const minimapCanvas = document.getElementById('minimapCanvas');
+        const minimapCtx = minimapCanvas.getContext('2d');
+        minimapCanvas.width = 120;
+        minimapCanvas.height = 120;
+
+        function updateMinimap() {
+            minimapCtx.fillStyle = 'rgba(0,0,0,0.3)';
+            minimapCtx.fillRect(0, 0, 120, 120);
             
-            // Aplica scale
-            ctx.save();
-            ctx.scale(scale, scale);
+            const scale = 0.5;
+            const cx = 60;
+            const cy = 60;
             
-            // --- Chão ---
-            for (let r = 0; r < ROWS; r++) {
-                for (let c = 0; c < COLS; c++) {
-                    const tile = MAP[r][c];
-                    if (tile !== '1') {
-                        const isAlt = (r + c) % 2 === 0;
-                        ctx.fillStyle = isAlt ? '#3a3a4a' : '#44445a';
-                        ctx.fillRect(c * TILE, r * TILE, TILE, TILE);
-                    }
+            // Desenha chunks próximos
+            for (const [key] of chunkMeshes) {
+                const { cx: chunkX, cz: chunkZ } = getChunkCoord(key);
+                const px = cx + (chunkX * CONFIG.CHUNK_SIZE - player.position.x) * scale;
+                const py = cy + (chunkZ * CONFIG.CHUNK_SIZE - player.position.z) * scale;
+                if (px > 0 && px < 120 && py > 0 && py < 120) {
+                    minimapCtx.fillStyle = 'rgba(255,255,255,0.05)';
+                    minimapCtx.fillRect(px - 2, py - 2, 4, 4);
                 }
             }
             
-            // --- Paredes ---
-            for (const wall of walls) {
-                ctx.fillStyle = '#4a5a6a';
-                ctx.shadowColor = 'rgba(0,0,0,0.3)';
-                ctx.shadowBlur = 4;
-                ctx.fillRect(wall.x - TILE/2, wall.y - TILE/2, TILE, TILE);
-                ctx.shadowBlur = 0;
-                // Borda
-                ctx.strokeStyle = '#3a4a5a';
-                ctx.lineWidth = 1;
-                ctx.strokeRect(wall.x - TILE/2, wall.y - TILE/2, TILE, TILE);
-            }
+            // Jogador
+            minimapCtx.fillStyle = '#88ccff';
+            minimapCtx.beginPath();
+            minimapCtx.arc(cx, cy, 3, 0, Math.PI * 2);
+            minimapCtx.fill();
             
-            // --- Marcadores de spawn ---
-            // Player spawn (4)
-            ctx.fillStyle = 'rgba(0,255,136,0.15)';
-            ctx.beginPath();
-            ctx.arc(playerSpawnPoint.x, playerSpawnPoint.y, TILE/2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = 'rgba(0,255,136,0.3)';
-            ctx.lineWidth = 1;
-            ctx.setLineDash([4, 4]);
-            ctx.beginPath();
-            ctx.arc(playerSpawnPoint.x, playerSpawnPoint.y, TILE/2, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.setLineDash([]);
-            
-            // Zombie spawns (3)
-            for (const spawn of zombieSpawnPoints) {
-                ctx.fillStyle = 'rgba(255,68,68,0.15)';
-                ctx.beginPath();
-                ctx.arc(spawn.x, spawn.y, TILE/2, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.strokeStyle = 'rgba(255,68,68,0.3)';
-                ctx.lineWidth = 1;
-                ctx.setLineDash([4, 4]);
-                ctx.beginPath();
-                ctx.arc(spawn.x, spawn.y, TILE/2, 0, Math.PI * 2);
-                ctx.stroke();
-                ctx.setLineDash([]);
-            }
-            
-            // --- Projéteis ---
-            for (const b of bullets) {
-                if (!b.alive) continue;
-                // Brilho
-                const grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.size * 3);
-                grad.addColorStop(0, 'rgba(255,220,68,1)');
-                grad.addColorStop(0.3, 'rgba(255,180,0,0.8)');
-                grad.addColorStop(1, 'rgba(255,100,0,0)');
-                ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.arc(b.x, b.y, b.size * 3, 0, Math.PI * 2);
-                ctx.fill();
-                // Núcleo
-                ctx.fillStyle = '#ffdd44';
-                ctx.shadowColor = '#ff8800';
-                ctx.shadowBlur = 10;
-                ctx.beginPath();
-                ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.shadowBlur = 0;
-            }
-            
-            // --- Zumbis ---
-            for (const zombie of zombies) {
-                if (!zombie.alive) continue;
-                const z = zombie;
-                // Corpo
-                ctx.fillStyle = '#2d5a27';
-                ctx.shadowColor = 'rgba(0,0,0,0.5)';
-                ctx.shadowBlur = 6;
-                ctx.beginPath();
-                ctx.arc(z.x, z.y, z.size/2, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.shadowBlur = 0;
-                // Olhos
-                const eyeOff = z.size * 0.25;
-                const eyeAngle = Math.atan2(player.y - z.y, player.x - z.x);
-                ctx.fillStyle = '#ff0000';
-                ctx.beginPath();
-                ctx.arc(z.x + Math.cos(eyeAngle - 0.4) * eyeOff, z.y + Math.sin(eyeAngle - 0.4) * eyeOff, 3, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(z.x + Math.cos(eyeAngle + 0.4) * eyeOff, z.y + Math.sin(eyeAngle + 0.4) * eyeOff, 3, 0, Math.PI * 2);
-                ctx.fill();
-                // HP bar
-                const hpWidth = z.size;
-                const hpHeight = 3;
-                const hpX = z.x - hpWidth/2;
-                const hpY = z.y - z.size/2 - 6;
-                ctx.fillStyle = 'rgba(0,0,0,0.5)';
-                ctx.fillRect(hpX, hpY, hpWidth, hpHeight);
-                ctx.fillStyle = z.hp > 50 ? '#4ecdc4' : '#ff6b6b';
-                ctx.fillRect(hpX, hpY, hpWidth * (z.hp / CONFIG.ZOMBIE_MAX_HP), hpHeight);
-            }
-            
-            // --- Jogador ---
-            if (player.isAlive) {
-                const p = player;
-                // Corpo
-                ctx.shadowColor = 'rgba(0,0,0,0.5)';
-                ctx.shadowBlur = 8;
-                ctx.fillStyle = '#4a8af4';
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size/2, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.shadowBlur = 0;
-                // Seta de direção (mira)
-                const aimLen = p.size * 0.7;
-                ctx.strokeStyle = '#ffdd44';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(p.x, p.y);
-                ctx.lineTo(p.x + Math.cos(p.angle) * aimLen, p.y + Math.sin(p.angle) * aimLen);
-                ctx.stroke();
-                // Olhos
-                const eyeOff2 = p.size * 0.2;
-                ctx.fillStyle = '#ffffff';
-                ctx.beginPath();
-                ctx.arc(p.x + Math.cos(p.angle - 0.3) * eyeOff2, p.y + Math.sin(p.angle - 0.3) * eyeOff2, 3, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(p.x + Math.cos(p.angle + 0.3) * eyeOff2, p.y + Math.sin(p.angle + 0.3) * eyeOff2, 3, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#222';
-                ctx.beginPath();
-                ctx.arc(p.x + Math.cos(p.angle - 0.3) * eyeOff2 + Math.cos(p.angle) * 1.5, 
-                        p.y + Math.sin(p.angle - 0.3) * eyeOff2 + Math.sin(p.angle) * 1.5, 1.5, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(p.x + Math.cos(p.angle + 0.3) * eyeOff2 + Math.cos(p.angle) * 1.5, 
-                        p.y + Math.sin(p.angle + 0.3) * eyeOff2 + Math.sin(p.angle) * 1.5, 1.5, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Arma (metralhadora)
-                const gunLen = p.size * 0.8;
-                const gunX = p.x + Math.cos(p.angle) * (p.size/2);
-                const gunY = p.y + Math.sin(p.angle) * (p.size/2);
-                ctx.strokeStyle = '#444';
-                ctx.lineWidth = 4;
-                ctx.beginPath();
-                ctx.moveTo(gunX, gunY);
-                ctx.lineTo(gunX + Math.cos(p.angle) * gunLen, gunY + Math.sin(p.angle) * gunLen);
-                ctx.stroke();
-                // Detalhe do cano
-                ctx.strokeStyle = '#666';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(gunX + Math.cos(p.angle) * gunLen * 0.7, gunY + Math.sin(p.angle) * gunLen * 0.7);
-                ctx.lineTo(gunX + Math.cos(p.angle) * gunLen, gunY + Math.sin(p.angle) * gunLen);
-                ctx.stroke();
-                
-                // HP bar do player
-                const hpWidth2 = p.size * 1.2;
-                const hpHeight2 = 4;
-                const hpX2 = p.x - hpWidth2/2;
-                const hpY2 = p.y + p.size/2 + 6;
-                ctx.fillStyle = 'rgba(0,0,0,0.5)';
-                ctx.fillRect(hpX2, hpY2, hpWidth2, hpHeight2);
-                ctx.fillStyle = player.hp > 50 ? '#4ecdc4' : '#ff6b6b';
-                ctx.fillRect(hpX2, hpY2, hpWidth2 * (player.hp / CONFIG.PLAYER_MAX_HP), hpHeight2);
-            }
-            
-            ctx.restore();
+            // Direção do jogador
+            minimapCtx.strokeStyle = '#88ccff';
+            minimapCtx.lineWidth = 1;
+            minimapCtx.beginPath();
+            minimapCtx.moveTo(cx, cy);
+            minimapCtx.lineTo(
+                cx + Math.sin(-player.yaw) * 10,
+                cy + Math.cos(-player.yaw) * 10
+            );
+            minimapCtx.stroke();
         }
 
         // ============================================================
-        // 17. SPAWN INICIAL DOS ZUMBIS
+        // 14. FPS
         // ============================================================
-        function spawnInitialZombies() {
-            const count = Math.min(CONFIG.ZOMBIE_LIMIT, zombieSpawnPoints.length);
-            for (let i = 0; i < count; i++) {
-                const spawn = zombieSpawnPoints[i % zombieSpawnPoints.length];
-                setTimeout(() => {
-                    new Zombie2D(spawn);
-                }, i * 200);
+        let frameCount = 0;
+        let fpsTime = 0;
+        let currentFPS = 60;
+
+        // ============================================================
+        // 15. LOOP PRINCIPAL
+        // ============================================================
+        // Gera chunks iniciais
+        updateChunks(0, 0);
+
+        let lastTime = 0;
+
+        function animate(time) {
+            const delta = Math.min((time - lastTime) / 1000, 0.05);
+            lastTime = time;
+
+            // FPS
+            frameCount++;
+            if (time - fpsTime > 1000) {
+                currentFPS = frameCount;
+                frameCount = 0;
+                fpsTime = time;
+                fpsSpan.textContent = currentFPS;
             }
+
+            updatePlayer(delta);
+            updateMinimap();
+
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
         }
+
+        animate(0);
 
         // ============================================================
-        // 18. LOOP PRINCIPAL
+        // 16. REDIMENSIONAR
         // ============================================================
-        buildMapData();
-        
-        // Posiciona o jogador no spawn
-        if (playerSpawnPoint.x !== 0 || playerSpawnPoint.y !== 0) {
-            player.x = playerSpawnPoint.x;
-            player.y = playerSpawnPoint.y;
-        }
-        
-        spawnInitialZombies();
-
-        function gameLoop() {
-            // Atualiza
-            updatePlayer();
-            updateBullets();
-            handleShooting();
-            
-            // Atualiza zumbis
-            for (const zombie of zombies) {
-                if (zombie.alive) {
-                    zombie.update();
-                }
-            }
-            zombies = zombies.filter(z => z.alive);
-            
-            // Desenha
-            draw();
-            
-            requestAnimationFrame(gameLoop);
-        }
-
-        gameLoop();
-
-        // Redimensionar
         window.addEventListener('resize', () => {
-            const maxW = window.innerWidth - 20;
-            const maxH = window.innerHeight - 20;
-            const sX = maxW / MAP_WIDTH;
-            const sY = maxH / MAP_HEIGHT;
-            const newScale = Math.min(sX, sY, 1.2);
-            canvas.width = MAP_WIDTH * newScale;
-            canvas.height = MAP_HEIGHT * newScale;
-            canvas.style.width = canvas.width + 'px';
-            canvas.style.height = canvas.height + 'px';
-            // Atualiza a referência da escala
-            window.scale = newScale;
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        console.log('🧟 Jogo 2D carregado!');
-        console.log('✅ Todas as mecânicas foram mantidas');
-        console.log('📋 Mapa:', MAP.join('\n'));
+        console.log('🏭 Mundo Industrial Infinito carregado!');
+        console.log('📋 Chunks: geração procedural com A*');
+        console.log('🔄 Regiões mutáveis (mudam ao revisitar)');
+        console.log('⬆️ Verticalidade: plataformas e escadas');
     </script>
 </body>
 </html>
