@@ -118,6 +118,13 @@
     display:flex;align-items:center;justify-content:center;touch-action:none;
   }
   #btnRun.active{background:var(--accent);border-color:var(--accent);color:#111;}
+  #btnFly{
+    position:absolute;right:26px;top:22px;width:70px;height:70px;border-radius:50%;
+    background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.25);
+    color:var(--gray-100);font-family:var(--font-ui);font-size:11px;letter-spacing:1px;
+    display:flex;align-items:center;justify-content:center;touch-action:none;
+  }
+  #btnFly.active{background:#3a86c8;border-color:#3a86c8;color:#0c0d0f;}
   #camLookZone{position:absolute;inset:0;touch-action:none;}
 </style>
 </head>
@@ -146,13 +153,14 @@
   <div><span class="lbl">Posi&ccedil;&atilde;o:</span> <span id="hudPos">0.0, 0.0, 0.0</span></div>
 </div>
 <div id="crosshair"></div>
-<div id="pcHint">WASD mover &middot; ESPA&Ccedil;O pular &middot; Q correr &middot; MOUSE olhar (clique para travar o cursor)</div>
+<div id="pcHint">WASD mover &middot; ESPA&Ccedil;O pular/subir &middot; Q correr &middot; E voar &middot; MOUSE olhar (clique para travar o cursor)</div>
 
 <div id="mobileControls">
   <div id="camLookZone"></div>
   <div id="joystickZone"><div id="joystickKnob"></div></div>
   <div id="btnJump">PULAR</div>
   <div id="btnRun">CORRER</div>
+  <div id="btnFly">VOAR</div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -180,6 +188,7 @@ const WALK_SPEED   = 4.2;
 const RUN_MULT     = 5;
 const GRAVITY      = -24;
 const JUMP_SPEED   = 8.2;
+const FLY_SPEED    = WALK_SPEED * RUN_MULT * 3; // 3x mais rápido que a corrida
 
 /* ---------------- THREE SETUP ---------------- */
 const canvas = document.getElementById('renderCanvas');
@@ -568,9 +577,65 @@ let velocityY = 0;
 let grounded = true;
 let running = false;
 let wantsJump = false;
+let flying = false;
 
 const raycaster = new THREE.Raycaster();
 const _fwd = new THREE.Vector3(), _right = new THREE.Vector3();
+const _flyDir = new THREE.Vector3(), _flyEuler = new THREE.Euler();
+const _moveVec = new THREE.Vector3(), _originVec = new THREE.Vector3();
+
+function setFlying(value){
+  flying = value;
+  if(flying){ velocityY = 0; grounded = false; }
+  else { velocityY = 0; } // recomeça a cair naturalmente a partir de v=0, sem "tranco"
+  updateFlyUI();
+}
+
+/* Modo de câmera livre: voa para qualquer direção para onde o jogador está
+   olhando (inclui o pitch), mas continua respeitando colisão via raycast. */
+function updateFlight(dt, inForward, inStrafe, ascend, descend){
+  _flyEuler.set(pitch, yaw, 0, 'YXZ');
+  _flyDir.set(0,0,-1).applyEuler(_flyEuler); // direção 3D completa do olhar
+  _right.set(Math.cos(yaw), 0, -Math.sin(yaw)); // strafe permanece horizontal
+
+  let mx = _flyDir.x*inForward + _right.x*inStrafe;
+  let my = _flyDir.y*inForward;
+  let mz = _flyDir.z*inForward + _right.z*inStrafe;
+  if(ascend) my += 1;
+  if(descend) my -= 1;
+
+  const len = Math.hypot(mx,my,mz);
+  if(len > 1e-6){ mx/=len; my/=len; mz/=len; } else { mx=0; my=0; mz=0; }
+
+  let dx = mx*FLY_SPEED*dt, dy = my*FLY_SPEED*dt, dz = mz*FLY_SPEED*dt;
+  const moveDist = Math.hypot(dx,dy,dz);
+
+  if(moveDist > 1e-6){
+    _moveVec.set(dx,dy,dz).normalize();
+    _originVec.copy(player.position);
+    raycaster.set(_originVec, _moveVec);
+    raycaster.far = PLAYER_RADIUS + moveDist + 0.05;
+    const hits = raycaster.intersectObjects(chunkGroup.children, false);
+    if(hits.length>0){
+      const allowed = Math.max(0, hits[0].distance - PLAYER_RADIUS - 0.02);
+      if(allowed < moveDist){
+        const scale = moveDist>0 ? allowed/moveDist : 0;
+        dx*=scale; dy*=scale; dz*=scale;
+      }
+    }
+  }
+
+  player.position.x += dx;
+  player.position.y += dy;
+  player.position.z += dz;
+
+  if(player.position.y < -80){ // segurança: nunca perder o jogador
+    player.position.set(0, EYE_HEIGHT+2, 0);
+  }
+
+  camera.position.copy(player.position);
+  camera.rotation.set(pitch, yaw, 0, 'YXZ');
+}
 
 function updatePhysics(dt, inForward, inStrafe){
   const speed = WALK_SPEED * (running ? RUN_MULT : 1);
@@ -646,8 +711,9 @@ let pointerLocked = false;
 
 window.addEventListener('keydown', (e)=>{
   keys[e.code] = true;
-  if(e.code==='Space'){ wantsJump = true; e.preventDefault(); }
+  if(e.code==='Space'){ if(!flying) wantsJump = true; e.preventDefault(); }
   if(e.code==='KeyQ'){ running = true; }
+  if(e.code==='KeyE' && !e.repeat){ setFlying(!flying); }
 });
 window.addEventListener('keyup', (e)=>{
   keys[e.code] = false;
@@ -682,6 +748,8 @@ const joystickKnob = document.getElementById('joystickKnob');
 const camLookZone = document.getElementById('camLookZone');
 const btnJump = document.getElementById('btnJump');
 const btnRun = document.getElementById('btnRun');
+const btnFly = document.getElementById('btnFly');
+let flyUpHeld = false, flyDownHeld = false;
 
 let joyActive = false, joyId = null, joyVec = {x:0,y:0};
 let lookId = null, lookLast = {x:0,y:0};
@@ -745,15 +813,44 @@ function endLook(e){
 camLookZone.addEventListener('touchend', endLook);
 camLookZone.addEventListener('touchcancel', endLook);
 
-btnJump.addEventListener('touchstart', (e)=>{ e.preventDefault(); wantsJump=true; }, {passive:false});
+// PULAR/CORRER viram SUBIR/DESCER (segurar) enquanto o modo voo estiver ativo
+btnJump.addEventListener('touchstart', (e)=>{
+  e.preventDefault();
+  if(flying){ flyUpHeld = true; } else { wantsJump = true; }
+}, {passive:false});
+btnJump.addEventListener('touchend', (e)=>{ e.preventDefault(); flyUpHeld = false; }, {passive:false});
+btnJump.addEventListener('touchcancel', (e)=>{ flyUpHeld = false; });
+
 btnRun.addEventListener('touchstart', (e)=>{
   e.preventDefault();
-  running = !running;
-  btnRun.classList.toggle('active', running);
+  if(flying){ flyDownHeld = true; }
+  else { running = !running; btnRun.classList.toggle('active', running); }
+}, {passive:false});
+btnRun.addEventListener('touchend', (e)=>{ e.preventDefault(); if(flying) flyDownHeld = false; }, {passive:false});
+btnRun.addEventListener('touchcancel', (e)=>{ flyDownHeld = false; });
+
+btnFly.addEventListener('touchstart', (e)=>{
+  e.preventDefault();
+  setFlying(!flying);
 }, {passive:false});
 
 function mobileInputVector(){
   return { f: -joyVec.y, s: joyVec.x };
+}
+
+function updateFlyUI(){
+  if(btnFly) btnFly.classList.toggle('active', flying);
+  if(btnJump) btnJump.textContent = flying ? 'SUBIR' : 'PULAR';
+  if(btnRun){
+    btnRun.textContent = flying ? 'DESCER' : 'CORRER';
+    if(flying) btnRun.classList.remove('active');
+    else btnRun.classList.toggle('active', running);
+  }
+  if(pcHint){
+    pcHint.textContent = flying
+      ? 'WASD mover · ESPAÇO subir · SHIFT descer · E parar de voar · MOUSE olhar'
+      : 'WASD mover · ESPAÇO pular · Q correr · E voar · MOUSE olhar (clique para travar o cursor)';
+  }
 }
 
 /* ---------------- START / LOADING FLOW ---------------- */
@@ -846,7 +943,13 @@ function animate(){
   }
 
   const inVec = mode==='pc' ? pcInputVector() : mobileInputVector();
-  updatePhysics(dt, inVec.f, inVec.s);
+  if(flying){
+    const ascend = mode==='pc' ? !!keys['Space'] : flyUpHeld;
+    const descend = mode==='pc' ? !!(keys['ShiftLeft']||keys['ShiftRight']||keys['ControlLeft']) : flyDownHeld;
+    updateFlight(dt, inVec.f, inVec.s, ascend, descend);
+  } else {
+    updatePhysics(dt, inVec.f, inVec.s);
+  }
 
   _fwd.set(-Math.sin(yaw),0,-Math.cos(yaw));
   updateStreaming(player.position.x, player.position.z, _fwd.x, _fwd.z, 2);
