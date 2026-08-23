@@ -3,41 +3,41 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Arena de Tiro 3D</title>
+    <title>Arena de Tiro 3D - Atualizado</title>
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            font-family: Arial, Helvetica, sans-serif;
-        }
-        #info {
+        * { margin: 0; padding: 0; }
+        body { overflow: hidden; background: #000; font-family: Arial, sans-serif; }
+        #hud {
             position: absolute;
             top: 20px;
             left: 20px;
             color: white;
-            font-size: 28px;
+            font-size: 22px;
             font-weight: bold;
-            text-shadow: 0 0 10px black;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 8px 18px;
+            text-shadow: 0 0 10px rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.6);
+            padding: 12px 20px;
             border-radius: 8px;
             pointer-events: none;
             user-select: none;
             z-index: 10;
+            min-width: 180px;
+            line-height: 1.6;
         }
+        #hud .hp { color: #ff6b6b; }
+        #hud .status { color: #ffd93d; font-size: 18px; }
         #crosshair {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: white;
-            font-size: 40px;
+            color: rgba(255,255,255,0.9);
+            font-size: 36px;
             font-weight: bold;
-            text-shadow: 0 0 5px black;
+            text-shadow: 0 0 8px rgba(0,0,0,0.9);
             pointer-events: none;
             user-select: none;
             z-index: 10;
-            opacity: 0.8;
         }
         #blocker {
             position: absolute;
@@ -45,42 +45,57 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.4);
+            background: rgba(0,0,0,0.6);
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 20;
             cursor: pointer;
             color: white;
-            font-size: 32px;
+            font-size: 28px;
             font-weight: bold;
-            text-shadow: 0 0 20px black;
             flex-direction: column;
+            text-shadow: 0 0 20px black;
         }
         #blocker small {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: normal;
-            margin-top: 10px;
+            margin-top: 12px;
             opacity: 0.8;
         }
-        #blocker.hidden {
-            display: none;
+        #blocker.hidden { display: none; }
+        #debug {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: #aaa;
+            font-size: 12px;
+            font-family: monospace;
+            background: rgba(0,0,0,0.5);
+            padding: 4px 10px;
+            border-radius: 4px;
+            pointer-events: none;
+            z-index: 10;
         }
     </style>
 </head>
 <body>
 
-    <!-- HUD -->
-    <div id="info">DANO: <span id="damageValue">0</span></div>
-    <div id="crosshair">+</div>
-
-    <!-- Bloqueio para ativar o mouse -->
-    <div id="blocker">
-        🎯 Clique para Jogar
-        <small>WASD para andar · Mouse para mirar · Segurar esquerdo para atirar</small>
+    <div id="hud">
+        <div>🎯 ALVO</div>
+        <div class="hp">❤️ HP: <span id="hpValue">100</span></div>
+        <div class="status" id="statusText">🔴 VIVO</div>
     </div>
 
-    <!-- Three.js via CDN -->
+    <div id="crosshair">+</div>
+
+    <div id="blocker">
+        🎯 Clique para Jogar
+        <small>WASD · Mouse · ESPAÇO(pular) · C(agachar) · Segurar esquerdo(atirar)</small>
+    </div>
+
+    <div id="debug">Projéteis: <span id="bulletCount">0</span></div>
+
     <script type="importmap">
         {
             "imports": {
@@ -92,239 +107,469 @@
     <script type="module">
         import * as THREE from 'three';
 
-        // --- CONFIGURAÇÕES ---
+        // --- CONFIG ---
         const ARENA_SIZE = 20;
         const WALL_HEIGHT = 3;
         const WALL_THICK = 0.5;
         const PLAYER_SPEED = 6;
-        const FIRE_RATE = 0.12; // segundos entre tiros
-        const DAMAGE_PER_HIT = 1;
+        const JUMP_FORCE = 6;
+        const GRAVITY = -18;
+        const FIRE_RATE = 0.12;
+        const BULLET_SPEED = 40;
+        const BULLET_LIFETIME = 2.5;
+        const DAMAGE_PER_BULLET = 10;
+        const TARGET_MAX_HP = 100;
+        const DEATH_DELAY = 5; // segundos até corpo sumir
+        const RESPAWN_DELAY = 25; // segundos até nascer novo
 
-        // --- ELEMENTOS DOM ---
+        // --- DOM ---
         const blocker = document.getElementById('blocker');
-        const damageSpan = document.getElementById('damageValue');
+        const hpSpan = document.getElementById('hpValue');
+        const statusText = document.getElementById('statusText');
+        const bulletCountSpan = document.getElementById('bulletCount');
 
-        // --- CENA, CÂMERA, RENDER ---
+        // --- CENA ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x88ccff); // céu claro
+        scene.background = new THREE.Color(0x88ccff);
+        scene.fog = new THREE.Fog(0x88ccff, 30, 50);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 1.7, -6); // altura dos olhos
+        camera.position.set(0, 1.7, -6);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true; // sombras legais
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
 
-        // --- LUZ ---
-        const ambientLight = new THREE.AmbientLight(0x404060);
-        scene.add(ambientLight);
+        // --- LUZES ---
+        const ambient = new THREE.AmbientLight(0x404060, 0.6);
+        scene.add(ambient);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
-        dirLight.position.set(10, 20, 10);
-        dirLight.castShadow = true;
-        scene.add(dirLight);
+        const sun = new THREE.DirectionalLight(0xffeedd, 1.8);
+        sun.position.set(15, 25, 10);
+        sun.castShadow = true;
+        sun.shadow.mapSize.width = 1024;
+        sun.shadow.mapSize.height = 1024;
+        sun.shadow.camera.near = 0.5;
+        sun.shadow.camera.far = 50;
+        sun.shadow.camera.left = -15;
+        sun.shadow.camera.right = 15;
+        sun.shadow.camera.top = 15;
+        sun.shadow.camera.bottom = -15;
+        scene.add(sun);
 
-        const fillLight = new THREE.DirectionalLight(0xccddff, 0.5);
-        fillLight.position.set(-10, 5, -10);
-        scene.add(fillLight);
+        const fill = new THREE.DirectionalLight(0x8888ff, 0.4);
+        fill.position.set(-10, 5, -10);
+        scene.add(fill);
 
-        // --- 1. ARENA (chão + muros) ---
-
-        // Chão
-        const floorGeo = new THREE.PlaneGeometry(ARENA_SIZE, ARENA_SIZE);
-        const floorMat = new THREE.MeshStandardMaterial({ color: 0x777777, roughness: 0.8 });
-        const floor = new THREE.Mesh(floorGeo, floorMat);
+        // --- ARENA ---
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.9, metalness: 0.1 });
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(ARENA_SIZE, ARENA_SIZE), floorMat);
         floor.rotation.x = -Math.PI / 2;
         floor.position.y = 0;
         floor.receiveShadow = true;
         scene.add(floor);
 
-        // Função para criar muro com colisão (bounding box)
         function createWall(w, h, d, x, y, z, color = 0x4a6b8a) {
-            const geo = new THREE.BoxGeometry(w, h, d);
-            const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.5 });
-            const mesh = new THREE.Mesh(geo, mat);
+            const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.6 });
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
             mesh.position.set(x, y, z);
             mesh.castShadow = true;
             mesh.receiveShadow = true;
             scene.add(mesh);
-            // Guardar para colisão
-            return { min: { x: x - w / 2, z: z - d / 2 }, max: { x: x + w / 2, z: z + d / 2 } };
+            return mesh;
         }
 
-        const walls = [];
         const half = ARENA_SIZE / 2;
-        // Muro Norte (Z+)
-        walls.push(createWall(ARENA_SIZE, WALL_HEIGHT, WALL_THICK, 0, WALL_HEIGHT / 2, half));
-        // Muro Sul (Z-)
-        walls.push(createWall(ARENA_SIZE, WALL_HEIGHT, WALL_THICK, 0, WALL_HEIGHT / 2, -half));
-        // Muro Leste (X+)
-        walls.push(createWall(WALL_THICK, WALL_HEIGHT, ARENA_SIZE, half, WALL_HEIGHT / 2, 0));
-        // Muro Oeste (X-)
-        walls.push(createWall(WALL_THICK, WALL_HEIGHT, ARENA_SIZE, -half, WALL_HEIGHT / 2, 0));
+        createWall(ARENA_SIZE, WALL_HEIGHT, WALL_THICK, 0, WALL_HEIGHT / 2, half);
+        createWall(ARENA_SIZE, WALL_HEIGHT, WALL_THICK, 0, WALL_HEIGHT / 2, -half);
+        createWall(WALL_THICK, WALL_HEIGHT, ARENA_SIZE, half, WALL_HEIGHT / 2, 0);
+        createWall(WALL_THICK, WALL_HEIGHT, ARENA_SIZE, -half, WALL_HEIGHT / 2, 0);
 
-        // --- 2. BONECO-ALVO ---
-        const targetGroup = new THREE.Group();
-        targetGroup.position.set(0, 0, 0);
+        // Linhas no chão (referência)
+        const gridHelper = new THREE.GridHelper(ARENA_SIZE, 10, 0x444444, 0x444444);
+        gridHelper.position.y = 0.01;
+        scene.add(gridHelper);
 
-        // Tronco
-        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xff4444 });
-        const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.8, 0.4), bodyMat);
-        body.position.y = 0.9;
-        body.castShadow = true;
-        targetGroup.add(body);
+        // --- BONECO (alvo) ---
+        let targetGroup = new THREE.Group();
+        let targetHP = TARGET_MAX_HP;
+        let isTargetDead = false;
+        let deathTimer = null;
+        let respawnTimer = null;
+        let targetBody = null;
+        let targetHead = null;
+        let targetParts = [];
 
-        // Cabeça
-        const headMat = new THREE.MeshStandardMaterial({ color: 0xffccaa });
-        const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), headMat);
-        head.position.y = 1.5;
-        head.castShadow = true;
-        targetGroup.add(head);
+        function createTarget() {
+            // Remove o antigo se existir
+            if (targetGroup.parent) {
+                scene.remove(targetGroup);
+                // Limpa partes
+                targetParts = [];
+            }
 
-        // Braços (simples)
-        const armMat = new THREE.MeshStandardMaterial({ color: 0xffaa88 });
-        const armGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.6);
-        // Braço esquerdo
-        const armL = new THREE.Mesh(armGeo, armMat);
-        armL.position.set(-0.45, 0.95, 0);
-        armL.rotation.z = 0.2;
-        armL.castShadow = true;
-        targetGroup.add(armL);
-        // Braço direito
-        const armR = new THREE.Mesh(armGeo, armMat);
-        armR.position.set(0.45, 0.95, 0);
-        armR.rotation.z = -0.2;
-        armR.castShadow = true;
-        targetGroup.add(armR);
+            targetGroup = new THREE.Group();
+            targetGroup.position.set(0, 0, 0);
 
-        // Pernas
-        const legMat = new THREE.MeshStandardMaterial({ color: 0x224466 });
-        const legGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.5);
-        const legL = new THREE.Mesh(legGeo, legMat);
-        legL.position.set(-0.2, 0.35, 0);
-        legL.castShadow = true;
-        targetGroup.add(legL);
-        const legR = new THREE.Mesh(legGeo, legMat);
-        legR.position.set(0.2, 0.35, 0);
-        legR.castShadow = true;
-        targetGroup.add(legR);
+            // Tronco
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0xff4444, roughness: 0.7 });
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.8, 0.4), bodyMat);
+            body.position.y = 0.9;
+            body.castShadow = true;
+            targetGroup.add(body);
+            targetBody = body;
 
-        scene.add(targetGroup);
+            // Cabeça
+            const headMat = new THREE.MeshStandardMaterial({ color: 0xffccaa, roughness: 0.6 });
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 12, 12), headMat);
+            head.position.y = 1.5;
+            head.castShadow = true;
+            targetGroup.add(head);
+            targetHead = head;
 
-        // Collider do boneco (para detecção de raycast)
-        const targetCollider = new THREE.Mesh(
-            new THREE.BoxGeometry(0.8, 1.8, 0.6),
-            new THREE.MeshBasicMaterial({ visible: false, transparent: true, opacity: 0 })
-        );
-        targetCollider.position.copy(targetGroup.position);
-        targetCollider.position.y = 0.9;
-        scene.add(targetCollider);
+            // Braços
+            const armMat = new THREE.MeshStandardMaterial({ color: 0xffaa88, roughness: 0.7 });
+            const armGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.6);
+            const armL = new THREE.Mesh(armGeo, armMat);
+            armL.position.set(-0.45, 0.95, 0);
+            armL.rotation.z = 0.2;
+            armL.castShadow = true;
+            targetGroup.add(armL);
+            targetParts.push(armL);
 
-        // --- ESTADO DO JOGADOR ---
+            const armR = new THREE.Mesh(armGeo, armMat);
+            armR.position.set(0.45, 0.95, 0);
+            armR.rotation.z = -0.2;
+            armR.castShadow = true;
+            targetGroup.add(armR);
+            targetParts.push(armR);
+
+            // Pernas
+            const legMat = new THREE.MeshStandardMaterial({ color: 0x224466, roughness: 0.7 });
+            const legGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.5);
+            const legL = new THREE.Mesh(legGeo, legMat);
+            legL.position.set(-0.2, 0.35, 0);
+            legL.castShadow = true;
+            targetGroup.add(legL);
+            targetParts.push(legL);
+
+            const legR = new THREE.Mesh(legGeo, legMat);
+            legR.position.set(0.2, 0.35, 0);
+            legR.castShadow = true;
+            targetGroup.add(legR);
+            targetParts.push(legR);
+
+            // Collider (invisível para detecção)
+            const collider = new THREE.Mesh(
+                new THREE.BoxGeometry(0.7, 1.7, 0.5),
+                new THREE.MeshBasicMaterial({ visible: false })
+            );
+            collider.position.y = 0.9;
+            collider.name = 'targetCollider';
+            targetGroup.add(collider);
+
+            scene.add(targetGroup);
+
+            // Reseta estado
+            targetHP = TARGET_MAX_HP;
+            isTargetDead = false;
+            hpSpan.textContent = targetHP;
+            statusText.textContent = '🔴 VIVO';
+            statusText.style.color = '#ff6b6b';
+
+            // Remove a gravidade se tinha (para ragdoll)
+            targetGroup.children.forEach(child => {
+                if (child.userData && child.userData.isRagdoll) {
+                    targetGroup.remove(child);
+                }
+            });
+
+            // Deixa o boneco em pé
+            targetGroup.rotation.x = 0;
+            targetGroup.rotation.z = 0;
+            targetGroup.position.y = 0;
+
+            console.log('🎯 Novo alvo spawnado com 100 HP');
+        }
+
+        // Cria o primeiro alvo
+        createTarget();
+
+        // --- PLAYER ---
         const player = {
             position: new THREE.Vector3(0, 1.7, -6),
             yaw: 0,
             pitch: 0,
+            velocity: new THREE.Vector3(0, 0, 0),
+            isGrounded: false,
+            isCrouching: false,
+            height: 1.7,
+            crouchHeight: 0.9,
             speed: PLAYER_SPEED
         };
         camera.position.copy(player.position);
 
-        // Teclas pressionadas
-        const keys = { w: false, a: false, s: false, d: false };
+        // Teclas
+        const keys = { w: false, a: false, s: false, d: false, space: false, c: false };
 
-        // --- ARMA (visual) ---
+        // --- ARMA (viewmodel FPS) ---
         const gunGroup = new THREE.Group();
+
+        // Corpo da arma (estilo metralhadora)
+        const gunMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.7, roughness: 0.3 });
+        const gunBody = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.15, 0.25), gunMat);
+        gunBody.position.set(0, 0.02, 0.1);
+        gunGroup.add(gunBody);
+
         // Cano
-        const gunMat = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.6, roughness: 0.4 });
-        const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.06, 0.35), gunMat);
+        const barrelMat = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.8, roughness: 0.2 });
+        const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.035, 0.35, 8), barrelMat);
         barrel.rotation.x = Math.PI / 2;
-        barrel.position.set(0, 0, -0.2);
+        barrel.position.set(0, 0.04, -0.15);
         gunGroup.add(barrel);
-        // Corpo da arma
-        const bodyGun = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.15, 0.25), gunMat);
-        bodyGun.position.set(0, -0.02, 0.1);
-        gunGroup.add(bodyGun);
+
         // Empunhadura
-        const gripMat = new THREE.MeshStandardMaterial({ color: 0x2a1a0a });
-        const grip = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.15, 0.06), gripMat);
-        grip.position.set(0, -0.12, 0.15);
+        const gripMat = new THREE.MeshStandardMaterial({ color: 0x1a0a05, roughness: 0.9 });
+        const grip = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.14, 0.06), gripMat);
+        grip.position.set(0, -0.08, 0.15);
         gunGroup.add(grip);
 
-        gunGroup.position.set(0.3, -0.15, -0.4);
-        scene.add(gunGroup); // Vai acompanhar a câmera manualmente
+        // Carregador
+        const magMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: 0.3 });
+        const mag = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.08, 0.04), magMat);
+        mag.position.set(0, -0.05, 0.08);
+        gunGroup.add(mag);
 
-        // --- ESTADO DO TIRO ---
-        let isFiring = false;
-        let fireTimeout = null;
-        let damageCount = 0;
+        // Mira (pequeno detalhe)
+        const sightMat = new THREE.MeshStandardMaterial({ color: 0x444444 });
+        const sight = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.03, 0.01), sightMat);
+        sight.position.set(0, 0.1, 0.18);
+        gunGroup.add(sight);
 
-        // Raycaster
-        const raycaster = new THREE.Raycaster();
+        // Posição fixa no canto inferior direito (estilo Half-Life)
+        gunGroup.position.set(0.35, -0.2, -0.45);
+        gunGroup.scale.set(1, 1, 1);
+        scene.add(gunGroup);
 
-        // --- FUNÇÃO DE TIRO ---
-        function shoot() {
-            if (!isFiring) return;
+        // --- PROJÉTEIS ---
+        const bullets = [];
+        let bulletCount = 0;
 
-            // Raycast do centro da câmera
-            raycaster.setFromCamera({ x: 0, y: 0 }, camera);
-            const intersects = raycaster.intersectObject(targetCollider);
+        function createBullet(origin, direction) {
+            const bulletMat = new THREE.MeshStandardMaterial({
+                color: 0xffdd44,
+                emissive: 0xff8800,
+                emissiveIntensity: 0.3,
+                metalness: 0.5,
+                roughness: 0.2
+            });
+            const bullet = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6), bulletMat);
+            bullet.position.copy(origin);
+            bullet.castShadow = true;
+            scene.add(bullet);
 
-            if (intersects.length > 0) {
-                // Acertou o boneco!
-                damageCount += DAMAGE_PER_HIT;
-                damageSpan.textContent = damageCount;
+            // Trail (rastro) - pequeno cone de luz
+            const trailMat = new THREE.MeshBasicMaterial({
+                color: 0xffaa00,
+                transparent: true,
+                opacity: 0.3
+            });
+            const trail = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), trailMat);
+            trail.position.copy(origin);
+            scene.add(trail);
+            // Vai ser atualizado junto com a bala
 
-                // Feedback visual: piscar o boneco
-                body.material.color.setHex(0xffaa00);
-                head.material.color.setHex(0xffaa00);
+            const data = {
+                mesh: bullet,
+                trail: trail,
+                velocity: direction.clone().multiplyScalar(BULLET_SPEED),
+                lifetime: BULLET_LIFETIME,
+                age: 0,
+                alive: true
+            };
+            bullets.push(data);
+            bulletCount++;
+            bulletCountSpan.textContent = bulletCount;
+            return data;
+        }
+
+        function updateBullets(delta) {
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const b = bullets[i];
+                if (!b.alive) continue;
+
+                b.age += delta;
+
+                // Move
+                b.mesh.position.add(b.velocity.clone().multiplyScalar(delta));
+                b.trail.position.copy(b.mesh.position);
+
+                // Verifica colisão com o alvo (se estiver vivo)
+                if (!isTargetDead && targetGroup.parent) {
+                    const collider = targetGroup.getObjectByName('targetCollider');
+                    if (collider) {
+                        const dist = b.mesh.position.distanceTo(collider.position);
+                        // Colisão simplificada com o box do collider
+                        const halfSize = new THREE.Vector3(0.35, 0.85, 0.25);
+                        const localPos = b.mesh.position.clone().sub(collider.position);
+                        if (Math.abs(localPos.x) < halfSize.x &&
+                            Math.abs(localPos.y) < halfSize.y &&
+                            Math.abs(localPos.z) < halfSize.z) {
+                            // Acertou!
+                            applyDamageToTarget(DAMAGE_PER_BULLET);
+                            b.alive = false;
+                            scene.remove(b.mesh);
+                            scene.remove(b.trail);
+                            bullets.splice(i, 1);
+                            continue;
+                        }
+                    }
+                }
+
+                // Verifica se passou do limite ou tempo de vida
+                if (b.age > b.lifetime ||
+                    Math.abs(b.mesh.position.x) > ARENA_SIZE / 2 + 2 ||
+                    Math.abs(b.mesh.position.z) > ARENA_SIZE / 2 + 2 ||
+                    b.mesh.position.y < -1) {
+                    b.alive = false;
+                    scene.remove(b.mesh);
+                    scene.remove(b.trail);
+                    bullets.splice(i, 1);
+                }
+            }
+        }
+
+        // --- DANO NO ALVO ---
+        function applyDamageToTarget(damage) {
+            if (isTargetDead || !targetGroup.parent) return;
+
+            targetHP = Math.max(0, targetHP - damage);
+            hpSpan.textContent = targetHP;
+
+            // Feedback visual: piscar
+            if (targetBody) {
+                targetBody.material.color.setHex(0xffaa00);
                 setTimeout(() => {
-                    body.material.color.setHex(0xff4444);
-                    head.material.color.setHex(0xffccaa);
+                    if (targetBody) targetBody.material.color.setHex(0xff4444);
                 }, 80);
-
-                // Pequeno efeito de "impacto" (partícula simples)
-                const impact = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.04, 4, 4),
-                    new THREE.MeshBasicMaterial({ color: 0xffaa00 })
-                );
-                const point = intersects[0].point;
-                impact.position.copy(point);
-                scene.add(impact);
-                setTimeout(() => scene.remove(impact), 150);
+            }
+            if (targetHead) {
+                targetHead.material.color.setHex(0xffaa00);
+                setTimeout(() => {
+                    if (targetHead) targetHead.material.color.setHex(0xffccaa);
+                }, 80);
             }
 
-            // Disparo contínuo com cadência
+            // Impacto visual
+            const impactMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
+            const impact = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), impactMat);
+            // Coloca o impacto na posição do alvo
+            impact.position.copy(targetGroup.position);
+            impact.position.y += 0.9;
+            scene.add(impact);
+            setTimeout(() => scene.remove(impact), 150);
+
+            if (targetHP <= 0) {
+                killTarget();
+            }
+        }
+
+        // --- MORTE DO ALVO ---
+        function killTarget() {
+            if (isTargetDead) return;
+            isTargetDead = true;
+            statusText.textContent = '💀 ELIMINADO';
+            statusText.style.color = '#ff0000';
+
+            // Efeito de ragdoll simples: derruba o boneco
+            targetGroup.rotation.x = Math.PI / 2;
+            targetGroup.position.y = -0.2; // afunda um pouco no chão
+
+            // Espalha as partes (simulando ragdoll)
+            targetParts.forEach((part, index) => {
+                const offset = (index % 2 === 0 ? 1 : -1) * 0.1;
+                setTimeout(() => {
+                    part.position.x += offset * 0.3;
+                    part.position.y -= 0.1;
+                    part.rotation.z = (Math.random() - 0.5) * 0.5;
+                }, index * 50);
+            });
+
+            // Timer para desaparecer
+            if (deathTimer) clearTimeout(deathTimer);
+            deathTimer = setTimeout(() => {
+                // Remove o corpo
+                if (targetGroup.parent) {
+                    scene.remove(targetGroup);
+                }
+                statusText.textContent = '⏳ RESPAWN EM: 25s';
+                statusText.style.color = '#ffd93d';
+
+                // Inicia contagem regressiva para respawn
+                let countdown = RESPAWN_DELAY;
+                if (respawnTimer) clearInterval(respawnTimer);
+                respawnTimer = setInterval(() => {
+                    countdown--;
+                    if (countdown > 0) {
+                        statusText.textContent = `⏳ RESPAWN EM: ${countdown}s`;
+                    } else {
+                        clearInterval(respawnTimer);
+                        respawnTimer = null;
+                        // Respawna o alvo
+                        createTarget();
+                        statusText.textContent = '🔴 VIVO';
+                        statusText.style.color = '#ff6b6b';
+                    }
+                }, 1000);
+
+                deathTimer = null;
+            }, DEATH_DELAY * 1000);
+        }
+
+        // --- TIRO ---
+        let isFiring = false;
+        let fireTimeout = null;
+
+        function shoot() {
+            if (!isFiring || document.pointerLockElement !== renderer.domElement) return;
+
+            // Posição do cano (mundo)
+            const barrelPos = new THREE.Vector3(0.35, -0.15, -0.6);
+            const worldPos = barrelPos.clone().applyMatrix4(gunGroup.matrixWorld);
+
+            // Direção = centro da câmera
+            const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+
+            // Cria o projétil
+            createBullet(worldPos, dir);
+
+            // Pequeno efeito de recuo visual (opcional)
+            gunGroup.position.x += 0.01;
+
+            // Próximo tiro
             if (isFiring) {
                 fireTimeout = setTimeout(shoot, FIRE_RATE * 1000);
             }
         }
 
-        // --- CONTROLES DE MOUSE (Pointer Lock) ---
-        document.addEventListener('mousemove', (event) => {
+        // --- CONTROLES ---
+        document.addEventListener('mousemove', (e) => {
             if (document.pointerLockElement !== renderer.domElement) return;
-
-            const sensitivity = 0.002;
-            player.yaw -= event.movementX * sensitivity;
-            player.pitch -= event.movementY * sensitivity;
-            player.pitch = Math.max(-1.2, Math.min(1.2, player.pitch)); // limite vertical
-
-            camera.rotation.order = 'YXZ';
-            camera.rotation.y = player.yaw;
-            camera.rotation.x = player.pitch;
+            const sens = 0.002;
+            player.yaw -= e.movementX * sens;
+            player.pitch -= e.movementY * sens;
+            player.pitch = Math.max(-1.2, Math.min(1.2, player.pitch));
         });
 
-        // --- CLIQUE PARA TRAVAR O MOUSE ---
-        blocker.addEventListener('click', () => {
-            renderer.domElement.requestPointerLock();
-        });
+        blocker.addEventListener('click', () => renderer.domElement.requestPointerLock());
 
         document.addEventListener('pointerlockchange', () => {
             if (document.pointerLockElement === renderer.domElement) {
                 blocker.classList.add('hidden');
             } else {
                 blocker.classList.remove('hidden');
-                // Para de atirar se perder o foco
                 if (isFiring) {
                     isFiring = false;
                     if (fireTimeout) clearTimeout(fireTimeout);
@@ -332,13 +577,12 @@
             }
         });
 
-        // --- BOTÃO ESQUERDO DO MOUSE (TIRO CONTÍNUO) ---
         renderer.domElement.addEventListener('mousedown', (e) => {
             if (e.button === 0 && document.pointerLockElement === renderer.domElement) {
                 e.preventDefault();
                 if (!isFiring) {
                     isFiring = true;
-                    shoot(); // primeiro tiro imediato
+                    shoot();
                 }
             }
         });
@@ -350,19 +594,22 @@
                     clearTimeout(fireTimeout);
                     fireTimeout = null;
                 }
+                // Volta a posição da arma
+                gunGroup.position.x = 0.35;
             }
         });
 
-        // Previne o menu de contexto (botão direito)
         renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
 
-        // --- TECLAS (WASD) ---
+        // --- TECLAS ---
         document.addEventListener('keydown', (e) => {
             switch (e.code) {
                 case 'KeyW': keys.w = true; e.preventDefault(); break;
                 case 'KeyA': keys.a = true; e.preventDefault(); break;
                 case 'KeyS': keys.s = true; e.preventDefault(); break;
                 case 'KeyD': keys.d = true; e.preventDefault(); break;
+                case 'Space': keys.space = true; e.preventDefault(); break;
+                case 'KeyC': keys.c = true; e.preventDefault(); break;
             }
         });
         document.addEventListener('keyup', (e) => {
@@ -371,68 +618,127 @@
                 case 'KeyA': keys.a = false; e.preventDefault(); break;
                 case 'KeyS': keys.s = false; e.preventDefault(); break;
                 case 'KeyD': keys.d = false; e.preventDefault(); break;
+                case 'Space': keys.space = false; e.preventDefault(); break;
+                case 'KeyC': keys.c = false; e.preventDefault(); break;
             }
         });
 
-        // --- COLISÃO COM MUROS ---
+        // --- MOVIMENTO E FÍSICA ---
         function clampPosition(pos) {
-            const margin = 0.4; // raio do jogador
+            const margin = 0.3;
             const halfSize = ARENA_SIZE / 2 - margin;
-            // Limitar X e Z dentro dos muros
-            if (pos.x > halfSize) pos.x = halfSize;
-            if (pos.x < -halfSize) pos.x = -halfSize;
-            if (pos.z > halfSize) pos.z = halfSize;
-            if (pos.z < -halfSize) pos.z = -halfSize;
+            pos.x = Math.max(-halfSize, Math.min(halfSize, pos.x));
+            pos.z = Math.max(-halfSize, Math.min(halfSize, pos.z));
             return pos;
         }
 
-        // --- LOOP DO JOGO (movimento e render) ---
-        function animate() {
-            // Movimento (WASD)
-            if (document.pointerLockElement === renderer.domElement) {
-                const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-                forward.y = 0;
-                forward.normalize();
+        function updatePlayer(delta) {
+            if (document.pointerLockElement !== renderer.domElement) return;
 
-                const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
-                right.y = 0;
-                right.normalize();
+            // --- Agachamento ---
+            const targetHeight = keys.c ? player.crouchHeight : 1.7;
+            player.height += (targetHeight - player.height) * 0.1;
+            player.isCrouching = keys.c;
 
-                const moveDelta = new THREE.Vector3(0, 0, 0);
-                if (keys.w) moveDelta.add(forward);
-                if (keys.s) moveDelta.sub(forward);
-                if (keys.d) moveDelta.add(right);
-                if (keys.a) moveDelta.sub(right);
-
-                if (moveDelta.lengthSq() > 0) {
-                    moveDelta.normalize().multiplyScalar(player.speed * 0.016); // deltaTime aproximado
-                    const newPos = player.position.clone().add(moveDelta);
-                    // Aplica colisão com muros
-                    const clamped = clampPosition(newPos);
-                    player.position.copy(clamped);
-                    camera.position.copy(clamped);
-                }
+            // --- Pulo ---
+            if (keys.space && player.isGrounded && !player.isCrouching) {
+                player.velocity.y = JUMP_FORCE;
+                player.isGrounded = false;
             }
 
-            // Arma acompanha a câmera com pequeno "bounce"
+            // --- Gravidade ---
+            player.velocity.y += GRAVITY * delta;
+
+            // --- Movimento horizontal ---
+            const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            forward.y = 0;
+            forward.normalize();
+
+            const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+            right.y = 0;
+            right.normalize();
+
+            const moveInput = new THREE.Vector3(0, 0, 0);
+            if (keys.w) moveInput.add(forward);
+            if (keys.s) moveInput.sub(forward);
+            if (keys.d) moveInput.add(right);
+            if (keys.a) moveInput.sub(right);
+
+            let speed = player.speed;
+            if (player.isCrouching) speed *= 0.5;
+
+            if (moveInput.lengthSq() > 0) {
+                moveInput.normalize().multiplyScalar(speed * delta);
+            }
+
+            // Aplica movimento
+            player.position.x += moveInput.x;
+            player.position.z += moveInput.z;
+            player.position.y += player.velocity.y * delta;
+
+            // Chão
+            const groundY = player.height;
+            if (player.position.y <= groundY) {
+                player.position.y = groundY;
+                player.velocity.y = 0;
+                player.isGrounded = true;
+            } else {
+                player.isGrounded = false;
+            }
+
+            // Colisão com muros
+            clampPosition(player.position);
+
+            // Atualiza câmera
+            camera.position.copy(player.position);
+            camera.position.y = player.position.y - player.height + 1.7;
+
+            // Rotação
+            camera.rotation.order = 'YXZ';
+            camera.rotation.y = player.yaw;
+            camera.rotation.x = player.pitch;
+
+            // --- Arma acompanha câmera com offset ---
+            const gunOffset = new THREE.Vector3(0.35, -0.2, -0.45);
+            const worldGunPos = gunOffset.clone().applyQuaternion(camera.quaternion);
             gunGroup.position.copy(camera.position);
-            gunGroup.position.add(new THREE.Vector3(0.3, -0.15, -0.4));
-            gunGroup.rotation.copy(camera.rotation);
+            gunGroup.position.add(worldGunPos);
+
+            // Rotação da arma = câmera (mas com leve inclinação)
+            gunGroup.quaternion.copy(camera.quaternion);
+            // Pequena rotação extra para parecer mais natural
+            const extraRot = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.05, 0, 0.05));
+            gunGroup.quaternion.multiply(extraRot);
+        }
+
+        // --- LOOP PRINCIPAL ---
+        let lastTime = 0;
+
+        function animate(time) {
+            const delta = Math.min((time - lastTime) / 1000, 0.05);
+            lastTime = time;
+
+            updatePlayer(delta);
+            updateBullets(delta);
+
+            // Atualiza contador de projéteis ativos
+            bulletCountSpan.textContent = bullets.filter(b => b.alive).length;
 
             renderer.render(scene, camera);
             requestAnimationFrame(animate);
         }
 
-        animate();
+        animate(0);
 
-        // --- REDIMENSIONAR TELA ---
+        // --- REDIMENSIONAR ---
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        console.log('🎯 Jogo iniciado! Clique na tela para travar o mouse.');
+        console.log('🎯 Jogo atualizado! Carregado com sucesso.');
+        console.log('📋 Novidades: pulo, agachamento, projéteis visíveis, HP 100, morte e respawn!');
     </script>
 </body>
 </html>
