@@ -1,1136 +1,1529 @@
-// ============================================
-// CONFIGURAÇÕES CENTRALIZADAS
-// ============================================
-const CONFIG = {
-    // Limites do mundo
-    MAX_ENTITIES: 200,
-    MAX_ANIMALS: 80,
-    MAX_HUMANS: 120,
-    
-    // Velocidades (em ms)
-    UPDATE_INTERVAL: 500,
-    RENDER_INTERVAL: 33,
-    
-    // Parâmetros de sobrevivência
-    FOOD_CONSUMPTION: 0.5,
-    ENERGY_DRAIN: 0.3,
-    REPRODUCTION_ENERGY: 40,
-    REPRODUCTION_COOLDOWN: 10,
-    MAX_AGE: 80,
-    
-    // Tecnologia
-    TECH_LEVELS: {
-        0: { name: 'Sobrevivência', desc: 'Caça e coleta básica' },
-        1: { name: 'Ferramentas', desc: 'Ferramentas simples' },
-        2: { name: 'Abrigo', desc: 'Construção de cabanas' },
-        3: { name: 'Aldeia', desc: 'Primeiras comunidades' }
-    },
-    
-    // Tamanhos da ilha
-    ISLAND_SIZES: {
-        pequeno: { radius: 80, waterOffset: 60 },
-        medio: { radius: 120, waterOffset: 40 },
-        grande: { radius: 160, waterOffset: 20 }
-    },
-    
-    // Cores dos biomas
-    BIOME_COLORS: {
-        floresta: { land: '#2d7d46', vegetation: '#3d9e5e', water: '#1a5276' },
-        planicie: { land: '#8cb87a', vegetation: '#a8d08d', water: '#1a5276' },
-        deserto: { land: '#d4b896', vegetation: '#c4a882', water: '#1a5276' },
-        neve: { land: '#e8e8f0', vegetation: '#d0d0d8', water: '#1a5276' }
-    },
-    
-    // Recursos por bioma
-    RESOURCES: {
-        floresta: { food: 15, wood: 20, water: 10 },
-        planicie: { food: 20, wood: 5, water: 8 },
-        deserto: { food: 5, wood: 2, water: 3 },
-        neve: { food: 3, wood: 1, water: 2 }
-    }
-};
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WorldBlox - V0.1</title>
+    <style>
+        /* ============================================
+           ESTILOS COMPLETOS
+           ============================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-// ============================================
-// ESTADO DO JOGO
-// ============================================
-let estado = {
-    mundo: null,
-    pausado: false,
-    velocidade: 1,
-    tempo: 0,
-    selecao: null,
-    rodando: false,
-    canvas: null,
-    ctx: null,
-    dimensions: { width: 0, height: 0 },
-    ultimaAtualizacao: 0,
-    ultimoRender: 0
-};
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
 
-// ============================================
-// ESTRUTURAS DE DADOS
-// ============================================
-class Humano {
-    constructor(x, y, mundo) {
-        this.id = Humano._idCounter++;
-        this.x = x;
-        this.y = y;
-        this.idade = Math.floor(Math.random() * 20) + 5;
-        this.energia = 80 + Math.random() * 20;
-        this.fome = 30 + Math.random() * 20;
-        this.estado = 'explorar';
-        this.velocidade = 0.5 + Math.random() * 0.5;
-        this.mundo = mundo;
-        this.comunidade = null;
-        this.energiaReproducao = 0;
-        this.alvo = null;
-        this.contadorEstado = 0;
-        this.vivo = true;
-        this.angulo = Math.random() * Math.PI * 2;
-    }
-    
-    atualizar() {
-        if (!this.vivo) return;
-        
-        this.idade += 0.01;
-        this.energia -= CONFIG.ENERGY_DRAIN * (0.8 + Math.random() * 0.4);
-        this.fome += CONFIG.FOOD_CONSUMPTION * (0.8 + Math.random() * 0.4);
-        
-        // Morte por idade ou fome extrema
-        if (this.idade > CONFIG.MAX_AGE || this.fome > 100 || this.energia <= 0) {
-            this.morrer();
-            return;
+        /* Tela inicial */
+        #telaInicial {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 20px;
         }
-        
-        this.contadorEstado++;
-        this.tomarDecisao();
-        this.mover();
-        this.interagir();
-    }
-    
-    tomarDecisao() {
-        // Mudança de estado baseada nas necessidades
-        if (this.fome > 70) {
-            this.estado = 'procurar_comida';
-        } else if (this.energia < 30) {
-            this.estado = 'descansar';
-        } else if (this.idade > 30 && this.energia > 60 && this.fome < 40 && Math.random() < 0.01) {
-            this.estado = 'reproduzir';
-        } else if (this.comunidade && this.mundo.tecnologia >= 2 && Math.random() < 0.005) {
-            this.estado = 'construir';
-        } else if (Math.random() < 0.02) {
-            this.estado = 'explorar';
+
+        .container-inicial {
+            max-width: 500px;
+            width: 100%;
+            padding: 30px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
-    }
-    
-    mover() {
-        const speed = this.velocidade * (this.energia / 100) * 0.5;
-        
-        switch(this.estado) {
-            case 'procurar_comida':
-                this.procurarComida();
-                break;
-            case 'descansar':
-                this.energia += 0.2;
-                break;
-            case 'reproduzir':
-                this.reproduzir();
-                break;
-            case 'construir':
-                this.construir();
-                break;
-            default:
-                this.explorar();
+
+        .logo {
+            text-align: center;
+            margin-bottom: 5px;
         }
-        
-        // Movimento aleatório
-        this.angulo += (Math.random() - 0.5) * 0.2;
-        this.x += Math.cos(this.angulo) * speed;
-        this.y += Math.sin(this.angulo) * speed;
-        
-        // Ficar dentro da ilha
-        const dist = Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.y, 2));
-        if (dist > this.mundo.raioIlha - 5) {
-            this.angulo += Math.PI + (Math.random() - 0.5) * 0.5;
-            this.x = Math.max(Math.min(this.x, this.mundo.raioIlha - 5), -this.mundo.raioIlha + 5);
-            this.y = Math.max(Math.min(this.y, this.mundo.raioIlha - 5), -this.mundo.raioIlha + 5);
+
+        .logo h1 {
+            font-size: 2.5rem;
+            color: #4fc3f7;
+            letter-spacing: 2px;
         }
-    }
-    
-    procurarComida() {
-        // Busca o recurso de comida mais próximo
-        let melhor = null;
-        let melhorDist = Infinity;
-        
-        for (const recurso of this.mundo.recursos) {
-            if (recurso.tipo === 'comida') {
-                const dist = Math.sqrt(Math.pow(this.x - recurso.x, 2) + Math.pow(this.y - recurso.y, 2));
-                if (dist < melhorDist) {
-                    melhorDist = dist;
-                    melhor = recurso;
-                }
-            }
+
+        .logo .versao {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: -5px;
         }
-        
-        if (melhor && melhorDist < 20) {
-            this.fome = Math.max(0, this.fome - 15);
-            melhor.consumir();
-        } else if (melhor) {
-            const ang = Math.atan2(melhor.y - this.y, melhor.x - this.x);
-            this.angulo = ang;
+
+        .subtitulo {
+            text-align: center;
+            color: #aaa;
+            margin-bottom: 30px;
+            font-size: 1rem;
         }
-    }
-    
-    explorar() {
-        // Movimento aleatório
-        if (Math.random() < 0.05) {
-            this.angulo += (Math.random() - 0.5) * 1.5;
+
+        .configuracoes {
+            margin-bottom: 30px;
         }
-    }
-    
-    reproduzir() {
-        if (this.energia < CONFIG.REPRODUCTION_ENERGY) return;
-        if (this.energiaReproducao > 0) {
-            this.energiaReproducao--;
-            return;
+
+        .config-grupo {
+            margin-bottom: 20px;
         }
-        
-        // Busca parceiro próximo
-        for (const outro of this.mundo.humanos) {
-            if (outro === this || !outro.vivo) continue;
-            if (outro.estado !== 'reproduzir') continue;
+
+        .config-grupo label {
+            display: block;
+            font-size: 0.9rem;
+            color: #ccc;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .botoes-opcao {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .botoes-opcao button {
+            flex: 1;
+            min-width: 60px;
+            padding: 10px 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            color: #ccc;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            touch-action: manipulation;
+        }
+
+        .botoes-opcao button.ativo {
+            background: rgba(79, 195, 247, 0.2);
+            border-color: #4fc3f7;
+            color: #fff;
+        }
+
+        .botoes-opcao button:active {
+            transform: scale(0.95);
+        }
+
+        .botao-principal {
+            width: 100%;
+            padding: 16px;
+            background: #4fc3f7;
+            border: none;
+            border-radius: 14px;
+            color: #1a1a2e;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            touch-action: manipulation;
+        }
+
+        .botao-principal:active {
+            transform: scale(0.97);
+            background: #4dd0e1;
+        }
+
+        /* Tela do jogo */
+        #telaJogo {
+            display: none;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+            background: #0d0d1a;
+        }
+
+        #barraSuperior {
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 10px;
+            background: rgba(0, 0, 0, 0.5);
+            flex-shrink: 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            min-height: 50px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.85rem;
+        }
+
+        .info-item .icone {
+            font-size: 1.1rem;
+        }
+
+        #containerCanvas {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #0d0d1a;
+            min-height: 0;
+        }
+
+        #canvasMundo {
+            width: 100%;
+            height: 100%;
+            display: block;
+            touch-action: none;
+        }
+
+        #controlesInferiores {
+            display: flex;
+            justify-content: space-around;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            flex-shrink: 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            gap: 10px;
+        }
+
+        .botao-controle {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            touch-action: manipulation;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .botao-controle:active {
+            transform: scale(0.9);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .botao-controle.pausado {
+            background: rgba(255, 193, 7, 0.3);
+        }
+
+        /* Painel de informações */
+        #painelInfo {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.95);
+            border-top: 2px solid rgba(79, 195, 247, 0.3);
+            padding: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+            z-index: 100;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        #conteudoPainel {
+            position: relative;
+        }
+
+        .botao-fechar {
+            position: absolute;
+            top: -5px;
+            right: 0;
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 1.5rem;
+            cursor: pointer;
+            touch-action: manipulation;
+            padding: 5px;
+        }
+
+        #infoEntidade {
+            margin-top: 10px;
+            padding-right: 30px;
+        }
+
+        #infoEntidade h3 {
+            color: #4fc3f7;
+            margin-bottom: 10px;
+        }
+
+        #infoEntidade p {
+            color: #ccc;
+            margin: 5px 0;
+            font-size: 0.95rem;
+        }
+
+        /* Modal de confirmação */
+        #modalConfirmacao {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+
+        .modal-conteudo {
+            background: #1a1a2e;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 320px;
+            width: 90%;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-conteudo p {
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+        }
+
+        .modal-botoes {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .botao-modal {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            touch-action: manipulation;
+            font-weight: 500;
+        }
+
+        .botao-modal.confirmar {
+            background: #ef5350;
+            color: #fff;
+        }
+
+        .botao-modal.cancelar {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ccc;
+        }
+
+        .botao-modal:active {
+            transform: scale(0.95);
+        }
+
+        /* Responsivo */
+        @media (max-width: 480px) {
+            .logo h1 { font-size: 2rem; }
+            .botoes-opcao button { font-size: 0.75rem; padding: 8px 6px; min-width: 50px; }
+            .info-item { font-size: 0.75rem; }
+            .botao-controle { width: 48px; height: 48px; font-size: 1.2rem; }
+            .container-inicial { padding: 20px 15px; }
+        }
+
+        @media (orientation: landscape) and (max-height: 500px) {
+            #barraSuperior { padding: 4px 10px; min-height: 36px; }
+            .info-item { font-size: 0.7rem; }
+            #controlesInferiores { padding: 5px; }
+            .botao-controle { width: 40px; height: 40px; font-size: 1rem; }
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+    </style>
+</head>
+<body>
+    <!-- Tela inicial -->
+    <div id="telaInicial">
+        <div class="container-inicial">
+            <div class="logo">
+                <h1>🌍 WorldBlox</h1>
+                <div class="versao">V0.1</div>
+            </div>
+            <p class="subtitulo">Crie e observe sua civilização evoluir</p>
             
-            const dist = Math.sqrt(Math.pow(this.x - outro.x, 2) + Math.pow(this.y - outro.y, 2));
-            if (dist < 30) {
-                // Cria novo humano
-                const novoX = this.x + (Math.random() - 0.5) * 20;
-                const novoY = this.y + (Math.random() - 0.5) * 20;
-                const filho = new Humano(novoX, novoY, this.mundo);
-                filho.idade = 0;
-                filho.energia = 30;
-                filho.fome = 20;
-                this.mundo.humanos.push(filho);
+            <div class="configuracoes">
+                <div class="config-grupo">
+                    <label>Tamanho da ilha</label>
+                    <div class="botoes-opcao" id="tamanhoIlha">
+                        <button data-valor="pequeno" class="opcao ativo">Pequeno</button>
+                        <button data-valor="medio" class="opcao">Médio</button>
+                        <button data-valor="grande" class="opcao">Grande</button>
+                    </div>
+                </div>
                 
-                this.energia -= 20;
-                outro.energia -= 20;
-                this.energiaReproducao = CONFIG.REPRODUCTION_COOLDOWN;
-                outro.energiaReproducao = CONFIG.REPRODUCTION_COOLDOWN;
-                break;
-            }
-        }
-    }
-    
-    construir() {
-        // Constrói uma cabana se não houver muitas
-        if (!this.comunidade) {
-            this.comunidade = new Comunidade(this.x, this.y, this.mundo);
-            this.mundo.comunidades.push(this.comunidade);
-            this.comunidade.adicionarMembro(this);
-        } else {
-            this.comunidade.construirCabana();
-        }
-    }
-    
-    interagir() {
-        // Interage com animais próximos
-        for (const animal of this.mundo.animais) {
-            const dist = Math.sqrt(Math.pow(this.x - animal.x, 2) + Math.pow(this.y - animal.y, 2));
-            if (dist < 15 && animal.tipo === 'urso' && Math.random() < 0.02) {
-                // Urso ataca
-                this.energia -= 20;
-                if (this.energia <= 0) {
-                    this.morrer();
-                }
-            }
-        }
-    }
-    
-    morrer() {
-        this.vivo = false;
-        if (this.comunidade) {
-            this.comunidade.removerMembro(this);
-        }
-    }
-}
-
-Humano._idCounter = 0;
-
-// ============================================
-class Animal {
-    constructor(x, y, tipo, mundo) {
-        this.id = Animal._idCounter++;
-        this.x = x;
-        this.y = y;
-        this.tipo = tipo;
-        this.mundo = mundo;
-        this.energia = 70 + Math.random() * 30;
-        this.idade = Math.random() * 30;
-        this.velocidade = 0.3 + Math.random() * 0.5;
-        this.angulo = Math.random() * Math.PI * 2;
-        this.vivo = true;
-        this.fome = 20 + Math.random() * 30;
-        this.tempoReproducao = 0;
-        this.tamanho = this.getTamanho();
-        this.cor = this.getCor();
-    }
-    
-    getTamanho() {
-        const tamanhos = { porco: 8, vaca: 10, galinha: 6, urso: 14 };
-        return tamanhos[this.tipo] || 8;
-    }
-    
-    getCor() {
-        const cores = { porco: '#e8a0a0', vaca: '#d4c4a0', galinha: '#e8d4a0', urso: '#8b6b4b' };
-        return cores[this.tipo] || '#ccc';
-    }
-    
-    atualizar() {
-        if (!this.vivo) return;
-        
-        this.idade += 0.01;
-        this.energia -= 0.1;
-        this.fome += 0.1;
-        
-        if (this.idade > 60 || this.energia <= 0 || this.fome > 100) {
-            this.morrer();
-            return;
-        }
-        
-        this.mover();
-        this.procurarComida();
-        this.reproduzir();
-    }
-    
-    mover() {
-        const speed = this.velocidade * 0.3;
-        this.angulo += (Math.random() - 0.5) * 0.3;
-        this.x += Math.cos(this.angulo) * speed;
-        this.y += Math.sin(this.angulo) * speed;
-        
-        // Ficar dentro da ilha
-        const dist = Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.y, 2));
-        if (dist > this.mundo.raioIlha - 5) {
-            this.angulo += Math.PI + (Math.random() - 0.5) * 0.5;
-        }
-    }
-    
-    procurarComida() {
-        if (this.fome < 30) return;
-        
-        // Procura recursos de comida
-        for (const recurso of this.mundo.recursos) {
-            if (recurso.tipo === 'comida') {
-                const dist = Math.sqrt(Math.pow(this.x - recurso.x, 2) + Math.pow(this.y - recurso.y, 2));
-                if (dist < this.tamanho + 5) {
-                    this.fome = Math.max(0, this.fome - 10);
-                    recurso.consumir();
-                    break;
-                }
-            }
-        }
-    }
-    
-    reproduzir() {
-        this.tempoReproducao++;
-        if (this.tempoReproducao < 50 || this.energia < 40 || this.fome > 40) return;
-        
-        // Procura parceiro
-        for (const outro of this.mundo.animais) {
-            if (outro === this || !outro.vivo || outro.tipo !== this.tipo) continue;
-            const dist = Math.sqrt(Math.pow(this.x - outro.x, 2) + Math.pow(this.y - outro.y, 2));
+                <div class="config-grupo">
+                    <label>Bioma</label>
+                    <div class="botoes-opcao" id="bioma">
+                        <button data-valor="floresta" class="opcao ativo">🌳 Floresta</button>
+                        <button data-valor="planicie" class="opcao">🌾 Planície</button>
+                        <button data-valor="deserto" class="opcao">🏜️ Deserto</button>
+                        <button data-valor="neve" class="opcao">❄️ Neve</button>
+                    </div>
+                </div>
+                
+                <div class="config-grupo">
+                    <label>População inicial</label>
+                    <div class="botoes-opcao" id="populacao">
+                        <button data-valor="5" class="opcao">5</button>
+                        <button data-valor="10" class="opcao ativo">10</button>
+                        <button data-valor="20" class="opcao">20</button>
+                    </div>
+                </div>
+            </div>
             
-            if (dist < 20) {
-                const filho = new Animal(
-                    this.x + (Math.random() - 0.5) * 15,
-                    this.y + (Math.random() - 0.5) * 15,
-                    this.tipo,
-                    this.mundo
-                );
-                filho.idade = 0;
-                filho.energia = 30;
-                this.mundo.animais.push(filho);
-                this.tempoReproducao = 0;
-                outro.tempoReproducao = 0;
-                break;
+            <button id="btnIniciar" class="botao-principal">▶ Iniciar Mundo</button>
+        </div>
+    </div>
+
+    <!-- Tela do jogo -->
+    <div id="telaJogo">
+        <div id="barraSuperior">
+            <div class="info-item">
+                <span class="icone">👥</span>
+                <span id="populacaoAtual">0</span>
+            </div>
+            <div class="info-item">
+                <span class="icone">🐾</span>
+                <span id="animaisAtual">0</span>
+            </div>
+            <div class="info-item">
+                <span class="icone">⏱️</span>
+                <span id="tempoSimulacao">0</span>
+            </div>
+            <div class="info-item">
+                <span class="icone">🔧</span>
+                <span id="nivelTecnologico">0</span>
+            </div>
+        </div>
+        
+        <div id="containerCanvas">
+            <canvas id="canvasMundo"></canvas>
+        </div>
+        
+        <div id="controlesInferiores">
+            <button id="btnPausar" class="botao-controle">⏸️</button>
+            <button id="btnVelocidade" class="botao-controle">1x</button>
+            <button id="btnInfo" class="botao-controle">ℹ️</button>
+            <button id="btnReiniciar" class="botao-controle">🔄</button>
+        </div>
+    </div>
+
+    <!-- Painel de informações -->
+    <div id="painelInfo" style="display: none;">
+        <div id="conteudoPainel">
+            <button id="btnFecharPainel" class="botao-fechar">✕</button>
+            <div id="infoEntidade"></div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmação -->
+    <div id="modalConfirmacao">
+        <div class="modal-conteudo">
+            <p>Tem certeza que deseja reiniciar?</p>
+            <div class="modal-botoes">
+                <button id="btnConfirmarReinicio" class="botao-modal confirmar">Sim</button>
+                <button id="btnCancelarReinicio" class="botao-modal cancelar">Não</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // WORLD BLOX - V0.1
+        // Código JavaScript Completo
+        // ============================================
+
+        // ============================================
+        // CONFIGURAÇÕES CENTRALIZADAS
+        // ============================================
+        const CONFIG = {
+            MAX_ENTITIES: 200,
+            MAX_ANIMALS: 80,
+            MAX_HUMANS: 120,
+            UPDATE_INTERVAL: 500,
+            RENDER_INTERVAL: 33,
+            FOOD_CONSUMPTION: 0.5,
+            ENERGY_DRAIN: 0.3,
+            REPRODUCTION_ENERGY: 40,
+            REPRODUCTION_COOLDOWN: 10,
+            MAX_AGE: 80,
+            TECH_LEVELS: {
+                0: { name: 'Sobrevivência', desc: 'Caça e coleta básica' },
+                1: { name: 'Ferramentas', desc: 'Ferramentas simples' },
+                2: { name: 'Abrigo', desc: 'Construção de cabanas' },
+                3: { name: 'Aldeia', desc: 'Primeiras comunidades' }
+            },
+            ISLAND_SIZES: {
+                pequeno: { radius: 80, waterOffset: 60 },
+                medio: { radius: 120, waterOffset: 40 },
+                grande: { radius: 160, waterOffset: 20 }
+            },
+            BIOME_COLORS: {
+                floresta: { land: '#2d7d46', vegetation: '#3d9e5e', water: '#1a5276' },
+                planicie: { land: '#8cb87a', vegetation: '#a8d08d', water: '#1a5276' },
+                deserto: { land: '#d4b896', vegetation: '#c4a882', water: '#1a5276' },
+                neve: { land: '#e8e8f0', vegetation: '#d0d0d8', water: '#1a5276' }
+            },
+            RESOURCES: {
+                floresta: { food: 15, wood: 20, water: 10 },
+                planicie: { food: 20, wood: 5, water: 8 },
+                deserto: { food: 5, wood: 2, water: 3 },
+                neve: { food: 3, wood: 1, water: 2 }
             }
-        }
-    }
-    
-    morrer() {
-        this.vivo = false;
-    }
-}
+        };
 
-Animal._idCounter = 0;
+        // ============================================
+        // ESTADO DO JOGO
+        // ============================================
+        let estado = {
+            mundo: null,
+            pausado: false,
+            velocidade: 1,
+            tempo: 0,
+            selecao: null,
+            rodando: false,
+            canvas: null,
+            ctx: null,
+            dimensions: { width: 0, height: 0 },
+            ultimaAtualizacao: 0,
+            ultimoRender: 0
+        };
 
-// ============================================
-class Recurso {
-    constructor(x, y, tipo, mundo) {
-        this.x = x;
-        this.y = y;
-        this.tipo = tipo; // 'comida', 'madeira', 'agua'
-        this.mundo = mundo;
-        this.quantidade = 10 + Math.random() * 20;
-        this.ativo = true;
-        this.tamanho = tipo === 'madeira' ? 6 : 4;
-        this.cor = this.getCor();
-    }
-    
-    getCor() {
-        const cores = { comida: '#e8c84a', madeira: '#8b6b3a', agua: '#4a8bc4' };
-        return cores[this.tipo] || '#888';
-    }
-    
-    consumir() {
-        this.quantidade -= 1 + Math.random() * 2;
-        if (this.quantidade <= 0) {
-            this.ativo = false;
-        }
-    }
-    
-    regenerar() {
-        if (!this.ativo && Math.random() < 0.001) {
-            this.ativo = true;
-            this.quantidade = 5 + Math.random() * 10;
-        }
-    }
-}
-
-// ============================================
-class Comunidade {
-    constructor(x, y, mundo) {
-        this.id = Comunidade._idCounter++;
-        this.x = x;
-        this.y = y;
-        this.mundo = mundo;
-        this.membros = [];
-        this.cabanas = 1;
-        this.nome = this.gerarNome();
-        this.recursos = { comida: 10, madeira: 5 };
-        this.tecnologia = 0;
-    }
-    
-    gerarNome() {
-        const prefixos = ['Vale', 'Monte', 'Rio', 'Lago', 'Campo', 'Floresta', 'Vila', 'Aldeia'];
-        const sufixos = ['Verde', 'Clara', 'Nova', 'Antiga', 'Bela', 'Serena', 'Próspera'];
-        return prefixos[Math.floor(Math.random() * prefixos.length)] + ' ' + 
-               sufixos[Math.floor(Math.random() * sufixos.length)];
-    }
-    
-    adicionarMembro(humano) {
-        if (!this.membros.includes(humano)) {
-            this.membros.push(humano);
-            humano.comunidade = this;
-        }
-    }
-    
-    removerMembro(humano) {
-        const index = this.membros.indexOf(humano);
-        if (index > -1) {
-            this.membros.splice(index, 1);
-            humano.comunidade = null;
-        }
-    }
-    
-    construirCabana() {
-        if (this.cabanas < this.membros.length * 0.5 + 1) {
-            this.cabanas++;
-            this.recursos.madeira -= 2;
-        }
-    }
-    
-    atualizar() {
-        // Coleta recursos automaticamente
-        if (Math.random() < 0.05) {
-            for (const recurso of this.mundo.recursos) {
-                if (recurso.ativo) {
-                    const dist = Math.sqrt(Math.pow(this.x - recurso.x, 2) + Math.pow(this.y - recurso.y, 2));
-                    if (dist < 100) {
-                        this.recursos.comida += 0.1;
-                        this.recursos.madeira += 0.05;
+        // ============================================
+        // ESTRUTURAS DE DADOS - CLASSES
+        // ============================================
+        
+        // CLASSE HUMANO
+        class Humano {
+            constructor(x, y, mundo) {
+                this.id = Humano._idCounter++;
+                this.x = x;
+                this.y = y;
+                this.idade = Math.floor(Math.random() * 20) + 5;
+                this.energia = 80 + Math.random() * 20;
+                this.fome = 30 + Math.random() * 20;
+                this.estado = 'explorar';
+                this.velocidade = 0.5 + Math.random() * 0.5;
+                this.mundo = mundo;
+                this.comunidade = null;
+                this.energiaReproducao = 0;
+                this.alvo = null;
+                this.contadorEstado = 0;
+                this.vivo = true;
+                this.angulo = Math.random() * Math.PI * 2;
+            }
+            
+            atualizar() {
+                if (!this.vivo) return;
+                
+                this.idade += 0.01;
+                this.energia -= CONFIG.ENERGY_DRAIN * (0.8 + Math.random() * 0.4);
+                this.fome += CONFIG.FOOD_CONSUMPTION * (0.8 + Math.random() * 0.4);
+                
+                if (this.idade > CONFIG.MAX_AGE || this.fome > 100 || this.energia <= 0) {
+                    this.morrer();
+                    return;
+                }
+                
+                this.contadorEstado++;
+                this.tomarDecisao();
+                this.mover();
+                this.interagir();
+            }
+            
+            tomarDecisao() {
+                if (this.fome > 70) {
+                    this.estado = 'procurar_comida';
+                } else if (this.energia < 30) {
+                    this.estado = 'descansar';
+                } else if (this.idade > 30 && this.energia > 60 && this.fome < 40 && Math.random() < 0.01) {
+                    this.estado = 'reproduzir';
+                } else if (this.comunidade && this.mundo.tecnologia >= 2 && Math.random() < 0.005) {
+                    this.estado = 'construir';
+                } else if (Math.random() < 0.02) {
+                    this.estado = 'explorar';
+                }
+            }
+            
+            mover() {
+                const speed = this.velocidade * (this.energia / 100) * 0.5;
+                
+                switch(this.estado) {
+                    case 'procurar_comida':
+                        this.procurarComida();
+                        break;
+                    case 'descansar':
+                        this.energia += 0.2;
+                        break;
+                    case 'reproduzir':
+                        this.reproduzir();
+                        break;
+                    case 'construir':
+                        this.construir();
+                        break;
+                    default:
+                        this.explorar();
+                }
+                
+                this.angulo += (Math.random() - 0.5) * 0.2;
+                this.x += Math.cos(this.angulo) * speed;
+                this.y += Math.sin(this.angulo) * speed;
+                
+                const dist = Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.y, 2));
+                if (dist > this.mundo.raioIlha - 5) {
+                    this.angulo += Math.PI + (Math.random() - 0.5) * 0.5;
+                    this.x = Math.max(Math.min(this.x, this.mundo.raioIlha - 5), -this.mundo.raioIlha + 5);
+                    this.y = Math.max(Math.min(this.y, this.mundo.raioIlha - 5), -this.mundo.raioIlha + 5);
+                }
+            }
+            
+            procurarComida() {
+                let melhor = null;
+                let melhorDist = Infinity;
+                
+                for (const recurso of this.mundo.recursos) {
+                    if (recurso.tipo === 'comida' && recurso.ativo) {
+                        const dist = Math.sqrt(Math.pow(this.x - recurso.x, 2) + Math.pow(this.y - recurso.y, 2));
+                        if (dist < melhorDist) {
+                            melhorDist = dist;
+                            melhor = recurso;
+                        }
+                    }
+                }
+                
+                if (melhor && melhorDist < 20) {
+                    this.fome = Math.max(0, this.fome - 15);
+                    melhor.consumir();
+                } else if (melhor) {
+                    const ang = Math.atan2(melhor.y - this.y, melhor.x - this.x);
+                    this.angulo = ang;
+                }
+            }
+            
+            explorar() {
+                if (Math.random() < 0.05) {
+                    this.angulo += (Math.random() - 0.5) * 1.5;
+                }
+            }
+            
+            reproduzir() {
+                if (this.energia < CONFIG.REPRODUCTION_ENERGY) return;
+                if (this.energiaReproducao > 0) {
+                    this.energiaReproducao--;
+                    return;
+                }
+                
+                for (const outro of this.mundo.humanos) {
+                    if (outro === this || !outro.vivo) continue;
+                    if (outro.estado !== 'reproduzir') continue;
+                    
+                    const dist = Math.sqrt(Math.pow(this.x - outro.x, 2) + Math.pow(this.y - outro.y, 2));
+                    if (dist < 30) {
+                        const novoX = this.x + (Math.random() - 0.5) * 20;
+                        const novoY = this.y + (Math.random() - 0.5) * 20;
+                        const filho = new Humano(novoX, novoY, this.mundo);
+                        filho.idade = 0;
+                        filho.energia = 30;
+                        filho.fome = 20;
+                        this.mundo.humanos.push(filho);
+                        
+                        this.energia -= 20;
+                        outro.energia -= 20;
+                        this.energiaReproducao = CONFIG.REPRODUCTION_COOLDOWN;
+                        outro.energiaReproducao = CONFIG.REPRODUCTION_COOLDOWN;
                         break;
                     }
                 }
             }
-        }
-        
-        // Evolução tecnológica
-        if (this.membros.length > 5 && this.recursos.comida > 20) {
-            this.tecnologia = Math.min(3, Math.floor(this.membros.length / 10) + 
-                                      Math.floor(this.recursos.comida / 30));
-        }
-    }
-}
-
-Comunidade._idCounter = 0;
-
-// ============================================
-class Mundo {
-    constructor(tamanhoIlha, bioma, populacaoInicial) {
-        this.tamanho = tamanhoIlha;
-        this.bioma = bioma;
-        this.raioIlha = CONFIG.ISLAND_SIZES[tamanhoIlha].radius;
-        this.humanos = [];
-        this.animais = [];
-        this.recursos = [];
-        this.comunidades = [];
-        this.tecnologia = 0;
-        this.tempo = 0;
-        this.populacao = 0;
-        
-        this.gerarIlha();
-        this.gerarRecursos();
-        this.gerarAnimais();
-        this.gerarHumanos(populacaoInicial);
-    }
-    
-    gerarIlha() {
-        // A ilha é definida pelo raio, o resto é água
-        this.centroX = 0;
-        this.centroY = 0;
-        this.corBioma = CONFIG.BIOME_COLORS[this.bioma];
-    }
-    
-    gerarRecursos() {
-        const numRecursos = Math.floor(this.raioIlha / 15);
-        const config = CONFIG.RESOURCES[this.bioma];
-        
-        for (let i = 0; i < numRecursos; i++) {
-            const angulo = Math.random() * Math.PI * 2;
-            const distancia = Math.sqrt(Math.random()) * this.raioIlha * 0.8;
-            const x = Math.cos(angulo) * distancia;
-            const y = Math.sin(angulo) * distancia;
             
-            // Decide tipo de recurso baseado no bioma
-            let tipo = 'comida';
-            if (Math.random() < config.wood / 20) tipo = 'madeira';
-            if (Math.random() < config.water / 20) tipo = 'agua';
-            
-            this.recursos.push(new Recurso(x, y, tipo, this));
-        }
-    }
-    
-    gerarAnimais() {
-        const numAnimais = Math.floor(this.raioIlha / 20);
-        const tipos = ['porco', 'vaca', 'galinha', 'urso'];
-        const pesos = [0.3, 0.3, 0.3, 0.1]; // Urso é mais raro
-        
-        for (let i = 0; i < numAnimais; i++) {
-            const angulo = Math.random() * Math.PI * 2;
-            const distancia = Math.sqrt(Math.random()) * this.raioIlha * 0.7;
-            const x = Math.cos(angulo) * distancia;
-            const y = Math.sin(angulo) * distancia;
-            
-            let tipo = 'porco';
-            let rand = Math.random();
-            let acumulado = 0;
-            for (let j = 0; j < tipos.length; j++) {
-                acumulado += pesos[j];
-                if (rand < acumulado) {
-                    tipo = tipos[j];
-                    break;
+            construir() {
+                if (!this.comunidade) {
+                    this.comunidade = new Comunidade(this.x, this.y, this.mundo);
+                    this.mundo.comunidades.push(this.comunidade);
+                    this.comunidade.adicionarMembro(this);
+                } else {
+                    this.comunidade.construirCabana();
                 }
             }
             
-            this.animais.push(new Animal(x, y, tipo, this));
-        }
-    }
-    
-    gerarHumanos(quantidade) {
-        for (let i = 0; i < quantidade; i++) {
-            const angulo = Math.random() * Math.PI * 2;
-            const distancia = Math.sqrt(Math.random()) * this.raioIlha * 0.5;
-            const x = Math.cos(angulo) * distancia;
-            const y = Math.sin(angulo) * distancia;
+            interagir() {
+                for (const animal of this.mundo.animais) {
+                    if (!animal.vivo) continue;
+                    const dist = Math.sqrt(Math.pow(this.x - animal.x, 2) + Math.pow(this.y - animal.y, 2));
+                    if (dist < 15 && animal.tipo === 'urso' && Math.random() < 0.02) {
+                        this.energia -= 20;
+                        if (this.energia <= 0) {
+                            this.morrer();
+                        }
+                    }
+                }
+            }
             
-            const humano = new Humano(x, y, this);
-            this.humanos.push(humano);
-        }
-    }
-    
-    atualizar() {
-        this.tempo += 0.1;
-        
-        // Atualiza humanos
-        for (const humano of this.humanos) {
-            humano.atualizar();
-        }
-        
-        // Remove humanos mortos
-        this.humanos = this.humanos.filter(h => h.vivo);
-        
-        // Atualiza animais
-        for (const animal of this.animais) {
-            animal.atualizar();
-        }
-        this.animais = this.animais.filter(a => a.vivo);
-        
-        // Atualiza recursos
-        for (const recurso of this.recursos) {
-            recurso.regenerar();
-        }
-        this.recursos = this.recursos.filter(r => r.ativo || Math.random() < 0.01);
-        
-        // Atualiza comunidades
-        for (const comunidade of this.comunidades) {
-            comunidade.atualizar();
-        }
-        
-        // Atualiza tecnologia global
-        let techSum = 0;
-        for (const comunidade of this.comunidades) {
-            techSum += comunidade.tecnologia;
-        }
-        this.tecnologia = Math.min(3, Math.floor(techSum / (this.comunidades.length || 1)));
-        
-        // Cria novas comunidades automaticamente
-        if (this.humanos.length > this.comunidades.length * 5 + 3 && Math.random() < 0.01) {
-            // Encontra humano sem comunidade
-            for (const humano of this.humanos) {
-                if (!humano.comunidade) {
-                    const comunidade = new Comunidade(humano.x, humano.y, this);
-                    comunidade.adicionarMembro(humano);
-                    this.comunidades.push(comunidade);
-                    break;
+            morrer() {
+                this.vivo = false;
+                if (this.comunidade) {
+                    this.comunidade.removerMembro(this);
                 }
             }
         }
-        
-        this.populacao = this.humanos.length;
-    }
-}
+        Humano._idCounter = 0;
 
-// ============================================
-// FUNÇÕES DE RENDERIZAÇÃO
-// ============================================
-function renderizar() {
-    if (!estado.ctx || !estado.mundo) return;
-    
-    const ctx = estado.ctx;
-    const width = estado.dimensions.width;
-    const height = estado.dimensions.height;
-    const mundo = estado.mundo;
-    
-    // Limpa o canvas
-    ctx.clearRect(0, 0, width, height);
-    
-    // Centraliza o mundo
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const escala = Math.min(width, height) / (mundo.raioIlha * 2.8);
-    
-    ctx.save();
-    ctx.translate(centerX, centerY);
-    ctx.scale(escala, escala);
-    
-    // Desenha água
-    ctx.fillStyle = '#1a5276';
-    ctx.beginPath();
-    ctx.arc(0, 0, mundo.raioIlha * 1.3, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // Desenha ilha
-    const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, mundo.raioIlha);
-    const corBase = mundo.corBioma.land;
-    grad.addColorStop(0, corBase);
-    grad.addColorStop(0.7, corBase);
-    grad.addColorStop(1, '#2c5a3c');
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(0, 0, mundo.raioIlha, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // Desenha vegetação
-    const corVeg = mundo.corBioma.vegetation;
-    for (let i = 0; i < mundo.raioIlha * 0.4; i++) {
-        const angulo = Math.random() * Math.PI * 2;
-        const distancia = Math.random() * mundo.raioIlha * 0.8;
-        const x = Math.cos(angulo) * distancia;
-        const y = Math.sin(angulo) * distancia;
-        const tamanho = 2 + Math.random() * 4;
-        
-        ctx.fillStyle = corVeg;
-        ctx.globalAlpha = 0.3 + Math.random() * 0.5;
-        ctx.beginPath();
-        ctx.arc(x, y, tamanho, 0, Math.PI * 2);
-        ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-    
-    // Desenha recursos
-    for (const recurso of mundo.recursos) {
-        if (!recurso.ativo) continue;
-        ctx.fillStyle = recurso.cor;
-        const tamanho = recurso.tamanho * 0.8;
-        ctx.beginPath();
-        ctx.arc(recurso.x, recurso.y, tamanho, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Pequeno brilho
-        ctx.fillStyle = 'rgba(255,255,255,0.3)';
-        ctx.beginPath();
-        ctx.arc(recurso.x - tamanho * 0.3, recurso.y - tamanho * 0.3, tamanho * 0.3, 0, Math.PI * 2);
-        ctx.fill();
-    }
-    
-    // Desenha cabanas
-    for (const comunidade of mundo.comunidades) {
-        for (let i = 0; i < Math.min(comunidade.cabanas, 10); i++) {
-            const ang = (i / Math.min(comunidade.cabanas, 10)) * Math.PI * 2;
-            const dist = 8 + i * 2;
-            const x = comunidade.x + Math.cos(ang) * dist;
-            const y = comunidade.y + Math.sin(ang) * dist;
+        // CLASSE ANIMAL
+        class Animal {
+            constructor(x, y, tipo, mundo) {
+                this.id = Animal._idCounter++;
+                this.x = x;
+                this.y = y;
+                this.tipo = tipo;
+                this.mundo = mundo;
+                this.energia = 70 + Math.random() * 30;
+                this.idade = Math.random() * 30;
+                this.velocidade = 0.3 + Math.random() * 0.5;
+                this.angulo = Math.random() * Math.PI * 2;
+                this.vivo = true;
+                this.fome = 20 + Math.random() * 30;
+                this.tempoReproducao = 0;
+                this.tamanho = this.getTamanho();
+                this.cor = this.getCor();
+            }
             
-            ctx.fillStyle = '#8b6b3a';
-            ctx.fillRect(x - 4, y - 3, 8, 6);
-            ctx.fillStyle = '#6b4b2a';
+            getTamanho() {
+                const tamanhos = { porco: 8, vaca: 10, galinha: 6, urso: 14 };
+                return tamanhos[this.tipo] || 8;
+            }
+            
+            getCor() {
+                const cores = { porco: '#e8a0a0', vaca: '#d4c4a0', galinha: '#e8d4a0', urso: '#8b6b4b' };
+                return cores[this.tipo] || '#ccc';
+            }
+            
+            atualizar() {
+                if (!this.vivo) return;
+                
+                this.idade += 0.01;
+                this.energia -= 0.1;
+                this.fome += 0.1;
+                
+                if (this.idade > 60 || this.energia <= 0 || this.fome > 100) {
+                    this.morrer();
+                    return;
+                }
+                
+                this.mover();
+                this.procurarComida();
+                this.reproduzir();
+            }
+            
+            mover() {
+                const speed = this.velocidade * 0.3;
+                this.angulo += (Math.random() - 0.5) * 0.3;
+                this.x += Math.cos(this.angulo) * speed;
+                this.y += Math.sin(this.angulo) * speed;
+                
+                const dist = Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.y, 2));
+                if (dist > this.mundo.raioIlha - 5) {
+                    this.angulo += Math.PI + (Math.random() - 0.5) * 0.5;
+                }
+            }
+            
+            procurarComida() {
+                if (this.fome < 30) return;
+                
+                for (const recurso of this.mundo.recursos) {
+                    if (recurso.ativo && recurso.tipo === 'comida') {
+                        const dist = Math.sqrt(Math.pow(this.x - recurso.x, 2) + Math.pow(this.y - recurso.y, 2));
+                        if (dist < this.tamanho + 5) {
+                            this.fome = Math.max(0, this.fome - 10);
+                            recurso.consumir();
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            reproduzir() {
+                this.tempoReproducao++;
+                if (this.tempoReproducao < 50 || this.energia < 40 || this.fome > 40) return;
+                
+                for (const outro of this.mundo.animais) {
+                    if (outro === this || !outro.vivo || outro.tipo !== this.tipo) continue;
+                    const dist = Math.sqrt(Math.pow(this.x - outro.x, 2) + Math.pow(this.y - outro.y, 2));
+                    
+                    if (dist < 20) {
+                        const filho = new Animal(
+                            this.x + (Math.random() - 0.5) * 15,
+                            this.y + (Math.random() - 0.5) * 15,
+                            this.tipo,
+                            this.mundo
+                        );
+                        filho.idade = 0;
+                        filho.energia = 30;
+                        this.mundo.animais.push(filho);
+                        this.tempoReproducao = 0;
+                        outro.tempoReproducao = 0;
+                        break;
+                    }
+                }
+            }
+            
+            morrer() {
+                this.vivo = false;
+            }
+        }
+        Animal._idCounter = 0;
+
+        // CLASSE RECURSO
+        class Recurso {
+            constructor(x, y, tipo, mundo) {
+                this.x = x;
+                this.y = y;
+                this.tipo = tipo;
+                this.mundo = mundo;
+                this.quantidade = 10 + Math.random() * 20;
+                this.ativo = true;
+                this.tamanho = tipo === 'madeira' ? 6 : 4;
+                this.cor = this.getCor();
+            }
+            
+            getCor() {
+                const cores = { comida: '#e8c84a', madeira: '#8b6b3a', agua: '#4a8bc4' };
+                return cores[this.tipo] || '#888';
+            }
+            
+            consumir() {
+                this.quantidade -= 1 + Math.random() * 2;
+                if (this.quantidade <= 0) {
+                    this.ativo = false;
+                }
+            }
+            
+            regenerar() {
+                if (!this.ativo && Math.random() < 0.001) {
+                    this.ativo = true;
+                    this.quantidade = 5 + Math.random() * 10;
+                }
+            }
+        }
+
+        // CLASSE COMUNIDADE
+        class Comunidade {
+            constructor(x, y, mundo) {
+                this.id = Comunidade._idCounter++;
+                this.x = x;
+                this.y = y;
+                this.mundo = mundo;
+                this.membros = [];
+                this.cabanas = 1;
+                this.nome = this.gerarNome();
+                this.recursos = { comida: 10, madeira: 5 };
+                this.tecnologia = 0;
+            }
+            
+            gerarNome() {
+                const prefixos = ['Vale', 'Monte', 'Rio', 'Lago', 'Campo', 'Floresta', 'Vila', 'Aldeia'];
+                const sufixos = ['Verde', 'Clara', 'Nova', 'Antiga', 'Bela', 'Serena', 'Próspera'];
+                return prefixos[Math.floor(Math.random() * prefixos.length)] + ' ' + 
+                       sufixos[Math.floor(Math.random() * sufixos.length)];
+            }
+            
+            adicionarMembro(humano) {
+                if (!this.membros.includes(humano)) {
+                    this.membros.push(humano);
+                    humano.comunidade = this;
+                }
+            }
+            
+            removerMembro(humano) {
+                const index = this.membros.indexOf(humano);
+                if (index > -1) {
+                    this.membros.splice(index, 1);
+                    humano.comunidade = null;
+                }
+            }
+            
+            construirCabana() {
+                if (this.cabanas < this.membros.length * 0.5 + 1) {
+                    this.cabanas++;
+                    this.recursos.madeira -= 2;
+                }
+            }
+            
+            atualizar() {
+                if (Math.random() < 0.05) {
+                    for (const recurso of this.mundo.recursos) {
+                        if (recurso.ativo) {
+                            const dist = Math.sqrt(Math.pow(this.x - recurso.x, 2) + Math.pow(this.y - recurso.y, 2));
+                            if (dist < 100) {
+                                this.recursos.comida += 0.1;
+                                this.recursos.madeira += 0.05;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                if (this.membros.length > 5 && this.recursos.comida > 20) {
+                    this.tecnologia = Math.min(3, Math.floor(this.membros.length / 10) + 
+                                              Math.floor(this.recursos.comida / 30));
+                }
+            }
+        }
+        Comunidade._idCounter = 0;
+
+        // CLASSE MUNDO
+        class Mundo {
+            constructor(tamanhoIlha, bioma, populacaoInicial) {
+                this.tamanho = tamanhoIlha;
+                this.bioma = bioma;
+                this.raioIlha = CONFIG.ISLAND_SIZES[tamanhoIlha].radius;
+                this.humanos = [];
+                this.animais = [];
+                this.recursos = [];
+                this.comunidades = [];
+                this.tecnologia = 0;
+                this.tempo = 0;
+                this.populacao = 0;
+                
+                this.gerarIlha();
+                this.gerarRecursos();
+                this.gerarAnimais();
+                this.gerarHumanos(populacaoInicial);
+            }
+            
+            gerarIlha() {
+                this.centroX = 0;
+                this.centroY = 0;
+                this.corBioma = CONFIG.BIOME_COLORS[this.bioma];
+            }
+            
+            gerarRecursos() {
+                const numRecursos = Math.floor(this.raioIlha / 15);
+                const config = CONFIG.RESOURCES[this.bioma];
+                
+                for (let i = 0; i < numRecursos; i++) {
+                    const angulo = Math.random() * Math.PI * 2;
+                    const distancia = Math.sqrt(Math.random()) * this.raioIlha * 0.8;
+                    const x = Math.cos(angulo) * distancia;
+                    const y = Math.sin(angulo) * distancia;
+                    
+                    let tipo = 'comida';
+                    if (Math.random() < config.wood / 20) tipo = 'madeira';
+                    if (Math.random() < config.water / 20) tipo = 'agua';
+                    
+                    this.recursos.push(new Recurso(x, y, tipo, this));
+                }
+            }
+            
+            gerarAnimais() {
+                const numAnimais = Math.floor(this.raioIlha / 20);
+                const tipos = ['porco', 'vaca', 'galinha', 'urso'];
+                const pesos = [0.3, 0.3, 0.3, 0.1];
+                
+                for (let i = 0; i < numAnimais; i++) {
+                    const angulo = Math.random() * Math.PI * 2;
+                    const distancia = Math.sqrt(Math.random()) * this.raioIlha * 0.7;
+                    const x = Math.cos(angulo) * distancia;
+                    const y = Math.sin(angulo) * distancia;
+                    
+                    let tipo = 'porco';
+                    let rand = Math.random();
+                    let acumulado = 0;
+                    for (let j = 0; j < tipos.length; j++) {
+                        acumulado += pesos[j];
+                        if (rand < acumulado) {
+                            tipo = tipos[j];
+                            break;
+                        }
+                    }
+                    
+                    this.animais.push(new Animal(x, y, tipo, this));
+                }
+            }
+            
+            gerarHumanos(quantidade) {
+                for (let i = 0; i < quantidade; i++) {
+                    const angulo = Math.random() * Math.PI * 2;
+                    const distancia = Math.sqrt(Math.random()) * this.raioIlha * 0.5;
+                    const x = Math.cos(angulo) * distancia;
+                    const y = Math.sin(angulo) * distancia;
+                    
+                    const humano = new Humano(x, y, this);
+                    this.humanos.push(humano);
+                }
+            }
+            
+            atualizar() {
+                this.tempo += 0.1;
+                
+                for (const humano of this.humanos) {
+                    humano.atualizar();
+                }
+                this.humanos = this.humanos.filter(h => h.vivo);
+                
+                for (const animal of this.animais) {
+                    animal.atualizar();
+                }
+                this.animais = this.animais.filter(a => a.vivo);
+                
+                for (const recurso of this.recursos) {
+                    recurso.regenerar();
+                }
+                this.recursos = this.recursos.filter(r => r.ativo || Math.random() < 0.01);
+                
+                for (const comunidade of this.comunidades) {
+                    comunidade.atualizar();
+                }
+                
+                let techSum = 0;
+                for (const comunidade of this.comunidades) {
+                    techSum += comunidade.tecnologia;
+                }
+                this.tecnologia = Math.min(3, Math.floor(techSum / (this.comunidades.length || 1)));
+                
+                if (this.humanos.length > this.comunidades.length * 5 + 3 && Math.random() < 0.01) {
+                    for (const humano of this.humanos) {
+                        if (!humano.comunidade) {
+                            const comunidade = new Comunidade(humano.x, humano.y, this);
+                            comunidade.adicionarMembro(humano);
+                            this.comunidades.push(comunidade);
+                            break;
+                        }
+                    }
+                }
+                
+                this.populacao = this.humanos.length;
+            }
+        }
+
+        // ============================================
+        // FUNÇÕES DE RENDERIZAÇÃO
+        // ============================================
+        function renderizar() {
+            if (!estado.ctx || !estado.mundo) return;
+            
+            const ctx = estado.ctx;
+            const width = estado.dimensions.width;
+            const height = estado.dimensions.height;
+            const mundo = estado.mundo;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const escala = Math.min(width, height) / (mundo.raioIlha * 2.8);
+            
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.scale(escala, escala);
+            
+            // Água
+            ctx.fillStyle = '#1a5276';
             ctx.beginPath();
-            ctx.moveTo(x - 5, y - 3);
-            ctx.lineTo(x, y - 8);
-            ctx.lineTo(x + 5, y - 3);
+            ctx.arc(0, 0, mundo.raioIlha * 1.3, 0, Math.PI * 2);
             ctx.fill();
-        }
-    }
-    
-    // Desenha animais
-    for (const animal of mundo.animais) {
-        if (!animal.vivo) continue;
-        ctx.fillStyle = animal.cor;
-        ctx.beginPath();
-        ctx.arc(animal.x, animal.y, animal.tamanho, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Olhos simples
-        ctx.fillStyle = '#222';
-        ctx.beginPath();
-        ctx.arc(animal.x - animal.tamanho * 0.4, animal.y - animal.tamanho * 0.3, 1.5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(animal.x + animal.tamanho * 0.4, animal.y - animal.tamanho * 0.3, 1.5, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Etiqueta do tipo
-        ctx.fillStyle = 'rgba(0,0,0,0.5)';
-        ctx.font = '6px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(animal.tipo, animal.x, animal.y - animal.tamanho - 4);
-    }
-    
-    // Desenha humanos
-    for (const humano of mundo.humanos) {
-        if (!humano.vivo) continue;
-        
-        // Corpo
-        ctx.fillStyle = '#e8c8a0';
-        ctx.beginPath();
-        ctx.arc(humano.x, humano.y, 5, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Cabelo
-        ctx.fillStyle = '#6b4b3a';
-        ctx.beginPath();
-        ctx.arc(humano.x, humano.y - 3, 4, Math.PI, Math.PI * 2);
-        ctx.fill();
-        
-        // Olhos
-        ctx.fillStyle = '#222';
-        ctx.beginPath();
-        ctx.arc(humano.x - 2, humano.y - 1, 1, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(humano.x + 2, humano.y - 1, 1, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Estado (indicador visual)
-        const coresEstado = {
-            'procurar_comida': '#ff6b35',
-            'descansar': '#6bb5ff',
-            'reproduzir': '#ff6b9d',
-            'construir': '#ffb84a',
-            'explorar': '#6bff6b'
-        };
-        ctx.fillStyle = coresEstado[humano.estado] || '#aaa';
-        ctx.beginPath();
-        ctx.arc(humano.x, humano.y + 7, 2, 0, Math.PI * 2);
-        ctx.fill();
-    }
-    
-    ctx.restore();
-}
-
-// ============================================
-// FUNÇÕES DE INTERAÇÃO
-// ============================================
-function tratarToque(x, y) {
-    if (!estado.mundo) return;
-    
-    const canvas = estado.canvas;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    
-    const canvasX = (x - rect.left) * scaleX;
-    const canvasY = (y - rect.top) * scaleY;
-    
-    // Converte para coordenadas do mundo
-    const centerX = estado.dimensions.width / 2;
-    const centerY = estado.dimensions.height / 2;
-    const escala = Math.min(estado.dimensions.width, estado.dimensions.height) / 
-                   (estado.mundo.raioIlha * 2.8);
-    
-    const mundoX = (canvasX - centerX) / escala;
-    const mundoY = (canvasY - centerY) / escala;
-    
-    // Verifica se tocou em algum humano
-    for (const humano of estado.mundo.humanos) {
-        if (!humano.vivo) continue;
-        const dist = Math.sqrt(Math.pow(mundoX - humano.x, 2) + Math.pow(mundoY - humano.y, 2));
-        if (dist < 15) {
-            mostrarInfoHumano(humano);
-            return;
-        }
-    }
-    
-    // Verifica se tocou em algum animal
-    for (const animal of estado.mundo.animais) {
-        if (!animal.vivo) continue;
-        const dist = Math.sqrt(Math.pow(mundoX - animal.x, 2) + Math.pow(mundoY - animal.y, 2));
-        if (dist < 20) {
-            mostrarInfoAnimal(animal);
-            return;
-        }
-    }
-    
-    // Verifica se tocou em alguma comunidade
-    for (const comunidade of estado.mundo.comunidades) {
-        const dist = Math.sqrt(Math.pow(mundoX - comunidade.x, 2) + Math.pow(mundoY - comunidade.y, 2));
-        if (dist < 30) {
-            mostrarInfoComunidade(comunidade);
-            return;
-        }
-    }
-    
-    // Área vazia - remove seleção
-    fecharPainel();
-}
-
-function mostrarInfoHumano(humano) {
-    const painel = document.getElementById('painelInfo');
-    const conteudo = document.getElementById('infoEntidade');
-    
-    const estados = {
-        'procurar_comida': '🍽️ Procurando comida',
-        'descansar': '😴 Descansando',
-        'reproduzir': '💕 Reproduzindo',
-        'construir': '🔨 Construindo',
-        'explorar': '🧭 Explorando'
-    };
-    
-    conteudo.innerHTML = `
-        <h3>👤 Humano #${humano.id}</h3>
-        <p><strong>Idade:</strong> ${Math.floor(humano.idade)} anos</p>
-        <p><strong>Energia:</strong> ${Math.floor(humano.energia)}%</p>
-        <p><strong>Fome:</strong> ${Math.floor(humano.fome)}%</p>
-        <p><strong>Estado:</strong> ${estados[humano.estado] || humano.estado}</p>
-        <p><strong>Comunidade:</strong> ${humano.comunidade ? humano.comunidade.nome : 'Nenhuma'}</p>
-    `;
-    
-    painel.style.display = 'block';
-    estado.selecao = humano;
-}
-
-function mostrarInfoAnimal(animal) {
-    const painel = document.getElementById('painelInfo');
-    const conteudo = document.getElementById('infoEntidade');
-    
-    const nomes = { porco: '🐷 Porco', vaca: '🐄 Vaca', galinha: '🐔 Galinha', urso: '🐻 Urso' };
-    
-    conteudo.innerHTML = `
-        <h3>${nomes[animal.tipo] || animal.tipo}</h3>
-        <p><strong>Idade:</strong> ${Math.floor(animal.idade)} anos</p>
-        <p><strong>Energia:</strong> ${Math.floor(animal.energia)}%</p>
-        <p><strong>Fome:</strong> ${Math.floor(animal.fome)}%</p>
-        <p><strong>Tamanho:</strong> ${animal.tamanho}</p>
-    `;
-    
-    painel.style.display = 'block';
-    estado.selecao = animal;
-}
-
-function mostrarInfoComunidade(comunidade) {
-    const painel = document.getElementById('painelInfo');
-    const conteudo = document.getElementById('infoEntidade');
-    
-    const techNomes = ['Sobrevivência', 'Ferramentas', 'Abrigo', 'Aldeia'];
-    const techDesc = [
-        'Caça e coleta básica',
-        'Ferramentas simples',
-        'Construção de cabanas',
-        'Primeiras comunidades'
-    ];
-    
-    conteudo.innerHTML = `
-        <h3>🏘️ ${comunidade.nome}</h3>
-        <p><strong>População:</strong> ${comunidade.membros.length}</p>
-        <p><strong>Cabanas:</strong> ${comunidade.cabanas}</p>
-        <p><strong>Tecnologia:</strong> ${techNomes[comunidade.tecnologia] || 'Sobrevivência'}</p>
-        <p><strong>Recursos:</strong> 🍖 ${Math.floor(comunidade.recursos.comida)} | 🪵 ${Math.floor(comunidade.recursos.madeira)}</p>
-        <p><em>${techDesc[comunidade.tecnologia] || ''}</em></p>
-    `;
-    
-    painel.style.display = 'block';
-    estado.selecao = comunidade;
-}
-
-function fecharPainel() {
-    document.getElementById('painelInfo').style.display = 'none';
-    estado.selecao = null;
-}
-
-// ============================================
-// FUNÇÕES DE INICIALIZAÇÃO E CONTROLE
-// ============================================
-function iniciarJogo() {
-    const tamanho = document.querySelector('#tamanhoIlha .ativo')?.dataset.valor || 'medio';
-    const bioma = document.querySelector('#bioma .ativo')?.dataset.valor || 'floresta';
-    const populacao = parseInt(document.querySelector('#populacao .ativo')?.dataset.valor || '10');
-    
-    // Esconde tela inicial
-    document.getElementById('telaInicial').style.display = 'none';
-    document.getElementById('telaJogo').style.display = 'flex';
-    
-    // Inicializa canvas
-    const canvas = document.getElementById('canvasMundo');
-    estado.canvas = canvas;
-    estado.ctx = canvas.getContext('2d');
-    
-    // Ajusta tamanho do canvas
-    ajustarCanvas();
-    
-    // Cria o mundo
-    estado.mundo = new Mundo(tamanho, bioma, populacao);
-    estado.rodando = true;
-    estado.tempo = 0;
-    estado.pausado = false;
-    
-    // Atualiza interface
-    atualizarInterface();
-    document.getElementById('btnPausar').textContent = '⏸️';
-    
-    // Inicia o loop do jogo
-    estado.ultimaAtualizacao = performance.now();
-    estado.ultimoRender = performance.now();
-    loopJogo();
-}
-
-function ajustarCanvas() {
-    const canvas = estado.canvas;
-    const container = document.getElementById('containerCanvas');
-    
-    const rect = container.getBoundingClientRect();
-    canvas.width = rect.width * 0.99;
-    canvas.height = rect.height * 0.99;
-    
-    estado.dimensions.width = canvas.width;
-    estado.dimensions.height = canvas.height;
-}
-
-function loopJogo(timestamp) {
-    if (!estado.rodando) return;
-    
-    const agora = performance.now();
-    const delta = agora - estado.ultimaAtualizacao;
-    
-    // Atualiza lógica
-    if (!estado.pausado && delta >= CONFIG.UPDATE_INTERVAL / estado.velocidade) {
-        estado.mundo.atualizar();
-        estado.tempo += 0.1;
-        estado.ultimaAtualizacao = agora;
-        atualizarInterface();
-    }
-    
-    // Renderiza
-    if (agora - estado.ultimoRender >= CONFIG.RENDER_INTERVAL) {
-        renderizar();
-        estado.ultimoRender = agora;
-    }
-    
-    requestAnimationFrame(loopJogo);
-}
-
-function atualizarInterface() {
-    if (!estado.mundo) return;
-    
-    document.getElementById('populacaoAtual').textContent = estado.mundo.populacao;
-    document.getElementById('animaisAtual').textContent = estado.mundo.animais.filter(a => a.vivo).length;
-    document.getElementById('tempoSimulacao').textContent = Math.floor(estado.tempo);
-    document.getElementById('nivelTecnologico').textContent = estado.mundo.tecnologia;
-}
-
-function togglePausa() {
-    estado.pausado = !estado.pausado;
-    document.getElementById('btnPausar').textContent = estado.pausado ? '▶️' : '⏸️';
-}
-
-function mudarVelocidade() {
-    const velocidades = [1, 2, 5];
-    let index = velocidades.indexOf(estado.velocidade);
-    index = (index + 1) % velocidades.length;
-    estado.velocidade = velocidades[index];
-    document.getElementById('btnVelocidade').textContent = `${estado.velocidade}x`;
-}
-
-function reiniciarJogo() {
-    document.getElementById('modalConfirmacao').style.display = 'flex';
-}
-
-function confirmarReinicio() {
-    document.getElementById('modalConfirmacao').style.display = 'none';
-    estado.rodando = false;
-    
-    // Volta para a tela inicial
-    document.getElementById('telaJogo').style.display = 'none';
-    document.getElementById('telaInicial').style.display = 'flex';
-    document.getElementById('painelInfo').style.display = 'none';
-    
-    // Reseta estado
-    estado.mundo = null;
-    estado.selecao = null;
-    estado.pausado = false;
-    estado.velocidade = 1;
-    estado.tempo = 0;
-}
-
-function cancelarReinicio() {
-    document.getElementById('modalConfirmacao').style.display = 'none';
-}
-
-// ============================================
-// EVENTOS DE TOQUE E MOUSE
-// ============================================
-function setupEventos() {
-    const canvas = document.getElementById('canvasMundo');
-    
-    // Eventos de toque
-    canvas.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        const touch = e.touches[0];
-        if (touch) {
-            tratarToque(touch.clientX, touch.clientY);
-        }
-    }, { passive: false });
-    
-    // Eventos de mouse (compatibilidade)
-    canvas.addEventListener('click', (e) => {
-        tratarToque(e.clientX, e.clientY);
-    });
-    
-    // Botões de controle
-    document.getElementById('btnPausar').addEventListener('click', togglePausa);
-    document.getElementById('btnPausar').addEventListener('touchend', (e) => {
-        e.preventDefault();
-        togglePausa();
-    });
-    
-    document.getElementById('btnVelocidade').addEventListener('click', mudarVelocidade);
-    document.getElementById('btnVelocidade').addEventListener('touchend', (e) => {
-        e.preventDefault();
-        mudarVelocidade();
-    });
-    
-    document.getElementById('btnInfo').addEventListener('click', mostrarAjuda);
-    document.getElementById('btnInfo').addEventListener('touchend', (e) => {
-        e.preventDefault();
-        mostrarAjuda();
-    });
-    
-    document.getElementById('btnReiniciar').addEventListener('click', reiniciarJogo);
-    document.getElementById('btnReiniciar').addEventListener('touchend', (e) => {
-        e.preventDefault();
-        reiniciarJogo();
-    });
-    
-    document.getElementById('btnFecharPainel').addEventListener('click', fecharPainel);
-    document.getElementById('btnFecharPainel').addEventListener('touchend', (e) => {
-        e.preventDefault();
-        fecharPainel();
-    });
-    
-    document.getElementById('btnConfirmarReinicio').addEventListener('click', confirmarReinicio);
-    document.getElementById('btnConfirmarReinicio').addEventListener('touchend', (e) => {
-        e.preventDefault();
-        confirmarReinicio();
-    });
-    
-    document.getElementById('btnCancelarReinicio').addEventListener('click', cancelarReinicio);
-    document.getElementById('btnCancelarReinicio').addEventListener('touchend', (e) => {
-        e.preventDefault();
-        cancelarReinicio();
-    });
-    
-    // Botões de opção
-    document.querySelectorAll('.botoes-opcao .opcao').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const grupo = btn.closest('.botoes-opcao');
-            grupo.querySelectorAll('.opcao').forEach(b => b.classList.remove('ativo'));
-            btn.classList.add('ativo');
-        });
-        btn.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            const grupo = btn.closest('.botoes-opcao');
-            grupo.querySelectorAll('.opcao').forEach(b => b.classList.remove('ativo'));
-            btn.classList.add('ativo');
-        });
-    });
-    
-    // Botão iniciar
-    document.getElementById('btnIniciar').addEventListener('click', iniciarJogo);
-    document.getElementById('btnIniciar').addEventListener('touchend', (e) => {
-        e.preventDefault();
-        iniciarJogo();
-    });
-    
-    // Redimensionamento
-    window.addEventListener('resize', () => {
-        if (estado.rodando) {
-            ajustarCanvas();
-        }
-    });
-    
-    window.addEventListener('orientationchange', () => {
-        setTimeout(() => {
-            if (estado.rodando) {
-                ajustarCanvas();
+            
+            // Ilha
+            const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, mundo.raioIlha);
+            const corBase = mundo.corBioma.land;
+            grad.addColorStop(0, corBase);
+            grad.addColorStop(0.7, corBase);
+            grad.addColorStop(1, '#2c5a3c');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(0, 0, mundo.raioIlha, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Vegetação
+            const corVeg = mundo.corBioma.vegetation;
+            for (let i = 0; i < mundo.raioIlha * 0.4; i++) {
+                const angulo = Math.random() * Math.PI * 2;
+                const distancia = Math.random() * mundo.raioIlha * 0.8;
+                const x = Math.cos(angulo) * distancia;
+                const y = Math.sin(angulo) * distancia;
+                const tamanho = 2 + Math.random() * 4;
+                
+                ctx.fillStyle = corVeg;
+                ctx.globalAlpha = 0.3 + Math.random() * 0.5;
+                ctx.beginPath();
+                ctx.arc(x, y, tamanho, 0, Math.PI * 2);
+                ctx.fill();
             }
-        }, 300);
-    });
-}
+            ctx.globalAlpha = 1;
+            
+            // Recursos
+            for (const recurso of mundo.recursos) {
+                if (!recurso.ativo) continue;
+                ctx.fillStyle = recurso.cor;
+                const tamanho = recurso.tamanho * 0.8;
+                ctx.beginPath();
+                ctx.arc(recurso.x, recurso.y, tamanho, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                ctx.beginPath();
+                ctx.arc(recurso.x - tamanho * 0.3, recurso.y - tamanho * 0.3, tamanho * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Cabanas
+            for (const comunidade of mundo.comunidades) {
+                for (let i = 0; i < Math.min(comunidade.cabanas, 10); i++) {
+                    const ang = (i / Math.min(comunidade.cabanas, 10)) * Math.PI * 2;
+                    const dist = 8 + i * 2;
+                    const x = comunidade.x + Math.cos(ang) * dist;
+                    const y = comunidade.y + Math.sin(ang) * dist;
+                    
+                    ctx.fillStyle = '#8b6b3a';
+                    ctx.fillRect(x - 4, y - 3, 8, 6);
+                    ctx.fillStyle = '#6b4b2a';
+                    ctx.beginPath();
+                    ctx.moveTo(x - 5, y - 3);
+                    ctx.lineTo(x, y - 8);
+                    ctx.lineTo(x + 5, y - 3);
+                    ctx.fill();
+                }
+            }
+            
+            // Animais
+            for (const animal of mundo.animais) {
+                if (!animal.vivo) continue;
+                ctx.fillStyle = animal.cor;
+                ctx.beginPath();
+                ctx.arc(animal.x, animal.y, animal.tamanho, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = '#222';
+                ctx.beginPath();
+                ctx.arc(animal.x - animal.tamanho * 0.4, animal.y - animal.tamanho * 0.3, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(animal.x + animal.tamanho * 0.4, animal.y - animal.tamanho * 0.3, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.font = '6px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(animal.tipo, animal.x, animal.y - animal.tamanho - 4);
+            }
+            
+            // Humanos
+            for (const humano of mundo.humanos) {
+                if (!humano.vivo) continue;
+                
+                ctx.fillStyle = '#e8c8a0';
+                ctx.beginPath();
+                ctx.arc(humano.x, humano.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = '#6b4b3a';
+                ctx.beginPath();
+                ctx.arc(humano.x, humano.y - 3, 4, Math.PI, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = '#222';
+                ctx.beginPath();
+                ctx.arc(humano.x - 2, humano.y - 1, 1, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(humano.x + 2, humano.y - 1, 1, 0, Math.PI * 2);
+                ctx.fill();
+                
+                const coresEstado = {
+                    'procurar_comida': '#ff6b35',
+                    'descansar': '#6bb5ff',
+                    'reproduzir': '#ff6b9d',
+                    'construir': '#ffb84a',
+                    'explorar': '#6bff6b'
+                };
+                ctx.fillStyle = coresEstado[humano.estado] || '#aaa';
+                ctx.beginPath();
+                ctx.arc(humano.x, humano.y + 7, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            ctx.restore();
+        }
 
-function mostrarAjuda() {
-    const painel = document.getElementById('painelInfo');
-    const conteudo = document.getElementById('infoEntidade');
-    
-    conteudo.innerHTML = `
-        <h3>📖 Como jogar</h3>
-        <p><strong>Objetivo:</strong> Observe sua civilização crescer!</p>
-        <p>👆 Toque em humanos, animais ou comunidades para ver informações.</p>
-        <p>⏸️ Pause a simulação para analisar o mundo.</p>
-        <p>⚡ Aumente a velocidade para ver o progresso mais rápido.</p>
-        <p>🔄 Reinicie para experimentar novas configurações.</p>
-        <p><em>Os humanos vão explorar, construir e se reproduzir automaticamente!</em></p>
-    `;
-    
-    painel.style.display = 'block';
-}
+        // ============================================
+        // FUNÇÕES DE INTERAÇÃO
+        // ============================================
+        function tratarToque(x, y) {
+            if (!estado.mundo) return;
+            
+            const canvas = estado.canvas;
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            const canvasX = (x - rect.left) * scaleX;
+            const canvasY = (y - rect.top) * scaleY;
+            
+            const centerX = estado.dimensions.width / 2;
+            const centerY = estado.dimensions.height / 2;
+            const escala = Math.min(estado.dimensions.width, estado.dimensions.height) / 
+                           (estado.mundo.raioIlha * 2.8);
+            
+            const mundoX = (canvasX - centerX) / escala;
+            const mundoY = (canvasY - centerY) / escala;
+            
+            // Verifica humanos
+            for (const humano of estado.mundo.humanos) {
+                if (!humano.vivo) continue;
+                const dist = Math.sqrt(Math.pow(mundoX - humano.x, 2) + Math.pow(mundoY - humano.y, 2));
+                if (dist < 15) {
+                    mostrarInfoHumano(humano);
+                    return;
+                }
+            }
+            
+            // Verifica animais
+            for (const animal of estado.mundo.animais) {
+                if (!animal.vivo) continue;
+                const dist = Math.sqrt(Math.pow(mundoX - animal.x, 2) + Math.pow(mundoY - animal.y, 2));
+                if (dist < 20) {
+                    mostrarInfoAnimal(animal);
+                    return;
+                }
+            }
+            
+            // Verifica comunidades
+            for (const comunidade of estado.mundo.comunidades) {
+                const dist = Math.sqrt(Math.pow(mundoX - comunidade.x, 2) + Math.pow(mundoY - comunidade.y, 2));
+                if (dist < 30) {
+                    mostrarInfoComunidade(comunidade);
+                    return;
+                }
+            }
+            
+            fecharPainel();
+        }
 
-// ============================================
-// INICIALIZAÇÃO
-// ============================================
-document.addEventListener('DOMContentLoaded', () => {
-    setupEventos();
-    
-    // Inicializa com configurações padrão visíveis
-    document.querySelector('#tamanhoIlha .opcao').classList.add('ativo');
-    document.querySelector('#bioma .opcao').classList.add('ativo');
-    document.querySelector('#populacao .opcao[data-valor="10"]').classList.add('ativo');
-});
+        function mostrarInfoHumano(humano) {
+            const painel = document.getElementById('painelInfo');
+            const conteudo = document.getElementById('infoEntidade');
+            
+            const estados = {
+                'procurar_comida': '🍽️ Procurando comida',
+                'descansar': '😴 Descansando',
+                'reproduzir': '💕 Reproduzindo',
+                'construir': '🔨 Construindo',
+                'explorar': '🧭 Explorando'
+            };
+            
+            conteudo.innerHTML = `
+                <h3>👤 Humano #${humano.id}</h3>
+                <p><strong>Idade:</strong> ${Math.floor(humano.idade)} anos</p>
+                <p><strong>Energia:</strong> ${Math.floor(humano.energia)}%</p>
+                <p><strong>Fome:</strong> ${Math.floor(humano.fome)}%</p>
+                <p><strong>Estado:</strong> ${estados[humano.estado] || humano.estado}</p>
+                <p><strong>Comunidade:</strong> ${humano.comunidade ? humano.comunidade.nome : 'Nenhuma'}</p>
+            `;
+            
+            painel.style.display = 'block';
+            estado.selecao = humano;
+        }
+
+        function mostrarInfoAnimal(animal) {
+            const painel = document.getElementById('painelInfo');
+            const conteudo = document.getElementById('infoEntidade');
+            
+            const nomes = { porco: '🐷 Porco', vaca: '🐄 Vaca', galinha: '🐔 Galinha', urso: '🐻 Urso' };
+            
+            conteudo.innerHTML = `
+                <h3>${nomes[animal.tipo] || animal.tipo}</h3>
+                <p><strong>Idade:</strong> ${Math.floor(animal.idade)} anos</p>
+                <p><strong>Energia:</strong> ${Math.floor(animal.energia)}%</p>
+                <p><strong>Fome:</strong> ${Math.floor(animal.fome)}%</p>
+                <p><strong>Tamanho:</strong> ${animal.tamanho}</p>
+            `;
+            
+            painel.style.display = 'block';
+            estado.selecao = animal;
+        }
+
+        function mostrarInfoComunidade(comunidade) {
+            const painel = document.getElementById('painelInfo');
+            const conteudo = document.getElementById('infoEntidade');
+            
+            const techNomes = ['Sobrevivência', 'Ferramentas', 'Abrigo', 'Aldeia'];
+            const techDesc = [
+                'Caça e coleta básica',
+                'Ferramentas simples',
+                'Construção de cabanas',
+                'Primeiras comunidades'
+            ];
+            
+            conteudo.innerHTML = `
+                <h3>🏘️ ${comunidade.nome}</h3>
+                <p><strong>População:</strong> ${comunidade.membros.length}</p>
+                <p><strong>Cabanas:</strong> ${comunidade.cabanas}</p>
+                <p><strong>Tecnologia:</strong> ${techNomes[comunidade.tecnologia] || 'Sobrevivência'}</p>
+                <p><strong>Recursos:</strong> 🍖 ${Math.floor(comunidade.recursos.comida)} | 🪵 ${Math.floor(comunidade.recursos.madeira)}</p>
+                <p><em>${techDesc[comunidade.tecnologia] || ''}</em></p>
+            `;
+            
+            painel.style.display = 'block';
+            estado.selecao = comunidade;
+        }
+
+        function fecharPainel() {
+            document.getElementById('painelInfo').style.display = 'none';
+            estado.selecao = null;
+        }
+
+        // ============================================
+        // FUNÇÕES DE INICIALIZAÇÃO E CONTROLE
+        // ============================================
+        function iniciarJogo() {
+            const tamanho = document.querySelector('#tamanhoIlha .ativo')?.dataset.valor || 'medio';
+            const bioma = document.querySelector('#bioma .ativo')?.dataset.valor || 'floresta';
+            const populacao = parseInt(document.querySelector('#populacao .ativo')?.dataset.valor || '10');
+            
+            document.getElementById('telaInicial').style.display = 'none';
+            document.getElementById('telaJogo').style.display = 'flex';
+            
+            const canvas = document.getElementById('canvasMundo');
+            estado.canvas = canvas;
+            estado.ctx = canvas.getContext('2d');
+            
+            ajustarCanvas();
+            
+            estado.mundo = new Mundo(tamanho, bioma, populacao);
+            estado.rodando = true;
+            estado.tempo = 0;
+            estado.pausado = false;
+            
+            atualizarInterface();
+            document.getElementById('btnPausar').textContent = '⏸️';
+            
+            estado.ultimaAtualizacao = performance.now();
+            estado.ultimoRender = performance.now();
+            loopJogo();
+        }
+
+        function ajustarCanvas() {
+            const canvas = estado.canvas;
+            const container = document.getElementById('containerCanvas');
+            
+            const rect = container.getBoundingClientRect();
+            canvas.width = rect.width * 0.99;
+            canvas.height = rect.height * 0.99;
+            
+            estado.dimensions.width = canvas.width;
+            estado.dimensions.height = canvas.height;
+        }
+
+        function loopJogo(timestamp) {
+            if (!estado.rodando) return;
+            
+            const agora = performance.now();
+            const delta = agora - estado.ultimaAtualizacao;
+            
+            if (!estado.pausado && delta >= CONFIG.UPDATE_INTERVAL / estado.velocidade) {
+                estado.mundo.atualizar();
+                estado.tempo += 0.1;
+                estado.ultimaAtualizacao = agora;
+                atualizarInterface();
+            }
+            
+            if (agora - estado.ultimoRender >= CONFIG.RENDER_INTERVAL) {
+                renderizar();
+                estado.ultimoRender = agora;
+            }
+            
+            requestAnimationFrame(loopJogo);
+        }
+
+        function atualizarInterface() {
+            if (!estado.mundo) return;
+            
+            document.getElementById('populacaoAtual').textContent = estado.mundo.populacao;
+            document.getElementById('animaisAtual').textContent = estado.mundo.animais.filter(a => a.vivo).length;
+            document.getElementById('tempoSimulacao').textContent = Math.floor(estado.tempo);
+            document.getElementById('nivelTecnologico').textContent = estado.mundo.tecnologia;
+        }
+
+        function togglePausa() {
+            estado.pausado = !estado.pausado;
+            document.getElementById('btnPausar').textContent = estado.pausado ? '▶️' : '⏸️';
+        }
+
+        function mudarVelocidade() {
+            const velocidades = [1, 2, 5];
+            let index = velocidades.indexOf(estado.velocidade);
+            index = (index + 1) % velocidades.length;
+            estado.velocidade = velocidades[index];
+            document.getElementById('btnVelocidade').textContent = `${estado.velocidade}x`;
+        }
+
+        function reiniciarJogo() {
+            document.getElementById('modalConfirmacao').style.display = 'flex';
+        }
+
+        function confirmarReinicio() {
+            document.getElementById('modalConfirmacao').style.display = 'none';
+            estado.rodando = false;
+            
+            document.getElementById('telaJogo').style.display = 'none';
+            document.getElementById('telaInicial').style.display = 'flex';
+            document.getElementById('painelInfo').style.display = 'none';
+            
+            estado.mundo = null;
+            estado.selecao = null;
+            estado.pausado = false;
+            estado.velocidade = 1;
+            estado.tempo = 0;
+            document.getElementById('btnVelocidade').textContent = '1x';
+        }
+
+        function cancelarReinicio() {
+            document.getElementById('modalConfirmacao').style.display = 'none';
+        }
+
+        function mostrarAjuda() {
+            const painel = document.getElementById('painelInfo');
+            const conteudo = document.getElementById('infoEntidade');
+            
+            conteudo.innerHTML = `
+                <h3>📖 Como jogar</h3>
+                <p><strong>Objetivo:</strong> Observe sua civilização crescer!</p>
+                <p>👆 Toque em humanos, animais ou comunidades para ver informações.</p>
+                <p>⏸️ Pause a simulação para analisar o mundo.</p>
+                <p>⚡ Aumente a velocidade para ver o progresso mais rápido.</p>
+                <p>🔄 Reinicie para experimentar novas configurações.</p>
+                <p><em>Os humanos vão explorar, construir e se reproduzir automaticamente!</em></p>
+                <hr style="border-color: #333; margin: 10px 0;">
+                <p style="font-size: 0.8rem; color: #888;">WorldBlox V0.1 - Criado por Manoel2313</p>
+            `;
+            
+            painel.style.display = 'block';
+        }
+
+        // ============================================
+        // EVENTOS
+        // ============================================
+        function setupEventos() {
+            const canvas = document.getElementById('canvasMundo');
+            
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                if (touch) {
+                    tratarToque(touch.clientX, touch.clientY);
+                }
+            }, { passive: false });
+            
+            canvas.addEventListener('click', (e) => {
+                tratarToque(e.clientX, e.clientY);
+            });
+            
+            document.getElementById('btnPausar').addEventListener('click', togglePausa);
+            document.getElementById('btnPausar').addEventListener('touchend', (e) => {
+                e.preventDefault();
+                togglePausa();
+            });
+            
+            document.getElementById('btnVelocidade').addEventListener('click', mudarVelocidade);
+            document.getElementById('btnVelocidade').addEventListener('touchend', (e) => {
+                e.preventDefault();
+                mudarVelocidade();
+            });
+            
+            document.getElementById('btnInfo').addEventListener('click', mostrarAjuda);
+            document.getElementById('btnInfo').addEventListener('touchend', (e) => {
+                e.preventDefault();
+                mostrarAjuda();
+            });
+            
+            document.getElementById('btnReiniciar').addEventListener('click', reiniciarJogo);
+            document.getElementById('btnReiniciar').addEventListener('touchend', (e) => {
+                e.preventDefault();
+                reiniciarJogo();
+            });
+            
+            document.getElementById('btnFecharPainel').addEventListener('click', fecharPainel);
+            document.getElementById('btnFecharPainel').addEventListener('touchend', (e) => {
+                e.preventDefault();
+                fecharPainel();
+            });
+            
+            document.getElementById('btnConfirmarReinicio').addEventListener('click', confirmarReinicio);
+            document.getElementById('btnConfirmarReinicio').addEventListener('touchend', (e) => {
+                e.preventDefault();
+                confirmarReinicio();
+            });
+            
+            document.getElementById('btnCancelarReinicio').addEventListener('click', cancelarReinicio);
+            document.getElementById('btnCancelarReinicio').addEventListener('touchend', (e) => {
+                e.preventDefault();
+                cancelarReinicio();
+            });
+            
+            document.querySelectorAll('.botoes-opcao .opcao').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const grupo = btn.closest('.botoes-opcao');
+                    grupo.querySelectorAll('.opcao').forEach(b => b.classList.remove('ativo'));
+                    btn.classList.add('ativo');
+                });
+                btn.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    const grupo = btn.closest('.botoes-opcao');
+                    grupo.querySelectorAll('.opcao').forEach(b => b.classList.remove('ativo'));
+                    btn.classList.add('ativo');
+                });
+            });
+            
+            document.getElementById('btnIniciar').addEventListener('click', iniciarJogo);
+            document.getElementById('btnIniciar').addEventListener('touchend', (e) => {
+                e.preventDefault();
+                iniciarJogo();
+            });
+            
+            window.addEventListener('resize', () => {
+                if (estado.rodando) {
+                    ajustarCanvas();
+                }
+            });
+            
+            window.addEventListener('orientationchange', () => {
+                setTimeout(() => {
+                    if (estado.rodando) {
+                        ajustarCanvas();
+                    }
+                }, 300);
+            });
+        }
+
+        // ============================================
+        // INICIALIZAÇÃO
+        // ============================================
+        document.addEventListener('DOMContentLoaded', () => {
+            setupEventos();
+            
+            document.querySelector('#tamanhoIlha .opcao').classList.add('ativo');
+            document.querySelector('#bioma .opcao').classList.add('ativo');
+            document.querySelector('#populacao .opcao[data-valor="10"]').classList.add('ativo');
+        });
+    </script>
+</body>
+</html>
