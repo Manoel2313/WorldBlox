@@ -2,18 +2,88 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mundo Industrial - CORRIGIDO</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>INDUSTRY FUND</title>
     <style>
-        * { margin: 0; padding: 0; }
-        body { overflow: hidden; background: #0a0a12; font-family: 'Segoe UI', Arial, sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { overflow: hidden; background: #0a0a12; font-family: 'Segoe UI', Arial, sans-serif; touch-action: none; }
         
+        /* === MENU INICIAL === */
+        #menu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #0a0a1a 0%, #1a1a2e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 100;
+            color: white;
+        }
+        #menu .title {
+            font-size: clamp(36px, 8vw, 72px);
+            font-weight: 900;
+            letter-spacing: 8px;
+            color: #88ccff;
+            text-shadow: 0 0 60px rgba(136,204,255,0.2);
+            margin-bottom: 8px;
+        }
+        #menu .subtitle {
+            font-size: clamp(12px, 2vw, 18px);
+            color: #666;
+            letter-spacing: 12px;
+            margin-bottom: 40px;
+            font-weight: 300;
+        }
+        #menu .platform-select {
+            display: flex;
+            gap: 30px;
+        }
+        #menu .platform-btn {
+            padding: 16px 50px;
+            font-size: clamp(16px, 2vw, 24px);
+            font-weight: 700;
+            border: 2px solid #444;
+            border-radius: 8px;
+            background: transparent;
+            color: #aaa;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 4px;
+            min-width: 140px;
+        }
+        #menu .platform-btn:hover {
+            border-color: #88ccff;
+            color: #88ccff;
+            background: rgba(136,204,255,0.05);
+            transform: scale(1.02);
+        }
+        #menu .platform-btn:active {
+            transform: scale(0.95);
+        }
+        #menu .platform-btn.pc { border-color: #4a6a8a; }
+        #menu .platform-btn.mobile { border-color: #6a4a8a; }
+        #menu .platform-btn.pc:hover { border-color: #88ccff; color: #88ccff; }
+        #menu .platform-btn.mobile:hover { border-color: #cc88ff; color: #cc88ff; }
+        #menu .footer {
+            position: absolute;
+            bottom: 30px;
+            font-size: 11px;
+            color: #333;
+            letter-spacing: 2px;
+        }
+        #menu.hidden { display: none; }
+
+        /* === HUD === */
         #hud {
             position: absolute;
             bottom: 30px;
             left: 30px;
-            color: rgba(255,255,255,0.6);
-            font-size: 14px;
+            color: rgba(255,255,255,0.5);
+            font-size: 13px;
             font-family: monospace;
             pointer-events: none;
             user-select: none;
@@ -21,65 +91,190 @@
             line-height: 1.8;
             text-shadow: 0 0 20px rgba(0,0,0,0.9);
         }
-        #hud .time { color: #88ccff; font-size: 18px; }
-        #hud .pos { color: #aaa; font-size: 13px; }
-        #hud .debug { color: #666; font-size: 11px; }
-        
+        #hud .time { color: #88ccff; font-size: 16px; }
+        #hud .pos { color: #888; font-size: 12px; }
+
+        /* === CROSSHAIR === */
         #crosshair {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: rgba(255,255,255,0.08);
-            font-size: 28px;
+            color: rgba(255,255,255,0.06);
+            font-size: 32px;
             pointer-events: none;
             user-select: none;
             z-index: 10;
         }
-        
+
+        /* === MOBILE CONTROLS === */
+        #mobile-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 15;
+            display: none;
+            touch-action: none;
+        }
+        #mobile-controls.active { display: block; }
+
+        /* Joystick */
+        #joystick-area {
+            position: absolute;
+            bottom: 40px;
+            left: 40px;
+            width: 120px;
+            height: 120px;
+            pointer-events: auto;
+            touch-action: none;
+        }
+        #joystick-bg {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.06);
+            border: 2px solid rgba(255,255,255,0.08);
+            position: relative;
+            touch-action: none;
+        }
+        #joystick-knob {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(136,204,255,0.25);
+            border: 2px solid rgba(136,204,255,0.15);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            touch-action: none;
+            transition: none;
+        }
+
+        /* Botões mobile */
+        #mobile-buttons {
+            position: absolute;
+            bottom: 50px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            pointer-events: none;
+            touch-action: none;
+        }
+        .mobile-btn {
+            pointer-events: auto;
+            touch-action: none;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.6);
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            cursor: pointer;
+            user-select: none;
+            min-width: 80px;
+            text-align: center;
+            transition: all 0.15s;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            letter-spacing: 1px;
+        }
+        .mobile-btn:active {
+            transform: scale(0.92);
+            background: rgba(255,255,255,0.12);
+        }
+        .mobile-btn.jump { color: #88ccff; border-color: rgba(136,204,255,0.2); }
+        .mobile-btn.sprint { color: #cc88ff; border-color: rgba(204,136,255,0.2); }
+        .mobile-btn.sprint.active { color: #ff88cc; border-color: rgba(255,136,204,0.3); background: rgba(255,136,204,0.08); }
+
+        /* Bloqueio de cursor */
         #blocker {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.85);
+            background: rgba(0,0,0,0.7);
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 20;
+            z-index: 30;
             cursor: pointer;
             color: white;
-            font-size: 26px;
+            font-size: 22px;
             font-weight: bold;
             flex-direction: column;
             text-shadow: 0 0 30px rgba(0,0,0,0.9);
         }
         #blocker .sub {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: normal;
             margin-top: 12px;
-            opacity: 0.5;
+            opacity: 0.4;
             font-family: monospace;
         }
         #blocker.hidden { display: none; }
+
+        /* Loading */
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #666;
+            font-size: 14px;
+            font-family: monospace;
+            z-index: 5;
+            display: none;
+        }
+        #loading.active { display: block; }
     </style>
 </head>
 <body>
 
+    <!-- MENU -->
+    <div id="menu">
+        <div class="title">INDUSTRY FUND</div>
+        <div class="subtitle">— EXPLORE THE INFINITE —</div>
+        <div class="platform-select">
+            <button class="platform-btn pc" data-platform="pc">🖥 PC</button>
+            <button class="platform-btn mobile" data-platform="mobile">📱 MOBILE</button>
+        </div>
+        <div class="footer">v1.0 · procedural world</div>
+    </div>
+
+    <!-- HUD -->
     <div id="hud">
         <div class="time" id="gameTime">⏱ 00:00:00</div>
         <div class="pos" id="playerPos">📍 0.0, 0.0, 0.0</div>
-        <div class="debug" id="debugInfo">Chunks: 0 | Objetos: 0</div>
     </div>
 
     <div id="crosshair">+</div>
 
+    <!-- MOBILE CONTROLS -->
+    <div id="mobile-controls">
+        <div id="joystick-area">
+            <div id="joystick-bg">
+                <div id="joystick-knob"></div>
+            </div>
+        </div>
+        <div id="mobile-buttons">
+            <button class="mobile-btn jump" id="btnJump">⬆ PULAR</button>
+            <button class="mobile-btn sprint" id="btnSprint">🏃 CORRER</button>
+        </div>
+    </div>
+
+    <!-- BLOCKER -->
     <div id="blocker">
         🏭 Clique para Explorar
-        <div class="sub">WASD · Mouse · ESPAÇO(pular) · Shift(correr)</div>
-        <div class="sub" style="font-size:12px; opacity:0.3;">Mundo em constante transformação</div>
+        <div class="sub">WASD · Mouse · ESPAÇO(pular) · Q(correr)</div>
     </div>
+
+    <div id="loading">CARREGANDO MUNDO...</div>
 
     <script type="importmap">
         {
@@ -98,34 +293,39 @@
         const CONFIG = {
             CHUNK_SIZE: 24,
             VIEW_DISTANCE: 600,
-            MAX_STRUCTURES_PER_CHUNK: 8,
             PLAYER_HEIGHT: 1.6,
-            PLAYER_SPEED: 6,
-            PLAYER_SPRINT: 11,
+            PLAYER_SPEED: 5,
+            SPRINT_MULTIPLIER: 5,
             JUMP_FORCE: 5,
             GRAVITY: -16,
             MAX_STRUCTURE_HEIGHT: 14,
             MIN_STRUCTURE_HEIGHT: 3,
-            GENERATE_PER_FRAME: 20,
-            FADE_DISTANCE: 550,
-            BIRTH_DISTANCE: 580,
-            CHUNKS_INITIAL_RADIUS: 3, // Chunks iniciais ao redor do spawn
+            INITIAL_CHUNK_RADIUS: 4,
         };
 
         // ============================================================
         // 2. DOM
         // ============================================================
+        const menu = document.getElementById('menu');
         const blocker = document.getElementById('blocker');
         const gameTimeSpan = document.getElementById('gameTime');
         const playerPosSpan = document.getElementById('playerPos');
-        const debugInfoSpan = document.getElementById('debugInfo');
+        const mobileControls = document.getElementById('mobile-controls');
+        const joystickBg = document.getElementById('joystick-bg');
+        const joystickKnob = document.getElementById('joystick-knob');
+        const btnJump = document.getElementById('btnJump');
+        const btnSprint = document.getElementById('btnSprint');
+        const loadingEl = document.getElementById('loading');
+
+        let platform = null; // 'pc' ou 'mobile'
+        let gameStarted = false;
 
         // ============================================================
-        // 3. CENA
+        // 3. THREE.JS - CENA, CÂMERA, RENDER
         // ============================================================
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x12121e);
-        scene.fog = new THREE.Fog(0x12121e, 500, 650);
+        scene.fog = new THREE.Fog(0x12121e, 450, 650);
 
         const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 700);
         camera.position.set(0, CONFIG.PLAYER_HEIGHT, 0);
@@ -140,7 +340,7 @@
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.2;
-        document.body.appendChild(renderer.domElement);
+        document.body.prepend(renderer.domElement);
 
         // ============================================================
         // 4. LUZES
@@ -169,7 +369,7 @@
         scene.add(fill);
 
         // ============================================================
-        // 5. MATERIAIS E GEOMETRIAS COMPARTILHADOS
+        // 5. MATERIAIS E GEOMETRIAS (compartilhados)
         // ============================================================
         const materials = {
             wall: new THREE.MeshStandardMaterial({ color: 0x6a7a8a, roughness: 0.7, metalness: 0.3 }),
@@ -191,6 +391,7 @@
         const chunks = new Map();
         let gameStartTime = Date.now();
         let totalObjects = 0;
+        let chunksGenerated = 0;
 
         function getChunkKey(cx, cz) {
             return `${cx},${cz}`;
@@ -211,7 +412,7 @@
         }
 
         // ============================================================
-        // 7. GERADOR DE ESTRUTURAS (MAIS DENSIDADE)
+        // 7. GERADOR DE ESTRUTURAS (COM ALTA DENSIDADE)
         // ============================================================
         function generateStructures(cx, cz) {
             const structures = [];
@@ -224,8 +425,8 @@
                 return (s / 233280) * n;
             };
 
-            // MAIS ESTRUTURAS por chunk
-            const count = 3 + Math.floor(rng(CONFIG.MAX_STRUCTURES_PER_CHUNK - 1));
+            // MUITAS estruturas por chunk
+            const count = 4 + Math.floor(rng(6));
             
             for (let i = 0; i < count; i++) {
                 const x = center.x + (rng(1) - 0.5) * CONFIG.CHUNK_SIZE * 0.75;
@@ -242,7 +443,7 @@
                 });
             }
             
-            // Conexões (corredores) - MAIS CONEXÕES
+            // Conexões
             const connCount = 2 + Math.floor(rng(structures.length));
             for (let i = 0; i < connCount; i++) {
                 const a = Math.floor(rng(structures.length));
@@ -260,7 +461,7 @@
                 }
             }
             
-            // Plataformas - MAIS PLATAFORMAS
+            // Plataformas
             for (const s of structures) {
                 if (s.h > 4 && rng(1) > 0.4) {
                     structures.push({
@@ -276,14 +477,14 @@
                 }
             }
             
-            // Estruturas gigantes (raras)
-            if (rng(1) > 0.7) {
+            // Estruturas gigantes
+            if (rng(1) > 0.6) {
                 structures.push({
-                    x: center.x + (rng(1) - 0.5) * CONFIG.CHUNK_SIZE * 0.3,
-                    z: center.z + (rng(1) - 0.5) * CONFIG.CHUNK_SIZE * 0.3,
-                    w: 6 + rng(6),
-                    d: 6 + rng(6),
-                    h: 8 + rng(8),
+                    x: center.x + (rng(1) - 0.5) * CONFIG.CHUNK_SIZE * 0.25,
+                    z: center.z + (rng(1) - 0.5) * CONFIG.CHUNK_SIZE * 0.25,
+                    w: 6 + rng(8),
+                    d: 6 + rng(8),
+                    h: 8 + rng(10),
                     type: 0,
                     hasRoof: true,
                     colorVariant: Math.floor(rng(2)),
@@ -295,7 +496,7 @@
         }
 
         // ============================================================
-        // 8. CONSTRUTOR DE ESTRUTURAS
+        // 8. CONSTRUTOR DE MESHES
         // ============================================================
         function buildStructureMeshes(s) {
             const meshes = [];
@@ -400,25 +601,11 @@
                 }
             }
             
-            // Janelas (detalhe)
-            if (s.h > 4 && !s.isGiant) {
-                const windowMat = new THREE.MeshBasicMaterial({
-                    color: 0x88ccff,
-                    transparent: true,
-                    opacity: 0.1
-                });
-                for (let i = 0; i < Math.min(3, Math.floor(w / 2)); i++) {
-                    const win = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.4), windowMat);
-                    win.position.set(x - w/3 + i * 1.0, h * 0.5, z - d/2 - 0.05);
-                    meshes.push(win);
-                }
-            }
-            
             return meshes;
         }
 
         // ============================================================
-        // 9. CRIAÇÃO DE CHUNKS (COM GERAÇÃO IMEDIATA)
+        // 9. CRIAÇÃO DE CHUNK (COM VISIBILIDADE GARANTIDA)
         // ============================================================
         function createChunk(cx, cz) {
             const key = getChunkKey(cx, cz);
@@ -432,7 +619,7 @@
             const center = getChunkCenter(cx, cz);
             const objects = [];
             
-            // Chão do chunk
+            // Chão
             const floorMesh = new THREE.Mesh(
                 new THREE.PlaneGeometry(CONFIG.CHUNK_SIZE, CONFIG.CHUNK_SIZE),
                 (cx + cz) % 2 === 0 ? materials.floor : materials.floorDark
@@ -444,7 +631,7 @@
             group.add(floorMesh);
             objects.push(floorMesh);
             
-            // Constrói estruturas
+            // Estruturas
             for (const s of structures) {
                 const meshes = buildStructureMeshes(s);
                 for (const mesh of meshes) {
@@ -456,6 +643,7 @@
                 }
             }
             
+            // ADICIONA À CENA IMEDIATAMENTE
             scene.add(group);
             chunks.set(key, { 
                 group, 
@@ -466,17 +654,21 @@
             });
             
             totalObjects += objects.length;
+            chunksGenerated++;
+            
+            return objects.length;
         }
 
         // ============================================================
-        // 10. GERENCIADOR DE CHUNKS (SIMPLIFICADO)
+        // 10. GERENCIADOR DE CHUNKS
         // ============================================================
         function updateChunks(playerPos) {
             const cx = Math.floor(playerPos.x / CONFIG.CHUNK_SIZE);
             const cz = Math.floor(playerPos.z / CONFIG.CHUNK_SIZE);
             const radius = Math.ceil(CONFIG.VIEW_DISTANCE / CONFIG.CHUNK_SIZE);
             
-            // Cria chunks necessários
+            // Cria chunks
+            let created = 0;
             for (let dx = -radius; dx <= radius; dx++) {
                 for (let dz = -radius; dz <= radius; dz++) {
                     const dist = Math.sqrt(dx*dx + dz*dz) * CONFIG.CHUNK_SIZE;
@@ -488,11 +680,12 @@
                     
                     if (!chunks.has(key)) {
                         createChunk(chunkX, chunkZ);
+                        created++;
                     }
                 }
             }
             
-            // Remove chunks muito distantes
+            // Remove chunks distantes
             const toRemove = [];
             for (const [key, data] of chunks) {
                 const dist = getDistanceToPlayer(data.cx, data.cz, playerPos);
@@ -511,16 +704,11 @@
                 chunks.delete(key);
             }
             
-            // Atualiza debug
-            let totalObj = 0;
-            for (const [key, data] of chunks) {
-                totalObj += data.objects.length;
-            }
-            debugInfoSpan.textContent = `Chunks: ${chunks.size} | Objetos: ${totalObj}`;
+            return created;
         }
 
         // ============================================================
-        // 11. JOGADOR (com colisão)
+        // 11. JOGADOR
         // ============================================================
         const player = {
             position: new THREE.Vector3(0, CONFIG.PLAYER_HEIGHT, 0),
@@ -529,15 +717,12 @@
             velocity: new THREE.Vector3(0, 0, 0),
             isGrounded: false,
             speed: CONFIG.PLAYER_SPEED,
-            sprintMultiplier: 1.8,
             isSprinting: false,
             radius: 0.3,
             height: CONFIG.PLAYER_HEIGHT,
         };
 
         camera.position.copy(player.position);
-
-        const keys = { w: false, a: false, s: false, d: false, space: false, shift: false };
 
         // ============================================================
         // 12. COLISÃO
@@ -596,19 +781,26 @@
         }
 
         // ============================================================
-        // 13. MOVIMENTO DO JOGADOR
+        // 13. MOVIMENTO (compartilhado)
         // ============================================================
-        function updatePlayer(delta) {
-            player.isSprinting = keys.shift && keys.w;
-            const speed = player.isSprinting ? CONFIG.PLAYER_SPEED * player.sprintMultiplier : CONFIG.PLAYER_SPEED;
+        let moveInput = { x: 0, z: 0 };
+        let jumpRequested = false;
+        let sprintRequested = false;
 
-            if (keys.space && player.isGrounded) {
+        function updatePlayer(delta) {
+            const speed = player.isSprinting ? CONFIG.PLAYER_SPEED * CONFIG.SPRINT_MULTIPLIER : CONFIG.PLAYER_SPEED;
+
+            // Pulo
+            if (jumpRequested && player.isGrounded) {
                 player.velocity.y = CONFIG.JUMP_FORCE;
                 player.isGrounded = false;
+                jumpRequested = false;
             }
 
+            // Gravidade
             player.velocity.y += CONFIG.GRAVITY * delta;
             
+            // Movimento
             const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
             forward.y = 0;
             forward.normalize();
@@ -617,13 +809,10 @@
             right.y = 0;
             right.normalize();
 
-            const moveX = (keys.d ? 1 : 0) - (keys.a ? 1 : 0);
-            const moveZ = (keys.s ? 1 : 0) - (keys.w ? 1 : 0);
-            
-            let moveDir = new THREE.Vector3();
-            if (moveX !== 0 || moveZ !== 0) {
-                moveDir.add(right.clone().multiplyScalar(moveX));
-                moveDir.add(forward.clone().multiplyScalar(-moveZ));
+            const moveDir = new THREE.Vector3();
+            if (moveInput.x !== 0 || moveInput.z !== 0) {
+                moveDir.add(right.clone().multiplyScalar(moveInput.x));
+                moveDir.add(forward.clone().multiplyScalar(-moveInput.z));
                 moveDir.normalize().multiplyScalar(speed * delta);
             }
 
@@ -647,73 +836,257 @@
             // Atualiza chunks
             updateChunks(player.position);
             
-            // Atualiza HUD
+            // HUD
             const elapsed = Math.floor((Date.now() - gameStartTime) / 1000);
             const hours = String(Math.floor(elapsed / 3600)).padStart(2, '0');
             const minutes = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
             const seconds = String(elapsed % 60).padStart(2, '0');
             gameTimeSpan.textContent = `⏱ ${hours}:${minutes}:${seconds}`;
-            
             playerPosSpan.textContent = `📍 ${player.position.x.toFixed(1)}, ${player.position.y.toFixed(1)}, ${player.position.z.toFixed(1)}`;
         }
 
         // ============================================================
-        // 14. CONTROLES
+        // 14. CONTROLES - PC
         // ============================================================
+        const pcKeys = { w: false, a: false, s: false, d: false, space: false, q: false };
+
+        function updatePCInput() {
+            moveInput.x = (pcKeys.d ? 1 : 0) - (pcKeys.a ? 1 : 0);
+            moveInput.z = (pcKeys.s ? 1 : 0) - (pcKeys.w ? 1 : 0);
+            
+            if (pcKeys.space) {
+                jumpRequested = true;
+                pcKeys.space = false; // prevenir pulo múltiplo
+            }
+            
+            player.isSprinting = pcKeys.q;
+        }
+
+        // Eventos PC
+        document.addEventListener('keydown', (e) => {
+            if (platform !== 'pc' || !gameStarted) return;
+            switch (e.code) {
+                case 'KeyW': pcKeys.w = true; e.preventDefault(); break;
+                case 'KeyA': pcKeys.a = true; e.preventDefault(); break;
+                case 'KeyS': pcKeys.s = true; e.preventDefault(); break;
+                case 'KeyD': pcKeys.d = true; e.preventDefault(); break;
+                case 'Space': pcKeys.space = true; e.preventDefault(); break;
+                case 'KeyQ': pcKeys.q = true; e.preventDefault(); break;
+            }
+        });
+        document.addEventListener('keyup', (e) => {
+            if (platform !== 'pc' || !gameStarted) return;
+            switch (e.code) {
+                case 'KeyW': pcKeys.w = false; e.preventDefault(); break;
+                case 'KeyA': pcKeys.a = false; e.preventDefault(); break;
+                case 'KeyS': pcKeys.s = false; e.preventDefault(); break;
+                case 'KeyD': pcKeys.d = false; e.preventDefault(); break;
+                case 'Space': pcKeys.space = false; e.preventDefault(); break;
+                case 'KeyQ': pcKeys.q = false; e.preventDefault(); break;
+            }
+        });
+
+        // Mouse PC
         document.addEventListener('mousemove', (e) => {
-            if (document.pointerLockElement !== renderer.domElement) return;
+            if (platform !== 'pc' || !gameStarted || document.pointerLockElement !== renderer.domElement) return;
             const sens = 0.002;
             player.yaw -= e.movementX * sens;
             player.pitch -= e.movementY * sens;
             player.pitch = Math.max(-1.2, Math.min(1.2, player.pitch));
         });
 
-        blocker.addEventListener('click', () => renderer.domElement.requestPointerLock());
+        // ============================================================
+        // 15. CONTROLES - MOBILE
+        // ============================================================
+        let joystickActive = false;
+        let joystickTouchId = null;
+        let cameraTouchId = null;
+        let lastCameraX = 0;
+        let lastCameraY = 0;
 
-        document.addEventListener('pointerlockchange', () => {
-            if (document.pointerLockElement === renderer.domElement) {
+        // Joystick
+        joystickBg.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            joystickTouchId = touch.identifier;
+            joystickActive = true;
+            updateJoystick(touch);
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            for (const touch of e.changedTouches) {
+                if (touch.identifier === joystickTouchId) {
+                    updateJoystick(touch);
+                }
+                if (touch.identifier === cameraTouchId) {
+                    const dx = touch.clientX - lastCameraX;
+                    const dy = touch.clientY - lastCameraY;
+                    const sens = 0.005;
+                    player.yaw -= dx * sens;
+                    player.pitch -= dy * sens;
+                    player.pitch = Math.max(-1.2, Math.min(1.2, player.pitch));
+                    lastCameraX = touch.clientX;
+                    lastCameraY = touch.clientY;
+                }
+            }
+        });
+
+        document.addEventListener('touchend', (e) => {
+            for (const touch of e.changedTouches) {
+                if (touch.identifier === joystickTouchId) {
+                    joystickActive = false;
+                    joystickTouchId = null;
+                    moveInput.x = 0;
+                    moveInput.z = 0;
+                    joystickKnob.style.transform = 'translate(-50%, -50%)';
+                }
+                if (touch.identifier === cameraTouchId) {
+                    cameraTouchId = null;
+                }
+            }
+        });
+
+        function updateJoystick(touch) {
+            const rect = joystickBg.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            const maxDist = rect.width / 2 - 10;
+            
+            let dx = touch.clientX - cx;
+            let dy = touch.clientY - cy;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            
+            if (dist > maxDist) {
+                dx = (dx / dist) * maxDist;
+                dy = (dy / dist) * maxDist;
+            }
+            
+            joystickKnob.style.transform = `translate(${-50 + (dx / maxDist) * 50}%, ${-50 + (dy / maxDist) * 50}%)`;
+            
+            moveInput.x = dx / maxDist;
+            moveInput.z = dy / maxDist;
+        }
+
+        // Câmera mobile
+        renderer.domElement.addEventListener('touchstart', (e) => {
+            if (platform !== 'mobile' || !gameStarted) return;
+            for (const touch of e.changedTouches) {
+                // Verifica se não é no joystick
+                const rect = joystickBg.getBoundingClientRect();
+                const isOnJoystick = touch.clientX >= rect.left && touch.clientX <= rect.right &&
+                                     touch.clientY >= rect.top && touch.clientY <= rect.bottom;
+                if (!isOnJoystick && cameraTouchId === null) {
+                    cameraTouchId = touch.identifier;
+                    lastCameraX = touch.clientX;
+                    lastCameraY = touch.clientY;
+                }
+            }
+        });
+
+        // Botões mobile
+        btnJump.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (platform === 'mobile' && gameStarted) {
+                jumpRequested = true;
+            }
+        });
+
+        btnSprint.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (platform === 'mobile' && gameStarted) {
+                player.isSprinting = !player.isSprinting;
+                btnSprint.classList.toggle('active');
+                btnSprint.textContent = player.isSprinting ? '🏃 CORRENDO' : '🏃 CORRER';
+            }
+        });
+
+        // ============================================================
+        // 16. INÍCIO DO JOGO
+        // ============================================================
+        function startGame(selectedPlatform) {
+            platform = selectedPlatform;
+            gameStarted = true;
+            
+            menu.classList.add('hidden');
+            
+            if (platform === 'mobile') {
+                mobileControls.classList.add('active');
+                // Remove o blocker para mobile
                 blocker.classList.add('hidden');
+                // Esconde o crosshair
+                document.getElementById('crosshair').style.display = 'none';
             } else {
+                // PC - mostra blocker para travar o mouse
                 blocker.classList.remove('hidden');
             }
-        });
+            
+            // Gera chunks iniciais
+            loadingEl.classList.add('active');
+            
+            // Geração inicial FORÇADA
+            const radius = CONFIG.INITIAL_CHUNK_RADIUS;
+            let generated = 0;
+            for (let dx = -radius; dx <= radius; dx++) {
+                for (let dz = -radius; dz <= radius; dz++) {
+                    if (dx*dx + dz*dz <= radius*radius) {
+                        const chunkX = dx;
+                        const chunkZ = dz;
+                        const key = getChunkKey(chunkX, chunkZ);
+                        if (!chunks.has(key)) {
+                            createChunk(chunkX, chunkZ);
+                            generated++;
+                        }
+                    }
+                }
+            }
+            
+            console.log(`✅ ${generated} chunks gerados inicialmente`);
+            console.log(`📊 Total de objetos: ${totalObjects}`);
+            
+            loadingEl.classList.remove('active');
+            
+            // Se for PC, pede para travar o mouse
+            if (platform === 'pc') {
+                blocker.addEventListener('click', () => {
+                    renderer.domElement.requestPointerLock();
+                });
+                document.addEventListener('pointerlockchange', () => {
+                    if (document.pointerLockElement === renderer.domElement) {
+                        blocker.classList.add('hidden');
+                    } else {
+                        blocker.classList.remove('hidden');
+                    }
+                });
+            }
+        }
 
-        document.addEventListener('keydown', (e) => {
-            switch (e.code) {
-                case 'KeyW': keys.w = true; e.preventDefault(); break;
-                case 'KeyA': keys.a = true; e.preventDefault(); break;
-                case 'KeyS': keys.s = true; e.preventDefault(); break;
-                case 'KeyD': keys.d = true; e.preventDefault(); break;
-                case 'Space': keys.space = true; e.preventDefault(); break;
-                case 'ShiftLeft': keys.shift = true; e.preventDefault(); break;
-            }
-        });
-        document.addEventListener('keyup', (e) => {
-            switch (e.code) {
-                case 'KeyW': keys.w = false; e.preventDefault(); break;
-                case 'KeyA': keys.a = false; e.preventDefault(); break;
-                case 'KeyS': keys.s = false; e.preventDefault(); break;
-                case 'KeyD': keys.d = false; e.preventDefault(); break;
-                case 'Space': keys.space = false; e.preventDefault(); break;
-                case 'ShiftLeft': keys.shift = false; e.preventDefault(); break;
-            }
+        // ============================================================
+        // 17. EVENTOS DO MENU
+        // ============================================================
+        document.querySelectorAll('.platform-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const platform = btn.dataset.platform;
+                startGame(platform);
+            });
         });
 
         // ============================================================
-        // 15. LOOP PRINCIPAL
+        // 18. LOOP PRINCIPAL
         // ============================================================
-        // GERA CHUNKS INICIAIS IMEDIATAMENTE
-        console.log('🏗️ Gerando chunks iniciais...');
-        updateChunks(player.position);
-        console.log(`✅ ${chunks.size} chunks gerados com ${totalObjects} objetos`);
-
         let lastTime = 0;
 
         function animate(time) {
             const delta = Math.min((time - lastTime) / 1000, 0.05);
             lastTime = time;
 
-            updatePlayer(delta);
+            if (gameStarted) {
+                // Atualiza input PC
+                if (platform === 'pc') {
+                    updatePCInput();
+                }
+                
+                updatePlayer(delta);
+            }
 
             renderer.render(scene, camera);
             requestAnimationFrame(animate);
@@ -722,7 +1095,7 @@
         animate(0);
 
         // ============================================================
-        // 16. REDIMENSIONAR
+        // 19. REDIMENSIONAR
         // ============================================================
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
@@ -730,9 +1103,13 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        console.log('🏭 Mundo Industrial CORRIGIDO carregado!');
-        console.log('📊 Chunks visíveis:', chunks.size);
-        console.log('📊 Objetos totais:', totalObjects);
+        // Previne scroll em mobile
+        document.addEventListener('touchmove', (e) => {
+            if (gameStarted) e.preventDefault();
+        }, { passive: false });
+
+        console.log('🏭 INDUSTRY FUND carregado!');
+        console.log('📋 Aguardando seleção de plataforma...');
     </script>
 </body>
 </html>
