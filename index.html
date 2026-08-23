@@ -186,38 +186,6 @@
         }
         #blocker .sub { font-size: 14px; font-weight: normal; margin-top: 12px; opacity: 0.4; font-family: monospace; }
         #blocker.hidden { display: none; }
-
-        #loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #88ccff;
-            font-size: 18px;
-            font-family: monospace;
-            z-index: 5;
-            display: none;
-            background: rgba(0,0,0,0.8);
-            padding: 20px 40px;
-            border-radius: 8px;
-            border: 1px solid rgba(136,204,255,0.1);
-        }
-        #loading .bar {
-            width: 200px;
-            height: 4px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 2px;
-            margin-top: 12px;
-            overflow: hidden;
-        }
-        #loading .bar .fill {
-            height: 100%;
-            background: #88ccff;
-            width: 0%;
-            transition: width 0.3s;
-            border-radius: 2px;
-        }
-        #loading.active { display: block; }
     </style>
 </head>
 <body>
@@ -256,12 +224,6 @@
         <div class="sub">WASD · Mouse · ESPAÇO(pular) · Q(correr)</div>
     </div>
 
-    <div id="loading">
-        <div>🏗️ GERANDO MUNDO</div>
-        <div class="bar"><div class="fill" id="loadBar"></div></div>
-        <div style="font-size:12px; color:#666; margin-top:8px;" id="loadText">0%</div>
-    </div>
-
     <script type="importmap">
         {
             "imports": {
@@ -286,6 +248,7 @@
             GRAVITY: -16,
             MAX_STRUCTURE_HEIGHT: 14,
             MIN_STRUCTURE_HEIGHT: 3,
+            CHUNKS_PER_FRAME: 3,
         };
 
         // ============================================================
@@ -300,9 +263,6 @@
         const joystickKnob = document.getElementById('joystick-knob');
         const btnJump = document.getElementById('btnJump');
         const btnSprint = document.getElementById('btnSprint');
-        const loadingEl = document.getElementById('loading');
-        const loadBar = document.getElementById('loadBar');
-        const loadText = document.getElementById('loadText');
 
         let platform = null;
         let gameStarted = false;
@@ -371,6 +331,8 @@
         const chunks = new Map();
         let gameStartTime = Date.now();
         let totalObjects = 0;
+        let chunkQueue = [];
+        let isGenerating = false;
 
         function getChunkKey(cx, cz) { return `${cx},${cz}`; }
         function getChunkCenter(cx, cz) {
@@ -382,7 +344,7 @@
         }
 
         // ============================================================
-        // 7. GERADOR DE ESTRUTURAS (ALTA DENSIDADE)
+        // 7. GERADOR DE ESTRUTURAS
         // ============================================================
         function generateStructures(cx, cz) {
             const structures = [];
@@ -394,7 +356,7 @@
                 return (s / 233280) * n;
             };
 
-            const count = 5 + Math.floor(rng(7));
+            const count = 4 + Math.floor(rng(6));
             
             for (let i = 0; i < count; i++) {
                 const x = center.x + (rng(1) - 0.5) * CONFIG.CHUNK_SIZE * 0.75;
@@ -536,7 +498,7 @@
         }
 
         // ============================================================
-        // 9. CRIAÇÃO DE CHUNK
+        // 9. CRIAÇÃO DE CHUNK (IMEDIATA)
         // ============================================================
         function createChunk(cx, cz) {
             const key = getChunkKey(cx, cz);
@@ -576,16 +538,16 @@
         }
 
         // ============================================================
-        // 10. GERENCIADOR DE CHUNKS (CARREGA 600m)
+        // 10. GERENCIADOR DE CHUNKS (GERAÇÃO GRADUAL)
         // ============================================================
-        function updateChunks(playerPos) {
+        let chunksToGenerate = [];
+
+        function queueChunks(playerPos) {
             const cx = Math.floor(playerPos.x / CONFIG.CHUNK_SIZE);
             const cz = Math.floor(playerPos.z / CONFIG.CHUNK_SIZE);
             const radius = Math.ceil(CONFIG.VIEW_DISTANCE / CONFIG.CHUNK_SIZE);
 
-            let created = 0;
-            let total = 0;
-            const totalChunks = (radius * 2 + 1) ** 2;
+            chunksToGenerate = [];
 
             for (let dx = -radius; dx <= radius; dx++) {
                 for (let dz = -radius; dz <= radius; dz++) {
@@ -597,10 +559,8 @@
                     const key = getChunkKey(chunkX, chunkZ);
 
                     if (!chunks.has(key)) {
-                        createChunk(chunkX, chunkZ);
-                        created++;
+                        chunksToGenerate.push({ cx: chunkX, cz: chunkZ, key });
                     }
-                    total++;
                 }
             }
 
@@ -621,8 +581,16 @@
                 });
                 chunks.delete(key);
             }
+        }
 
-            return { created, total, totalChunks };
+        function processChunkQueue() {
+            let generated = 0;
+            while (chunksToGenerate.length > 0 && generated < CONFIG.CHUNKS_PER_FRAME) {
+                const chunk = chunksToGenerate.pop();
+                createChunk(chunk.cx, chunk.cz);
+                generated++;
+            }
+            return generated;
         }
 
         // ============================================================
@@ -729,8 +697,8 @@
             camera.rotation.y = player.yaw;
             camera.rotation.x = player.pitch;
 
-            // Atualiza chunks
-            updateChunks(player.position);
+            // Queue chunks baseado na posição atual
+            queueChunks(player.position);
 
             const elapsed = Math.floor((Date.now() - gameStartTime) / 1000);
             const hours = String(Math.floor(elapsed / 3600)).padStart(2, '0');
@@ -864,9 +832,9 @@
         });
 
         // ============================================================
-        // 16. INÍCIO DO JOGO (COM CARREGAMENTO GARANTIDO)
+        // 16. INÍCIO DO JOGO (SEM LOADING)
         // ============================================================
-        async function startGame(selectedPlatform) {
+        function startGame(selectedPlatform) {
             platform = selectedPlatform;
             gameStarted = true;
             menu.classList.add('hidden');
@@ -879,46 +847,18 @@
                 blocker.classList.remove('hidden');
             }
 
-            // Mostra loading
-            loadingEl.classList.add('active');
-            loadBar.style.width = '0%';
-            loadText.textContent = '0%';
-
-            // Gera chunks EM TODAS AS DIREÇÕES até 600m
-            const radius = Math.ceil(CONFIG.VIEW_DISTANCE / CONFIG.CHUNK_SIZE);
-            const totalChunks = (radius * 2 + 1) ** 2;
-            let generated = 0;
-
+            // Gera chunks iniciais imediatamente
+            const radius = 2;
             for (let dx = -radius; dx <= radius; dx++) {
                 for (let dz = -radius; dz <= radius; dz++) {
-                    const dist = Math.sqrt(dx*dx + dz*dz) * CONFIG.CHUNK_SIZE;
-                    if (dist > CONFIG.VIEW_DISTANCE + CONFIG.CHUNK_SIZE) continue;
-
-                    const chunkX = dx;
-                    const chunkZ = dz;
-                    const key = getChunkKey(chunkX, chunkZ);
-
-                    if (!chunks.has(key)) {
-                        createChunk(chunkX, chunkZ);
-                        generated++;
-                    }
-
-                    // Atualiza barra de progresso
-                    const progress = Math.min(100, (generated / totalChunks) * 100);
-                    loadBar.style.width = progress + '%';
-                    loadText.textContent = Math.round(progress) + '%';
-
-                    // Pequena pausa para não travar
-                    if (generated % 10 === 0) {
-                        await new Promise(r => setTimeout(r, 5));
+                    if (dx*dx + dz*dz <= radius*radius) {
+                        createChunk(dx, dz);
                     }
                 }
             }
 
-            console.log(`✅ ${generated} chunks gerados (${totalObjects} objetos)`);
-            console.log(`📊 Raio: ${radius} chunks (${CONFIG.VIEW_DISTANCE}m)`);
-
-            loadingEl.classList.remove('active');
+            console.log(`✅ Chunks iniciais: ${chunks.size} (${totalObjects} objetos)`);
+            console.log('📋 Jogador em (0, 0, 0) - Mundo gerando gradualmente');
 
             if (platform === 'pc') {
                 blocker.addEventListener('click', () => renderer.domElement.requestPointerLock());
@@ -948,6 +888,9 @@
             if (gameStarted) {
                 if (platform === 'pc') updatePCInput();
                 updatePlayer(delta);
+                
+                // Processa chunks gradualmente (3 por frame)
+                processChunkQueue();
             }
 
             renderer.render(scene, camera);
@@ -967,8 +910,8 @@
 
         document.addEventListener('touchmove', (e) => { if (gameStarted) e.preventDefault(); }, { passive: false });
 
-        console.log('🏭 INDUSTRY FUND - MUNDO 600m GARANTIDO');
-        console.log('📋 Aguardando seleção de plataforma...');
+        console.log('🏭 INDUSTRY FUND - SEM LOADING!');
+        console.log('📋 O mundo aparece gradualmente enquanto você explora');
     </script>
 </body>
 </html>
