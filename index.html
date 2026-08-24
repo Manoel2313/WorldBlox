@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>INDUSTRY FUND</title>
+<title>INDUSTRY FUND - CAOS INFINITO</title>
 <style>
   :root{
     --gray-950:#0c0d0f;
@@ -20,7 +20,6 @@
   html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0c0d0f;font-family:var(--font-ui);}
   #renderCanvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;outline:none;}
 
-  /* ---------- START SCREEN ---------- */
   #startScreen{
     position:absolute;inset:0;z-index:50;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -65,7 +64,6 @@
   .platBtn:hover{background:var(--gray-700);border-color:var(--accent);}
   .platBtn:active{transform:scale(0.97);}
 
-  /* ---------- LOADING ---------- */
   #loadingScreen{
     position:absolute;inset:0;z-index:40;
     display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;
@@ -75,7 +73,6 @@
   #loadingBarOuter{width:min(420px,70vw);height:6px;background:var(--gray-800);border:1px solid var(--gray-700);}
   #loadingBarInner{width:0%;height:100%;background:var(--accent);transition:width .12s linear;}
 
-  /* ---------- HUD ---------- */
   #hud{
     position:absolute;top:14px;left:16px;z-index:20;
     color:var(--gray-100);font-family:var(--font-ui);font-size:13px;letter-spacing:1px;
@@ -83,6 +80,8 @@
     display:none;line-height:1.6;pointer-events:none;
   }
   #hud .lbl{color:var(--gray-500);}
+  #hudLayer{color:var(--accent);font-weight:bold;}
+  #hudTimeOfDay{color:var(--accent);}
   #crosshair{
     position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
     width:6px;height:6px;border-radius:50%;background:rgba(230,230,230,0.75);
@@ -93,7 +92,6 @@
     font-family:var(--font-ui);font-size:11px;letter-spacing:1px;display:none;pointer-events:none;
   }
 
-  /* ---------- MOBILE CONTROLS ---------- */
   #mobileControls{position:absolute;inset:0;z-index:20;display:none;}
   #joystickZone{
     position:absolute;left:26px;bottom:26px;width:130px;height:130px;
@@ -125,6 +123,14 @@
     display:flex;align-items:center;justify-content:center;touch-action:none;
   }
   #btnFly.active{background:#3a86c8;border-color:#3a86c8;color:#0c0d0f;}
+  #btnFlashlight{
+    position:absolute;left:50%;bottom:100px;transform:translateX(-50%);
+    width:70px;height:70px;border-radius:50%;
+    background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.25);
+    color:var(--gray-100);font-family:var(--font-ui);font-size:11px;letter-spacing:1px;
+    display:flex;align-items:center;justify-content:center;touch-action:none;
+  }
+  #btnFlashlight.active{background:#ffdd44;border-color:#ffdd44;color:#0c0d0f;}
   #camLookZone{position:absolute;inset:0;touch-action:none;}
 </style>
 </head>
@@ -135,7 +141,7 @@
 <div id="startScreen">
   <div>
     <div id="startTitle">Industry&nbsp;Fund</div>
-    <div id="startSub">explora&ccedil;&atilde;o industrial procedural</div>
+    <div id="startSub">caos infinito • camadas • dia/noite</div>
   </div>
   <div id="platformRow">
     <button class="platBtn" id="btnPC">PC</button>
@@ -150,10 +156,12 @@
 
 <div id="hud">
   <div><span class="lbl">Tempo de jogo:</span> <span id="hudTime">00:00:00</span></div>
-  <div><span class="lbl">Posi&ccedil;&atilde;o:</span> <span id="hudPos">0.0, 0.0, 0.0</span></div>
+  <div><span class="lbl">Posição:</span> <span id="hudPos">0.0, 0.0, 0.0</span></div>
+  <div><span class="lbl">Camada:</span> <span id="hudLayer">0</span></div>
+  <div><span class="lbl">Período:</span> <span id="hudTimeOfDay">☀️ DIA</span></div>
 </div>
 <div id="crosshair"></div>
-<div id="pcHint">WASD mover &middot; ESPA&Ccedil;O pular/subir &middot; Q correr &middot; E voar &middot; MOUSE olhar (clique para travar o cursor)</div>
+<div id="pcHint">WASD mover · ESPAÇO pular/subir · Q correr · E voar · F lanterna · MOUSE olhar</div>
 
 <div id="mobileControls">
   <div id="camLookZone"></div>
@@ -161,6 +169,7 @@
   <div id="btnJump">PULAR</div>
   <div id="btnRun">CORRER</div>
   <div id="btnFly">VOAR</div>
+  <div id="btnFlashlight">🔦 LUZ</div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -169,26 +178,35 @@
 "use strict";
 
 /* ======================================================================
-   INDUSTRY FUND
-   Mundo procedural infinito em chunks, 1 jogador / 1 mundo / 1 física,
-   input alternável PC (WASD+mouse) / Mobile (joystick+touch).
+   INDUSTRY FUND - CAOS INFINITO
    ====================================================================== */
 
 /* ---------------- CONFIG ---------------- */
-const CHUNK_SIZE      = 100;      // metros por chunk
-const ACTIVE_RADIUS    = 600;     // raio de geração ativa (spec: 600m)
-const UNLOAD_MARGIN    = 60;      // começa a desmontar além de ACTIVE_RADIUS
+const CHUNK_SIZE      = 100;
+const ACTIVE_RADIUS    = 600;
+const UNLOAD_MARGIN    = 60;
 const UNLOAD_RADIUS    = ACTIVE_RADIUS + UNLOAD_MARGIN;
-const INITIAL_RADIUS   = 220;     // precisa estar pronto antes de esconder o loading
-const FADE_TIME        = 1.1;     // segundos para montar/desmontar
+const INITIAL_RADIUS   = 220;
+const FADE_TIME        = 1.1;
+
+// ===== VELOCIDADES =====
+const WALK_SPEED   = 5;
+const RUN_MULT     = 5;
+const FLY_SPEED    = 100;
+
+// ===== CICLO DIA/NOITE =====
+const DAY_DURATION  = 180;
+const NIGHT_DURATION = 180;
+const CYCLE_DURATION = DAY_DURATION + NIGHT_DURATION;
+
+// ===== CAMADAS INFINITAS =====
+const LAYER_HEIGHT  = 400;
+const HOLE_RADIUS   = 5;        // 5m de raio = 10m de diâmetro
 
 const EYE_HEIGHT   = 1.7;
 const PLAYER_RADIUS = 0.4;
-const WALK_SPEED   = 4.2;
-const RUN_MULT     = 5;
 const GRAVITY      = -24;
 const JUMP_SPEED   = 8.2;
-const FLY_SPEED    = WALK_SPEED * RUN_MULT * 3; // 3x mais rápido que a corrida
 
 /* ---------------- THREE SETUP ---------------- */
 const canvas = document.getElementById('renderCanvas');
@@ -198,23 +216,42 @@ renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
 
-const SKY_COLOR = new THREE.Color(0xb9c2c9);
+const SKY_DAY = new THREE.Color(0x87CEEB);
+const SKY_NIGHT = new THREE.Color(0x000000); // Noite TOTALMENTE escura
 const scene = new THREE.Scene();
-scene.background = SKY_COLOR;
-scene.fog = new THREE.Fog(SKY_COLOR.getHex(), 120, UNLOAD_RADIUS + 40);
+scene.background = SKY_DAY.clone();
+scene.fog = new THREE.Fog(0x87CEEB, 80, UNLOAD_RADIUS + 40);
 
 const camera = new THREE.PerspectiveCamera(72, window.innerWidth/window.innerHeight, 0.1, UNLOAD_RADIUS+200);
 camera.rotation.order = 'YXZ';
 
-// well-lit, no reliance on darkness
-scene.add(new THREE.HemisphereLight(0xdfe6ea, 0x3a3d42, 1.15));
-const sun = new THREE.DirectionalLight(0xfff4de, 1.15);
-sun.position.set(180,260,120);
-scene.add(sun);
-const fillLight = new THREE.DirectionalLight(0xaebbc9, 0.45);
+// --- Iluminação ---
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.35);
+scene.add(ambientLight);
+
+const hemisphereLight = new THREE.HemisphereLight(0xdfe6ea, 0x3a3d42, 0.8);
+scene.add(hemisphereLight);
+
+const sunLight = new THREE.DirectionalLight(0xfff4de, 1.2);
+sunLight.position.set(180,260,120);
+scene.add(sunLight);
+
+const fillLight = new THREE.DirectionalLight(0xaebbc9, 0.4);
 fillLight.position.set(-160,120,-140);
 scene.add(fillLight);
-scene.add(new THREE.AmbientLight(0xffffff, 0.28));
+
+// --- Lanterna (SpotLight) ---
+const flashlight = new THREE.SpotLight(0xffeedd, 0);
+flashlight.angle = 0.35;
+flashlight.penumbra = 0.3;
+flashlight.decay = 1;
+flashlight.distance = 120;
+flashlight.position.set(0, EYE_HEIGHT, 0);
+flashlight.target.position.set(0, EYE_HEIGHT, -100);
+scene.add(flashlight);
+scene.add(flashlight.target);
+
+let flashlightOn = false;
 
 function onResize(){
   camera.aspect = window.innerWidth/window.innerHeight;
@@ -224,19 +261,20 @@ function onResize(){
 window.addEventListener('resize', onResize);
 onResize();
 
-/* ---------------- GEOMETRY TEMPLATE (shared unit box) ---------------- */
+/* ---------------- GEOMETRY TEMPLATE ---------------- */
 const UNIT_BOX = new THREE.BoxGeometry(1,1,1).toNonIndexed();
 const BASE_POS = UNIT_BOX.attributes.position.array;
 const BASE_NORM = UNIT_BOX.attributes.normal.array;
-const VERTS_PER_BOX = BASE_POS.length/3; // 36
+const VERTS_PER_BOX = BASE_POS.length/3;
 
 function box(x,y,z,w,h,d,color){ return {x,y,z,w,h,d,color}; }
 
 /* ---------------- SEEDED RNG ---------------- */
-function hashSeed(cx,cz,salt){
+function hashSeed(cx,cz,cy,salt){
   let h = 2166136261;
   h = Math.imul(h ^ (cx|0), 16777619);
   h = Math.imul(h ^ (cz|0), 16777619);
+  h = Math.imul(h ^ (cy|0), 16777619);
   h = Math.imul(h ^ (salt|0), 16777619);
   h = Math.imul(h ^ 0x9e3779b9, 16777619);
   return h>>>0;
@@ -250,7 +288,7 @@ function mulberry32(a){
   };
 }
 
-/* ---------------- MATERIAL PALETTE (imundo / sujo / industrial) ---------------- */
+/* ---------------- MATERIAL PALETTE ---------------- */
 function grayColor(rng, lo, hi, tint){
   const l = lo + rng()*(hi-lo);
   const hue = tint===undefined ? 0.58 + (rng()-0.5)*0.07 : tint;
@@ -259,188 +297,282 @@ function grayColor(rng, lo, hi, tint){
   c.setHSL(hue, sat, l);
   return c;
 }
-function groundColor(rng){ return grayColor(rng, 0.08, 0.15); }
+function groundColor(rng){ 
+  const c = grayColor(rng, 0.04, 0.10); 
+  return c; 
+}
 function structColor(rng){
-  // base metal/concreto, mas mais escuro e sujo que antes
-  const c = grayColor(rng, 0.14, 0.42);
-  if(rng() < 0.22){
-    // mancha de sujeira/oleo/ferrugem sobre a estrutura
-    return grimeColor(rng);
-  }
+  const c = grayColor(rng, 0.12, 0.38);
+  if(rng() < 0.22) return grimeColor(rng);
   return c;
 }
 function grimeColor(rng){
   const c = new THREE.Color();
   const pick = rng();
-  if(pick < 0.4){ c.setHSL(0.08+rng()*0.04, 0.4+rng()*0.15, 0.16+rng()*0.14); }        // ferrugem
-  else if(pick < 0.7){ c.setHSL(0.24+rng()*0.05, 0.2+rng()*0.15, 0.10+rng()*0.10); }   // mofo/oleo esverdeado
-  else { c.setHSL(0.0, 0.0, 0.05+rng()*0.06); }                                        // fuligem preta
+  if(pick < 0.4){ c.setHSL(0.08+rng()*0.04, 0.4+rng()*0.15, 0.16+rng()*0.14); }
+  else if(pick < 0.7){ c.setHSL(0.24+rng()*0.05, 0.2+rng()*0.15, 0.10+rng()*0.10); }
+  else { c.setHSL(0.0, 0.0, 0.05+rng()*0.06); }
   return c;
 }
-function accentColor(rng){
-  if(rng() < 0.22){ const c = new THREE.Color(); c.setHSL(0.09+rng()*0.03, 0.4, 0.26+rng()*0.16); return c; }
-  if(rng() < 0.30) return grimeColor(rng);
-  return structColor(rng);
+
+/* ---------------- CHUNK CONTENT GENERATION ---------------- */
+
+// ===== BURACOS MELHORADOS - VISÍVEIS! =====
+function genHoles(boxes, ox, oz, layerY, rng){
+  // 1-2 furos por chunk (100m)
+  const numHoles = 1 + Math.floor(rng() * 2);
+  
+  for(let h = 0; h < numHoles; h++){
+    const hx = ox + 5 + rng() * (CHUNK_SIZE - 10);
+    const hz = oz + 5 + rng() * (CHUNK_SIZE - 10);
+    
+    // BORDA DO BURACO (anel vermelho/alaranjado brilhante)
+    const ringColor = new THREE.Color(0xff2200);
+    for(let i = 0; i < 12; i++){
+      const angle = (i / 12) * Math.PI * 2;
+      const px = hx + Math.cos(angle) * (HOLE_RADIUS + 0.3);
+      const pz = hz + Math.sin(angle) * (HOLE_RADIUS + 0.3);
+      boxes.push(box(px, layerY - 0.1, pz, 0.5, 0.2, 0.5, ringColor));
+    }
+    
+    // ANEL INTERNO (escuro, marca o vazio)
+    const darkRing = new THREE.Color(0x000000);
+    boxes.push(box(hx, layerY - 0.05, hz, HOLE_RADIUS * 2 - 0.5, 0.1, HOLE_RADIUS * 2 - 0.5, darkRing));
+    
+    // SINALIZADORES LUMINOSOS (piscam na noite)
+    for(let i = 0; i < 6; i++){
+      const angle = (i / 6) * Math.PI * 2;
+      const lx = hx + Math.cos(angle) * (HOLE_RADIUS + 1.5);
+      const lz = hz + Math.sin(angle) * (HOLE_RADIUS + 1.5);
+      const lightColor = new THREE.Color(0xff4400);
+      boxes.push(box(lx, layerY + 1.0, lz, 0.6, 0.6, 0.6, lightColor));
+    }
+    
+    // PAREDES DO BURACO (descendo 10m)
+    for(let i = 0; i < 8; i++){
+      const angle = (i / 8) * Math.PI * 2;
+      const px = hx + Math.cos(angle) * HOLE_RADIUS;
+      const pz = hz + Math.sin(angle) * HOLE_RADIUS;
+      const wallColor = new THREE.Color(0x333344);
+      boxes.push(box(px, layerY - 3, pz, 0.6, 6, 0.6, wallColor));
+    }
+    
+    // TEXTO INDICANDO "BURACO" (usando cubos coloridos)
+    for(let i = 0; i < 4; i++){
+      const angle = (i / 4) * Math.PI * 2 + 0.2;
+      const tx = hx + Math.cos(angle) * (HOLE_RADIUS + 0.8);
+      const tz = hz + Math.sin(angle) * (HOLE_RADIUS + 0.8);
+      const textColor = new THREE.Color(0xff8800);
+      boxes.push(box(tx, layerY + 1.8, tz, 0.4, 0.4, 0.4, textColor));
+    }
+  }
 }
 
-/* ---------------- CHUNK CONTENT GENERATION ----------------
-   Cada chunk empilha VÁRIAS camadas (prédios + pilares + muros +
-   túneis + viadutos), com margens mínimas e sobreposição proposital,
-   além de "perfuradores": vigas/pistas retas que atravessam tudo sem
-   nenhuma lógica estrutural — ruas cruzando pilares, viadutos cravados
-   no meio de muralhas, prédios colados uns nos outros. */
-
-function genBuildings(boxes, ox, oz, rng, density){
-  const count = density + Math.floor(rng()*(density+2));
+// ===== 8x MAIS ESTRUTURAS =====
+function genBuildings(boxes, ox, oz, layerY, rng, density){
+  const count = density * 8 + Math.floor(rng()*(density * 8 + 4)); // 8x mais!
   for(let i=0;i<count;i++){
-    const w = 5 + rng()*16, d = 5 + rng()*16, h = 6 + rng()*40;
-    // margem quase nula: deixa empilhar e invadir os vizinhos
-    const x = ox - 4 + rng()*(CHUNK_SIZE+8-w);
-    const z = oz - 4 + rng()*(CHUNK_SIZE+8-d);
-    boxes.push(box(x+w/2, h/2, z+d/2, w, h, d, structColor(rng)));
+    const w = 3 + rng()*20, d = 3 + rng()*20, h = 4 + rng()*55;
+    const x = ox - 8 + rng()*(CHUNK_SIZE+16-w);
+    const z = oz - 8 + rng()*(CHUNK_SIZE+16-d);
+    boxes.push(box(x+w/2, layerY + h/2, z+d/2, w, h, d, structColor(rng)));
+    
+    // TELHADOS/DETALHES
+    if(rng()<0.6){
+      boxes.push(box(x+w/2, layerY + h+3, z+d/2, w*(0.2+rng()*0.5), 2+rng()*8, d*(0.2+rng()*0.5), grimeColor(rng)));
+    }
     if(rng()<0.5){
-      boxes.push(box(x+w/2, h+4, z+d/2, w*(0.3+rng()*0.4), 6+rng()*10, d*(0.3+rng()*0.4), accentColor(rng)));
+      boxes.push(box(x+w/2, layerY + h*(0.2+rng()*0.6), z+d/2 + d*0.4, w*0.6, 0.7, 1.2, grimeColor(rng)));
     }
     if(rng()<0.4){
-      boxes.push(box(x+w/2, h*(0.3+rng()*0.5), z+d/2 + d*0.5, w*0.8, 0.7, 1.4, accentColor(rng)));
+      boxes.push(box(x+w/2 + (rng()-0.5)*w*0.7, layerY + h*(0.1+rng()*0.7), z+d/2 + (rng()-0.5)*d*0.7,
+        2+rng()*6, 2+rng()*10, 2+rng()*6, grimeColor(rng)));
     }
+    // Estruturas tortas
     if(rng()<0.3){
-      // um segundo volume colado/atravessado no primeiro, sem sentido nenhum
-      boxes.push(box(x+w/2 + (rng()-0.5)*w*0.6, h*(0.2+rng()*0.6), z+d/2 + (rng()-0.5)*d*0.6,
-        3+rng()*8, 3+rng()*8, 3+rng()*8, accentColor(rng)));
+      boxes.push(box(x+w/2 + w*0.3, layerY + h*0.7, z+d/2 + d*0.3, w*0.4, h*1.2, d*0.4, structColor(rng)));
     }
   }
 }
 
-function genMegastructure(boxes, ox, oz, rng){
-  const w = 20 + rng()*26, d = 20 + rng()*26, h = 90 + rng()*180;
-  const x = ox + CHUNK_SIZE*(0.3+rng()*0.4), z = oz + CHUNK_SIZE*(0.3+rng()*0.4);
-  boxes.push(box(x, h/2, z, w, h, d, structColor(rng)));
-  const beams = 4 + Math.floor(rng()*6);
+function genMegastructure(boxes, ox, oz, layerY, rng){
+  const w = 15 + rng()*35, d = 15 + rng()*35, h = 60 + rng()*220;
+  const x = ox + CHUNK_SIZE*(0.2+rng()*0.5), z = oz + CHUNK_SIZE*(0.2+rng()*0.5);
+  boxes.push(box(x, layerY + h/2, z, w, h, d, structColor(rng)));
+  
+  const beams = 6 + Math.floor(rng()*10);
   for(let i=0;i<beams;i++){
-    const by = 10 + (h-30) * (i/(beams-1||1));
-    boxes.push(box(x, by, z, w+4+rng()*10, 1.6+rng()*2, d+4+rng()*10, accentColor(rng)));
+    const by = layerY + 8 + (h-20) * (i/(beams-1||1));
+    boxes.push(box(x, by, z, w+6+rng()*14, 1.2+rng()*3, d+6+rng()*14, grimeColor(rng)));
+  }
+  
+  // Estruturas penduradas
+  if(rng()<0.5){
+    for(let i=0;i<4;i++){
+      const angle = (i/4)*Math.PI*2;
+      const px = x + Math.cos(angle)*w*0.6;
+      const pz = z + Math.sin(angle)*d*0.6;
+      boxes.push(box(px, layerY + h*0.3, pz, 3+rng()*8, 5+rng()*15, 3+rng()*8, grimeColor(rng)));
+    }
   }
 }
 
-function genBridge(boxes, ox, oz, rng){
+function genBridge(boxes, ox, oz, layerY, rng){
   const alongX = rng() < 0.5;
-  const y = 6 + rng()*46; // qualquer altura, inclusive cravado dentro de prédios
-  const thickness = 1.8 + rng()*2.5, width = 5 + rng()*7;
+  const y = layerY + 4 + rng()*55;
+  const thickness = 1.5 + rng()*3.5, width = 4 + rng()*10;
   const lateral = ox_lateral(ox, oz, alongX, rng);
   if(alongX){
-    boxes.push(box(ox+CHUNK_SIZE/2, y, lateral, CHUNK_SIZE*1.15, thickness, width, structColor(rng)));
-    boxes.push(box(ox+4, Math.max(1,y/2), lateral, 3.5, Math.max(2,y), 3.5, structColor(rng)));
-    boxes.push(box(ox+CHUNK_SIZE-4, Math.max(1,y/2), lateral, 3.5, Math.max(2,y), 3.5, structColor(rng)));
+    boxes.push(box(ox+CHUNK_SIZE/2, y, lateral, CHUNK_SIZE*1.3, thickness, width, structColor(rng)));
+    // Pilares extras
+    for(let i=0;i<6;i++){
+      const px = ox + 5 + i*(CHUNK_SIZE-10)/5;
+      boxes.push(box(px, layerY + Math.max(1,(y-layerY)/2), lateral, 2.5, Math.max(2,(y-layerY)), 2.5, structColor(rng)));
+    }
   } else {
-    boxes.push(box(lateral, y, oz+CHUNK_SIZE/2, width, thickness, CHUNK_SIZE*1.15, structColor(rng)));
-    boxes.push(box(lateral, Math.max(1,y/2), oz+4, 3.5, Math.max(2,y), 3.5, structColor(rng)));
-    boxes.push(box(lateral, Math.max(1,y/2), oz+CHUNK_SIZE-4, 3.5, Math.max(2,y), 3.5, structColor(rng)));
+    boxes.push(box(lateral, y, oz+CHUNK_SIZE/2, width, thickness, CHUNK_SIZE*1.3, structColor(rng)));
+    for(let i=0;i<6;i++){
+      const pz = oz + 5 + i*(CHUNK_SIZE-10)/5;
+      boxes.push(box(lateral, layerY + Math.max(1,(y-layerY)/2), pz, 2.5, Math.max(2,(y-layerY)), 2.5, structColor(rng)));
+    }
   }
 }
 function ox_lateral(ox, oz, alongX, rng){
-  return alongX ? (oz + 15 + rng()*(CHUNK_SIZE-30)) : (ox + 15 + rng()*(CHUNK_SIZE-30));
+  return alongX ? (oz + 10 + rng()*(CHUNK_SIZE-20)) : (ox + 10 + rng()*(CHUNK_SIZE-20));
 }
 
-function genTunnel(boxes, ox, oz, rng){
+function genTunnel(boxes, ox, oz, layerY, rng){
   const alongX = rng() < 0.5;
-  const h = 7 + rng()*5, w = 8 + rng()*5, wallT = 1.3;
-  const jx = (rng()-0.5)*30, jz = (rng()-0.5)*30; // fora do centro: colide com o resto
+  const h = 5 + rng()*8, w = 5 + rng()*10, wallT = 1.5;
+  const jx = (rng()-0.5)*40, jz = (rng()-0.5)*40;
   const cx = ox+CHUNK_SIZE/2+jx, cz = oz+CHUNK_SIZE/2+jz;
   if(alongX){
-    boxes.push(box(cx, h/2, cz - w/2, CHUNK_SIZE*1.1, h, wallT, structColor(rng)));
-    boxes.push(box(cx, h/2, cz + w/2, CHUNK_SIZE*1.1, h, wallT, structColor(rng)));
-    boxes.push(box(cx, h, cz, CHUNK_SIZE*1.1, wallT, w, structColor(rng)));
+    boxes.push(box(cx, layerY + h/2, cz - w/2, CHUNK_SIZE*1.2, h, wallT, structColor(rng)));
+    boxes.push(box(cx, layerY + h/2, cz + w/2, CHUNK_SIZE*1.2, h, wallT, structColor(rng)));
+    boxes.push(box(cx, layerY + h, cz, CHUNK_SIZE*1.2, wallT, w, structColor(rng)));
   } else {
-    boxes.push(box(cx - w/2, h/2, cz, wallT, h, CHUNK_SIZE*1.1, structColor(rng)));
-    boxes.push(box(cx + w/2, h/2, cz, wallT, h, CHUNK_SIZE*1.1, structColor(rng)));
-    boxes.push(box(cx, h, cz, w, wallT, CHUNK_SIZE*1.1, structColor(rng)));
+    boxes.push(box(cx - w/2, layerY + h/2, cz, wallT, h, CHUNK_SIZE*1.2, structColor(rng)));
+    boxes.push(box(cx + w/2, layerY + h/2, cz, wallT, h, CHUNK_SIZE*1.2, structColor(rng)));
+    boxes.push(box(cx, layerY + h, cz, w, wallT, CHUNK_SIZE*1.2, structColor(rng)));
+  }
+  // Túneis adicionais cruzados
+  if(rng()<0.4){
+    const h2 = 4 + rng()*6, w2 = 4 + rng()*8;
+    boxes.push(box(cx + 10, layerY + h2/2, cz - w2/2, 5, h2, wallT, grimeColor(rng)));
+    boxes.push(box(cx + 10, layerY + h2/2, cz + w2/2, 5, h2, wallT, grimeColor(rng)));
   }
 }
 
-function genWall(boxes, ox, oz, rng){
+function genWall(boxes, ox, oz, layerY, rng){
   const alongX = rng() < 0.5;
-  const h = 14 + rng()*44, len = CHUNK_SIZE*(0.6+rng()*0.35), thickness = 2 + rng()*2.5;
-  const offsetFrac = rng()*0.5; // sem preocupação de deixar passagem "limpa"
-  const lateralFrac = rng();
+  const h = 10 + rng()*55, len = CHUNK_SIZE*(0.5+rng()*0.45), thickness = 1.5 + rng()*4;
+  const offsetFrac = rng()*0.4;
+  const lateralFrac = rng()*0.6;
   if(alongX){
-    boxes.push(box(ox + CHUNK_SIZE*offsetFrac + len/2, h/2, oz + CHUNK_SIZE*lateralFrac, len, h, thickness, structColor(rng)));
+    boxes.push(box(ox + CHUNK_SIZE*offsetFrac + len/2, layerY + h/2, oz + CHUNK_SIZE*lateralFrac, len, h, thickness, structColor(rng)));
+    // Muralhas duplas
+    if(rng()<0.5){
+      boxes.push(box(ox + CHUNK_SIZE*offsetFrac + len/2, layerY + h/2, oz + CHUNK_SIZE*lateralFrac + 5, len, h*0.6, thickness*0.7, grimeColor(rng)));
+    }
   } else {
-    boxes.push(box(ox + CHUNK_SIZE*lateralFrac, h/2, oz + CHUNK_SIZE*offsetFrac + len/2, thickness, h, len, structColor(rng)));
+    boxes.push(box(ox + CHUNK_SIZE*lateralFrac, layerY + h/2, oz + CHUNK_SIZE*offsetFrac + len/2, thickness, h, len, structColor(rng)));
+    if(rng()<0.5){
+      boxes.push(box(ox + CHUNK_SIZE*lateralFrac + 5, layerY + h/2, oz + CHUNK_SIZE*offsetFrac + len/2, thickness*0.7, h*0.6, len, grimeColor(rng)));
+    }
   }
 }
 
-function genPillarfield(boxes, ox, oz, rng){
-  const gridN = 3 + Math.floor(rng()*2), spacing = 8 + rng()*6;
-  const cx = ox + CHUNK_SIZE*(0.2+rng()*0.5) - (gridN*spacing)/2;
-  const cz = oz + CHUNK_SIZE*(0.2+rng()*0.5) - (gridN*spacing)/2;
+function genPillarfield(boxes, ox, oz, layerY, rng){
+  const gridN = 5 + Math.floor(rng()*4), spacing = 5 + rng()*8;
+  const cx = ox + CHUNK_SIZE*(0.1+rng()*0.6) - (gridN*spacing)/2;
+  const cz = oz + CHUNK_SIZE*(0.1+rng()*0.6) - (gridN*spacing)/2;
   for(let i=0;i<gridN;i++){
     for(let j=0;j<gridN;j++){
-      const h = 12 + rng()*54; // alturas desiguais, grade torta e quebrada
-      const pR = 1.1 + rng()*1.6;
-      const jitterX = (rng()-0.5)*4, jitterZ = (rng()-0.5)*4;
-      boxes.push(box(cx+i*spacing+jitterX, h/2, cz+j*spacing+jitterZ, pR, h, pR, structColor(rng)));
+      const h = 8 + rng()*70;
+      const pR = 0.8 + rng()*2.5;
+      const jitterX = (rng()-0.5)*6, jitterZ = (rng()-0.5)*6;
+      boxes.push(box(cx+i*spacing+jitterX, layerY + h/2, cz+j*spacing+jitterZ, pR, h, pR, structColor(rng)));
+      
+      // Pilares com plataformas
+      if(rng()<0.3){
+        boxes.push(box(cx+i*spacing+jitterX, layerY + h*0.7, cz+j*spacing+jitterZ, pR*3, 0.8, pR*3, grimeColor(rng)));
+      }
     }
   }
-  if(rng()<0.6){
-    const platY = 10+rng()*40;
-    boxes.push(box(cx+(gridN*spacing)/2, platY, cz+(gridN*spacing)/2, gridN*spacing+8, 1.6+rng()*2, gridN*spacing+8, accentColor(rng)));
+  if(rng()<0.7){
+    const platY = layerY + 6 + rng()*55;
+    boxes.push(box(cx+(gridN*spacing)/2, platY, cz+(gridN*spacing)/2, gridN*spacing+12, 1.2+rng()*3, gridN*spacing+12, structColor(rng)));
   }
 }
 
-function genClutterAndPiercers(boxes, ox, oz, rng, count){
-  // tranqueira / entulho / dutos: pequenos volumes por toda parte
-  for(let i=0;i<count;i++){
-    const s = 1 + rng()*3.5;
+function genClutterAndPiercers(boxes, ox, oz, layerY, rng, count){
+  const clutterCount = count * 6; // 6x mais entulho!
+  for(let i=0;i<clutterCount;i++){
+    const s = 0.5 + rng()*5;
     const x = ox + rng()*CHUNK_SIZE, z = oz + rng()*CHUNK_SIZE;
-    const y = rng()*rng()*40; // mais provável perto do chão, mas pode estar suspenso
-    boxes.push(box(x, y+s/2, z, s*(0.5+rng()), s*(0.5+rng()*2), s*(0.5+rng()), grimeColor(rng)));
+    const y = layerY + rng()*rng()*55;
+    boxes.push(box(x, y+s/2, z, s*(0.3+rng()), s*(0.3+rng()*3), s*(0.3+rng()), grimeColor(rng)));
   }
-  // perfuradores: vigas/vias retas que atravessam TUDO sem nenhum motivo —
-  // ruas cortando pilares, viadutos cravados em muralhas, dutos cruzados
-  const piercers = 1 + Math.floor(rng()*3);
+  
+  const piercers = 3 + Math.floor(rng()*5);
   for(let i=0;i<piercers;i++){
     const alongX = rng()<0.5;
-    const y = 1.5 + rng()*55;
-    const thickness = 1.2 + rng()*3.2;
-    const width = 2.5 + rng()*7;
+    const y = layerY + 0.5 + rng()*70;
+    const thickness = 0.8 + rng()*4;
+    const width = 1.5 + rng()*10;
     const pos = rng()*CHUNK_SIZE;
     if(alongX){
-      boxes.push(box(ox+CHUNK_SIZE/2, y, oz+pos, CHUNK_SIZE*1.2, thickness, width, accentColor(rng)));
+      boxes.push(box(ox+CHUNK_SIZE/2, y, oz+pos, CHUNK_SIZE*1.3, thickness, width, grimeColor(rng)));
     } else {
-      boxes.push(box(ox+pos, y, oz+CHUNK_SIZE/2, width, thickness, CHUNK_SIZE*1.2, accentColor(rng)));
+      boxes.push(box(ox+pos, y, oz+CHUNK_SIZE/2, width, thickness, CHUNK_SIZE*1.3, grimeColor(rng)));
     }
   }
 }
 
-function generateChunkBoxes(cx, cz, salt, isSpawn){
-  const rng = mulberry32(hashSeed(cx,cz,salt));
+function generateChunkBoxes(cx, cz, layerIndex, salt, isSpawn){
+  const rng = mulberry32(hashSeed(cx, cz, layerIndex, salt));
   const ox = cx*CHUNK_SIZE, oz = cz*CHUNK_SIZE;
+  const layerY = layerIndex * LAYER_HEIGHT;
+  
   const boxes = [];
-  boxes.push(box(ox+CHUNK_SIZE/2, -0.5, oz+CHUNK_SIZE/2, CHUNK_SIZE, 1, CHUNK_SIZE, groundColor(rng)));
-
-  if(isSpawn){
-    // ponto de partida: ainda denso e sujo, mas um pouco mais respirável
-    genBuildings(boxes, ox, oz, rng, 2);
-    if(rng()<0.6) genPillarfield(boxes, ox, oz, rng);
-    genClutterAndPiercers(boxes, ox, oz, rng, 6);
+  
+  // CHÃO DA CAMADA (com furos visíveis!)
+  const groundColor_c = groundColor(rng);
+  boxes.push(box(ox+CHUNK_SIZE/2, layerY - 0.5, oz+CHUNK_SIZE/2, CHUNK_SIZE, 1, CHUNK_SIZE, groundColor_c));
+  
+  // BURACOS SEMPRE PRESENTES
+  genHoles(boxes, ox, oz, layerY, rng);
+  
+  // ===== MUITO MAIS ESTRUTURAS (8x) =====
+  if(isSpawn && layerIndex === 0){
+    // Camada inicial: já caótica
+    genBuildings(boxes, ox, oz, layerY, rng, 2);
+    genPillarfield(boxes, ox, oz, layerY, rng);
+    genClutterAndPiercers(boxes, ox, oz, layerY, rng, 6);
+    if(rng()<0.8) genWall(boxes, ox, oz, layerY, rng);
+    if(rng()<0.7) genTunnel(boxes, ox, oz, layerY, rng);
+    if(rng()<0.5) genBridge(boxes, ox, oz, layerY, rng);
     return boxes;
   }
-
-  // caos: várias camadas empilhadas e sobrepostas no mesmo chunk
-  genBuildings(boxes, ox, oz, rng, 4);
-  if(rng()<0.6) genPillarfield(boxes, ox, oz, rng);
-  if(rng()<0.5) genWall(boxes, ox, oz, rng);
-  if(rng()<0.45) genTunnel(boxes, ox, oz, rng);
-  if(rng()<0.7) genBridge(boxes, ox, oz, rng);
-  if(rng()<0.75){ genBridge(boxes, ox, oz, rng); } // segundo viaduto cruzado, quase sempre
-  if(rng()<0.18) genMegastructure(boxes, ox, oz, rng);
-  genClutterAndPiercers(boxes, ox, oz, rng, 8 + Math.floor(rng()*14));
-
+  
+  // ===== CAMADAS NORMAIS: INFESTADAS DE COISAS =====
+  genBuildings(boxes, ox, oz, layerY, rng, 5);      // 5x densidade base
+  genPillarfield(boxes, ox, oz, layerY, rng);
+  if(rng()<0.8) genWall(boxes, ox, oz, layerY, rng);
+  if(rng()<0.7) genTunnel(boxes, ox, oz, layerY, rng);
+  if(rng()<0.9) genBridge(boxes, ox, oz, layerY, rng);
+  if(rng()<0.5) genBridge(boxes, ox, oz, layerY, rng); // Viadutos extras
+  if(rng()<0.35) genMegastructure(boxes, ox, oz, layerY, rng);
+  genClutterAndPiercers(boxes, ox, oz, layerY, rng, 12);
+  
+  // Estruturas extras para garantir caos
+  if(rng()<0.6) genWall(boxes, ox, oz, layerY, rng);
+  if(rng()<0.5) genTunnel(boxes, ox, oz, layerY, rng);
+  
   return boxes;
 }
 
-/* ---------------- MESH BUILDING (merged per chunk) ---------------- */
+/* ---------------- MESH BUILDING ---------------- */
 function buildChunkMesh(boxes){
   const n = boxes.length;
   const positions = new Float32Array(n*VERTS_PER_BOX*3);
@@ -482,22 +614,26 @@ function buildChunkMesh(boxes){
 const chunkGroup = new THREE.Group();
 scene.add(chunkGroup);
 
-const chunkMap = new Map();     // key -> {cx,cz,mesh,state,alpha,dist}
-const saltMap = new Map();      // key -> revisit salt (world mutates on revisit)
-const buildingSet = new Set();  // keys currently queued/building this tick
+const chunkMap = new Map();
+const saltMap = new Map();
+const buildingSet = new Set();
 
-function chunkKey(cx,cz){ return cx+','+cz; }
+function chunkKey(cx, cz, layer){ return cx+','+cz+','+layer; }
 
-function requestChunk(cx, cz){
-  const key = chunkKey(cx,cz);
+function getLayerFromY(y){
+  return Math.round(y / LAYER_HEIGHT);
+}
+
+function requestChunk(cx, cz, layer){
+  const key = chunkKey(cx,cz,layer);
   if(chunkMap.has(key) || buildingSet.has(key)) return;
   buildingSet.add(key);
   const salt = saltMap.get(key) || 0;
-  const isSpawn = (cx===0 && cz===0);
-  const boxes = generateChunkBoxes(cx, cz, salt, isSpawn);
+  const isSpawn = (cx===0 && cz===0 && layer===0);
+  const boxes = generateChunkBoxes(cx, cz, layer, salt, isSpawn);
   const mesh = buildChunkMesh(boxes);
   chunkGroup.add(mesh);
-  chunkMap.set(key, {cx,cz,mesh,state:'in',alpha:0,scaleY:0.15});
+  chunkMap.set(key, {cx,cz,layer,mesh,state:'in',alpha:0,scaleY:0.15});
   buildingSet.delete(key);
 }
 
@@ -508,48 +644,59 @@ function unloadChunk(key){
   c.mesh.geometry.dispose();
   c.mesh.material.dispose();
   chunkMap.delete(key);
-  saltMap.set(key, (saltMap.get(key)||0) + 1); // world mutates on next visit
+  saltMap.set(key, (saltMap.get(key)||0) + 1);
 }
 
 let loadingComplete = false;
 
-function nearestMissingChunks(px, pz, radius, forwardX, forwardZ){
+function nearestMissingChunks(px, py, pz, radius, forwardX, forwardZ){
+  const currentLayer = getLayerFromY(py);
+  const layerRange = Math.ceil(radius / LAYER_HEIGHT) + 1;
   const rC = Math.ceil(radius/CHUNK_SIZE);
   const pcx = Math.floor(px/CHUNK_SIZE), pcz = Math.floor(pz/CHUNK_SIZE);
   const list = [];
-  for(let cx=pcx-rC; cx<=pcx+rC; cx++){
-    for(let cz=pcz-rC; cz<=pcz+rC; cz++){
-      const centerX = cx*CHUNK_SIZE+CHUNK_SIZE/2, centerZ = cz*CHUNK_SIZE+CHUNK_SIZE/2;
-      const dx = centerX-px, dz = centerZ-pz;
-      const dist = Math.hypot(dx,dz);
-      if(dist>radius) continue;
-      const key = chunkKey(cx,cz);
-      if(chunkMap.has(key) || buildingSet.has(key)) continue;
-      let score = dist;
-      if(forwardX!==undefined && dist>0.01){
-        const dot = (dx/dist)*forwardX + (dz/dist)*forwardZ;
-        score -= dot*40; // prioritize what's ahead of the player
+  
+  for(let layer = currentLayer - layerRange; layer <= currentLayer + layerRange; layer++){
+    const layerY = layer * LAYER_HEIGHT;
+    const dy = layerY - py;
+    if(Math.abs(dy) > radius + LAYER_HEIGHT) continue;
+    
+    for(let cx=pcx-rC; cx<=pcx+rC; cx++){
+      for(let cz=pcz-rC; cz<=pcz+rC; cz++){
+        const centerX = cx*CHUNK_SIZE+CHUNK_SIZE/2, centerZ = cz*CHUNK_SIZE+CHUNK_SIZE/2;
+        const dx = centerX-px, dz = centerZ-pz;
+        const dist = Math.hypot(dx,dy,dz);
+        if(dist>radius) continue;
+        const key = chunkKey(cx,cz,layer);
+        if(chunkMap.has(key) || buildingSet.has(key)) continue;
+        let score = dist;
+        if(forwardX!==undefined && dist>0.01){
+          const dot = (dx/dist)*forwardX + (dz/dist)*forwardZ;
+          score -= dot*40;
+        }
+        list.push({cx,cz,layer,score});
       }
-      list.push({cx,cz,score});
     }
   }
   list.sort((a,b)=>a.score-b.score);
   return list;
 }
 
-function updateStreaming(px, pz, forwardX, forwardZ, budget){
-  const candidates = nearestMissingChunks(px, pz, ACTIVE_RADIUS, forwardX, forwardZ);
+function updateStreaming(px, py, pz, forwardX, forwardZ, budget){
+  const candidates = nearestMissingChunks(px, py, pz, ACTIVE_RADIUS, forwardX, forwardZ);
   for(let i=0;i<Math.min(budget, candidates.length); i++){
-    requestChunk(candidates[i].cx, candidates[i].cz);
+    requestChunk(candidates[i].cx, candidates[i].cz, candidates[i].layer);
   }
-  // mark far chunks for unload
+  
   for(const [key,c] of chunkMap){
     const centerX = c.cx*CHUNK_SIZE+CHUNK_SIZE/2, centerZ = c.cz*CHUNK_SIZE+CHUNK_SIZE/2;
-    const dist = Math.hypot(centerX-px, centerZ-pz);
+    const layerY = c.layer * LAYER_HEIGHT;
+    const dy = layerY - py;
+    const dist = Math.hypot(centerX-px, centerZ-pz, dy);
     if(dist>UNLOAD_RADIUS && c.state!=='out'){
       c.state='out';
     } else if(dist<=ACTIVE_RADIUS && c.state==='out'){
-      c.state='in'; // player turned back before it fully unloaded
+      c.state='in';
     }
   }
 }
@@ -570,6 +717,83 @@ function animateChunks(dt){
   }
 }
 
+/* ---------------- CICLO DIA/NOITE ---------------- */
+let cycleTime = 0;
+
+function updateDayNight(dt){
+  cycleTime += dt;
+  if(cycleTime > CYCLE_DURATION) cycleTime -= CYCLE_DURATION;
+  
+  const isDay = cycleTime < DAY_DURATION;
+  const progress = isDay ? cycleTime / DAY_DURATION : (cycleTime - DAY_DURATION) / NIGHT_DURATION;
+  
+  // Céu: DIA claro, NOITE completamente escuro
+  if(isDay){
+    scene.background = SKY_DAY.clone();
+    scene.fog.color = SKY_DAY;
+  } else {
+    // Noite escura - transição suave mas muito escura
+    const darkColor = new THREE.Color(0x000000);
+    const nightFactor = Math.min(1, progress * 2);
+    scene.background = SKY_NIGHT.clone().lerp(new THREE.Color(0x050508), 1 - nightFactor * 0.5);
+    scene.fog.color = scene.background;
+  }
+  
+  // Intensidade da luz ambiente - quase zero na noite
+  const ambientIntensity = isDay ? 0.35 : 0.005 + (1 - progress) * 0.01;
+  ambientLight.intensity = ambientIntensity;
+  
+  // Luz do sol - quase zero na noite
+  const sunIntensity = isDay ? 1.2 : 0.001 + (1 - progress) * 0.005;
+  sunLight.intensity = sunIntensity;
+  
+  if(isDay){
+    const warmFactor = progress;
+    const color = new THREE.Color(0xfff4de);
+    color.lerp(new THREE.Color(0xff8844), warmFactor * 0.3);
+    sunLight.color = color;
+  } else {
+    sunLight.color = new THREE.Color(0x112233);
+  }
+  
+  fillLight.intensity = isDay ? 0.4 : 0.001;
+  hemisphereLight.intensity = isDay ? 0.8 : 0.005;
+  
+  const timeOfDayElement = document.getElementById('hudTimeOfDay');
+  if(isDay){
+    timeOfDayElement.textContent = '☀️ DIA';
+    timeOfDayElement.style.color = '#ffdd44';
+  } else {
+    timeOfDayElement.textContent = '🌙 NOITE';
+    timeOfDayElement.style.color = '#224466';
+  }
+  
+  return isDay;
+}
+
+/* ---------------- LANTERNA ---------------- */
+function toggleFlashlight(){
+  flashlightOn = !flashlightOn;
+  flashlight.intensity = flashlightOn ? 80 : 0; // Mais forte!
+  
+  const btnFlashlight = document.getElementById('btnFlashlight');
+  if(btnFlashlight){
+    btnFlashlight.classList.toggle('active', flashlightOn);
+  }
+}
+
+function updateFlashlight(){
+  flashlight.position.copy(camera.position);
+  
+  const target = new THREE.Vector3(0, 0, -100);
+  target.applyQuaternion(camera.quaternion);
+  target.add(camera.position);
+  flashlight.target.position.copy(target);
+  
+  flashlight.distance = 150; // Mais alcance
+  flashlight.angle = 0.4;    // Cone mais aberto
+}
+
 /* ---------------- PLAYER STATE ---------------- */
 const player = { position: new THREE.Vector3(0, EYE_HEIGHT, 0) };
 let yaw = 0, pitch = 0;
@@ -578,6 +802,7 @@ let grounded = true;
 let running = false;
 let wantsJump = false;
 let flying = false;
+let isDay = true;
 
 const raycaster = new THREE.Raycaster();
 const _fwd = new THREE.Vector3(), _right = new THREE.Vector3();
@@ -587,16 +812,14 @@ const _moveVec = new THREE.Vector3(), _originVec = new THREE.Vector3();
 function setFlying(value){
   flying = value;
   if(flying){ velocityY = 0; grounded = false; }
-  else { velocityY = 0; } // recomeça a cair naturalmente a partir de v=0, sem "tranco"
+  else { velocityY = 0; }
   updateFlyUI();
 }
 
-/* Modo de câmera livre: voa para qualquer direção para onde o jogador está
-   olhando (inclui o pitch), mas continua respeitando colisão via raycast. */
 function updateFlight(dt, inForward, inStrafe, ascend, descend){
   _flyEuler.set(pitch, yaw, 0, 'YXZ');
-  _flyDir.set(0,0,-1).applyEuler(_flyEuler); // direção 3D completa do olhar
-  _right.set(Math.cos(yaw), 0, -Math.sin(yaw)); // strafe permanece horizontal
+  _flyDir.set(0,0,-1).applyEuler(_flyEuler);
+  _right.set(Math.cos(yaw), 0, -Math.sin(yaw));
 
   let mx = _flyDir.x*inForward + _right.x*inStrafe;
   let my = _flyDir.y*inForward;
@@ -629,7 +852,7 @@ function updateFlight(dt, inForward, inStrafe, ascend, descend){
   player.position.y += dy;
   player.position.z += dz;
 
-  if(player.position.y < -80){ // segurança: nunca perder o jogador
+  if(player.position.y < -80){ 
     player.position.set(0, EYE_HEIGHT+2, 0);
   }
 
@@ -694,7 +917,7 @@ function updatePhysics(dt, inForward, inStrafe){
     }
   } else {
     grounded = false;
-    if(player.position.y < -80){ // safety respawn
+    if(player.position.y < -80){
       player.position.set(0, EYE_HEIGHT+2, 0);
       velocityY = 0;
     }
@@ -702,10 +925,13 @@ function updatePhysics(dt, inForward, inStrafe){
 
   camera.position.copy(player.position);
   camera.rotation.set(pitch, yaw, 0, 'YXZ');
+  
+  const currentLayer = getLayerFromY(player.position.y);
+  document.getElementById('hudLayer').textContent = currentLayer;
 }
 
 /* ---------------- INPUT: PC ---------------- */
-let mode = null; // 'pc' | 'mobile'
+let mode = null;
 const keys = {};
 let pointerLocked = false;
 
@@ -714,6 +940,7 @@ window.addEventListener('keydown', (e)=>{
   if(e.code==='Space'){ if(!flying) wantsJump = true; e.preventDefault(); }
   if(e.code==='KeyQ'){ running = true; }
   if(e.code==='KeyE' && !e.repeat){ setFlying(!flying); }
+  if(e.code==='KeyF' && !e.repeat){ toggleFlashlight(); }
 });
 window.addEventListener('keyup', (e)=>{
   keys[e.code] = false;
@@ -749,6 +976,7 @@ const camLookZone = document.getElementById('camLookZone');
 const btnJump = document.getElementById('btnJump');
 const btnRun = document.getElementById('btnRun');
 const btnFly = document.getElementById('btnFly');
+const btnFlashlight = document.getElementById('btnFlashlight');
 let flyUpHeld = false, flyDownHeld = false;
 
 let joyActive = false, joyId = null, joyVec = {x:0,y:0};
@@ -813,7 +1041,6 @@ function endLook(e){
 camLookZone.addEventListener('touchend', endLook);
 camLookZone.addEventListener('touchcancel', endLook);
 
-// PULAR/CORRER viram SUBIR/DESCER (segurar) enquanto o modo voo estiver ativo
 btnJump.addEventListener('touchstart', (e)=>{
   e.preventDefault();
   if(flying){ flyUpHeld = true; } else { wantsJump = true; }
@@ -834,6 +1061,11 @@ btnFly.addEventListener('touchstart', (e)=>{
   setFlying(!flying);
 }, {passive:false});
 
+btnFlashlight.addEventListener('touchstart', (e)=>{
+  e.preventDefault();
+  toggleFlashlight();
+}, {passive:false});
+
 function mobileInputVector(){
   return { f: -joyVec.y, s: joyVec.x };
 }
@@ -848,8 +1080,8 @@ function updateFlyUI(){
   }
   if(pcHint){
     pcHint.textContent = flying
-      ? 'WASD mover · ESPAÇO subir · SHIFT descer · E parar de voar · MOUSE olhar'
-      : 'WASD mover · ESPAÇO pular · Q correr · E voar · MOUSE olhar (clique para travar o cursor)';
+      ? 'WASD mover · ESPAÇO subir · SHIFT descer · E parar de voar · F lanterna · MOUSE olhar'
+      : 'WASD mover · ESPAÇO pular · Q correr · E voar · F lanterna · MOUSE olhar';
   }
 }
 
@@ -865,11 +1097,15 @@ const mobileControls = document.getElementById('mobileControls');
 
 function neededInitialChunkCount(){
   const rC = Math.ceil(INITIAL_RADIUS/CHUNK_SIZE);
+  const layerRange = Math.ceil(INITIAL_RADIUS/LAYER_HEIGHT) + 1;
   let n=0;
-  for(let cx=-rC; cx<=rC; cx++){
-    for(let cz=-rC; cz<=rC; cz++){
-      const d = Math.hypot(cx*CHUNK_SIZE+CHUNK_SIZE/2, cz*CHUNK_SIZE+CHUNK_SIZE/2);
-      if(d<=INITIAL_RADIUS) n++;
+  for(let layer=-layerRange; layer<=layerRange; layer++){
+    const layerY = layer*LAYER_HEIGHT;
+    for(let cx=-rC; cx<=rC; cx++){
+      for(let cz=-rC; cz<=rC; cz++){
+        const d = Math.hypot(cx*CHUNK_SIZE+CHUNK_SIZE/2, cz*CHUNK_SIZE+CHUNK_SIZE/2, layerY);
+        if(d<=INITIAL_RADIUS) n++;
+      }
     }
   }
   return n;
@@ -877,17 +1113,17 @@ function neededInitialChunkCount(){
 const NEEDED_INITIAL = neededInitialChunkCount();
 
 function initialLoadStep(){
-  const list = nearestMissingChunks(0,0, INITIAL_RADIUS, 0, -1);
+  const list = nearestMissingChunks(0,0,0, INITIAL_RADIUS, 0, -1);
   const batch = Math.min(8, list.length);
-  for(let i=0;i<batch;i++) requestChunk(list[i].cx, list[i].cz);
+  for(let i=0;i<batch;i++) requestChunk(list[i].cx, list[i].cz, list[i].layer);
   const loadedInRange = [...chunkMap.values()].filter(c=>{
-    const d = Math.hypot(c.cx*CHUNK_SIZE+CHUNK_SIZE/2, c.cz*CHUNK_SIZE+CHUNK_SIZE/2);
+    const layerY = c.layer*LAYER_HEIGHT;
+    const d = Math.hypot(c.cx*CHUNK_SIZE+CHUNK_SIZE/2, c.cz*CHUNK_SIZE+CHUNK_SIZE/2, layerY);
     return d<=INITIAL_RADIUS;
   }).length;
   const pct = Math.min(100, Math.round((loadedInRange/NEEDED_INITIAL)*100));
   loadingBarInner.style.width = pct+'%';
   loadingLabel.textContent = 'CARREGANDO '+pct+'%';
-  // fast-forward the fade-in so the starting view is fully solid
   for(const c of chunkMap.values()){ c.alpha=1; c.mesh.material.opacity=1; c.mesh.scale.y=1; c.state='active'; }
   if(loadedInRange >= NEEDED_INITIAL){
     loadingComplete = true;
@@ -910,6 +1146,7 @@ function beginGame(selectedMode){
   player.position.set(0, EYE_HEIGHT, 0);
   yaw = 0; pitch = 0;
   camera.position.copy(player.position);
+  cycleTime = 0;
   animate();
 }
 
@@ -942,6 +1179,8 @@ function animate(){
     return;
   }
 
+  isDay = updateDayNight(dt);
+
   const inVec = mode==='pc' ? pcInputVector() : mobileInputVector();
   if(flying){
     const ascend = mode==='pc' ? !!keys['Space'] : flyUpHeld;
@@ -951,8 +1190,10 @@ function animate(){
     updatePhysics(dt, inVec.f, inVec.s);
   }
 
+  updateFlashlight();
+
   _fwd.set(-Math.sin(yaw),0,-Math.cos(yaw));
-  updateStreaming(player.position.x, player.position.z, _fwd.x, _fwd.z, 2);
+  updateStreaming(player.position.x, player.position.y, player.position.z, _fwd.x, _fwd.z, 2);
   animateChunks(dt);
 
   const elapsed = performance.now() - gameStartTime;
