@@ -20,50 +20,108 @@
   html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0c0d0f;font-family:var(--font-ui);}
   #renderCanvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;outline:none;}
 
+  /* ===== TELA INICIAL ORIGINAL ===== */
   #startScreen{
     position:absolute;inset:0;z-index:50;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    background:
-      linear-gradient(180deg, rgba(12,13,15,0.65), rgba(12,13,15,0.92)),
-      repeating-linear-gradient(90deg, #17181b 0px, #17181b 2px, #121316 2px, #121316 64px);
-    gap:48px;
+    background: #0c0d0f;
+    padding:20px;
   }
-  #startTitle{
+  #startScreen::before{
+    content:'';
+    position:absolute;inset:0;
+    background:
+      radial-gradient(ellipse at 30% 40%, rgba(192,57,43,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 70% 60%, rgba(139,115,85,0.05) 0%, transparent 50%);
+    pointer-events:none;
+  }
+  #startLogo{
+    position:relative;
+    z-index:1;
+    text-align:center;
+    margin-bottom:40px;
+  }
+  #startLogo .icon{
+    font-size:clamp(48px,10vw,96px);
+    display:block;
+    margin-bottom:8px;
+    animation: float 3s ease-in-out infinite;
+  }
+  @keyframes float{
+    0%,100%{transform:translateY(0px);}
+    50%{transform:translateY(-12px);}
+  }
+  #startLogo h1{
     font-family:var(--font-ui);
     font-weight:700;
-    letter-spacing:14px;
-    font-size:clamp(28px,6vw,58px);
-    color:var(--gray-100);
+    letter-spacing:8px;
+    font-size:clamp(22px,5vw,48px);
+    color:#e8ddd0;
     text-transform:uppercase;
-    text-align:center;
-    text-shadow:0 0 24px rgba(192,57,43,0.2), 0 2px 0 #000;
-    border-top:2px solid var(--gray-700);
-    border-bottom:2px solid var(--gray-700);
-    padding:18px 26px;
+    margin:0;
+    text-shadow:0 0 40px rgba(192,57,43,0.15);
   }
-  #startSub{
-    margin-top:-30px;
+  #startLogo .sub{
+    font-family:var(--font-ui);
+    letter-spacing:12px;
+    font-size:clamp(9px,1.2vw,14px);
     color:var(--gray-500);
-    letter-spacing:5px;
-    font-size:11px;
     text-transform:uppercase;
+    margin-top:6px;
+    border-top:1px solid var(--gray-700);
+    padding-top:10px;
   }
-  #platformRow{display:flex;gap:22px;flex-wrap:wrap;justify-content:center;}
-  .platBtn{
+  #startLogo .tagline{
     font-family:var(--font-ui);
     letter-spacing:4px;
-    font-size:15px;
-    padding:16px 40px;
+    font-size:clamp(10px,1vw,13px);
+    color:var(--gray-500);
+    margin-top:10px;
+    opacity:0.6;
+  }
+  #platformRow{
+    position:relative;
+    z-index:1;
+    display:flex;
+    gap:24px;
+    flex-wrap:wrap;
+    justify-content:center;
+  }
+  .platBtn{
+    font-family:var(--font-ui);
+    letter-spacing:3px;
+    font-size:14px;
+    padding:14px 38px;
     color:var(--gray-100);
-    background:var(--gray-800);
-    border:1px solid var(--gray-700);
+    background:transparent;
+    border:1.5px solid var(--gray-700);
     cursor:pointer;
     text-transform:uppercase;
-    transition:background .15s, border-color .15s, transform .1s;
+    transition:all .25s;
+    position:relative;
+    overflow:hidden;
   }
-  .platBtn:hover{background:var(--gray-700);border-color:#c0392b;}
-  .platBtn:active{transform:scale(0.97);}
-  .platBtn.active{background:#c0392b;border-color:#c0392b;color:#fff;}
+  .platBtn::after{
+    content:'';
+    position:absolute;
+    inset:0;
+    background:#c0392b;
+    transform:translateX(-100%);
+    transition:transform .3s;
+    z-index:-1;
+  }
+  .platBtn:hover::after{transform:translateX(0);}
+  .platBtn:hover{border-color:#c0392b;color:#fff;}
+  .platBtn:active{transform:scale(0.95);}
+  .platBtn .key{
+    display:inline-block;
+    background:var(--gray-800);
+    padding:0 8px;
+    border-radius:2px;
+    font-size:10px;
+    margin-left:6px;
+    color:var(--gray-500);
+  }
 
   #loadingScreen{
     position:absolute;inset:0;z-index:40;
@@ -71,13 +129,13 @@
     background:var(--gray-950);
   }
   #loadingLabel{color:var(--gray-300);letter-spacing:5px;font-size:12px;text-transform:uppercase;}
-  #loadingBarOuter{width:min(420px,70vw);height:6px;background:var(--gray-800);border:1px solid var(--gray-700);}
-  #loadingBarInner{width:0%;height:100%;background:#c0392b;transition:width .12s linear;}
+  #loadingBarOuter{width:min(420px,70vw);height:4px;background:var(--gray-800);border:1px solid var(--gray-700);}
+  #loadingBarInner{width:0%;height:100%;background:#c0392b;transition:width .15s linear;}
 
   #hud{
     position:absolute;top:14px;left:16px;z-index:20;
-    color:var(--gray-100);font-family:var(--font-ui);font-size:13px;letter-spacing:1px;
-    text-shadow:0 1px 3px rgba(0,0,0,0.9);
+    color:var(--gray-100);font-family:var(--font-ui);font-size:12px;letter-spacing:1px;
+    text-shadow:0 1px 6px rgba(0,0,0,0.95);
     display:none;line-height:1.6;pointer-events:none;
   }
   #hud .lbl{color:var(--gray-500);}
@@ -87,13 +145,25 @@
 
   #crosshair{
     position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-    width:6px;height:6px;border-radius:50%;background:rgba(230,230,230,0.75);
+    width:4px;height:4px;border-radius:50%;background:rgba(230,230,230,0.6);
     z-index:20;display:block;pointer-events:none;
+  }
+  #crosshair::before{
+    content:'';position:absolute;top:-6px;left:50%;transform:translateX(-50%);
+    width:1px;height:6px;background:rgba(230,230,230,0.3);
+  }
+  #crosshair::after{
+    content:'';position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);
+    width:1px;height:6px;background:rgba(230,230,230,0.3);
   }
 
   #pcHint{
-    position:absolute;bottom:14px;left:16px;z-index:20;color:var(--gray-500);
-    font-family:var(--font-ui);font-size:11px;letter-spacing:1px;display:none;pointer-events:none;
+    position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+    z-index:20;color:var(--gray-500);
+    font-family:var(--font-ui);font-size:10px;letter-spacing:2px;
+    display:none;pointer-events:none;
+    text-shadow:0 1px 6px rgba(0,0,0,0.9);
+    text-transform:uppercase;
   }
 
   #mobileControls{
@@ -104,53 +174,42 @@
   #mobileControls > * { pointer-events:auto; }
 
   #joystickZone{
-    position:absolute;left:20px;bottom:20px;width:120px;height:120px;
+    position:absolute;left:20px;bottom:20px;width:110px;height:110px;
     border-radius:50%;
-    background:rgba(255,255,255,0.06);
-    border:2px solid rgba(255,255,255,0.15);
-    backdrop-filter:blur(4px);
+    background:rgba(255,255,255,0.04);
+    border:1.5px solid rgba(255,255,255,0.08);
+    backdrop-filter:blur(6px);
     touch-action:none;
-    box-shadow:0 0 30px rgba(0,0,0,0.3);
   }
   #joystickKnob{
-    position:absolute;left:32px;top:32px;width:56px;height:56px;border-radius:50%;
-    background:radial-gradient(circle, rgba(255,255,255,0.25), rgba(255,255,255,0.05));
-    border:2px solid rgba(255,255,255,0.2);
+    position:absolute;left:30px;top:30px;width:50px;height:50px;border-radius:50%;
+    background:radial-gradient(circle, rgba(255,255,255,0.15), rgba(255,255,255,0.02));
+    border:1.5px solid rgba(255,255,255,0.1);
     pointer-events:none;
-    box-shadow:0 0 20px rgba(255,255,255,0.05);
   }
   .mobileBtn{
     border-radius:50%;
-    background:rgba(255,255,255,0.06);
-    border:2px solid rgba(255,255,255,0.15);
-    backdrop-filter:blur(4px);
+    background:rgba(255,255,255,0.04);
+    border:1.5px solid rgba(255,255,255,0.08);
+    backdrop-filter:blur(6px);
     color:var(--gray-100);
     font-family:var(--font-ui);
-    font-size:10px;
+    font-size:9px;
     letter-spacing:1px;
     display:flex;
     align-items:center;
     justify-content:center;
     touch-action:none;
-    box-shadow:0 0 30px rgba(0,0,0,0.3);
     transition:all 0.15s;
     text-shadow:0 1px 4px rgba(0,0,0,0.5);
+    width:60px;height:60px;
   }
-  .mobileBtn:active{transform:scale(0.92);}
-  .mobileBtn.active{background:#c0392b;border-color:#c0392b;color:#fff;text-shadow:none;}
+  .mobileBtn:active{transform:scale(0.92);background:rgba(192,57,43,0.3);}
+  .mobileBtn.active{background:rgba(192,57,43,0.4);border-color:#c0392b;}
 
-  #btnJump{
-    position:absolute;right:20px;bottom:120px;width:72px;height:72px;
-    font-size:11px;
-    border-color:rgba(255,200,100,0.2);
-  }
-  #btnJump:active{background:rgba(255,200,100,0.15);}
-
-  #btnRun{
-    position:absolute;right:20px;bottom:20px;width:60px;height:60px;
-    font-size:9px;
-  }
-  #btnRun.active{background:#c0392b;border-color:#c0392b;color:#fff;}
+  #btnJump{position:absolute;right:20px;bottom:110px;width:68px;height:68px;font-size:10px;}
+  #btnRun{position:absolute;right:20px;bottom:20px;width:56px;height:56px;font-size:8px;}
+  #btnRun.active{background:rgba(192,57,43,0.4);border-color:#c0392b;}
 
   #camLookZone{
     position:absolute;inset:0;
@@ -159,9 +218,10 @@
   }
 
   #toastMsg{
-    position:absolute;top:110px;left:50%;transform:translateX(-50%);
-    color:var(--gray-100);font-family:var(--font-ui);font-size:12px;letter-spacing:1px;
-    text-shadow:0 1px 3px rgba(0,0,0,0.9);z-index:22;opacity:0;transition:opacity .3s;pointer-events:none;
+    position:absolute;top:100px;left:50%;transform:translateX(-50%);
+    color:var(--gray-100);font-family:var(--font-ui);font-size:11px;letter-spacing:2px;
+    text-shadow:0 1px 6px rgba(0,0,0,0.9);z-index:22;opacity:0;transition:opacity .3s;
+    pointer-events:none;text-transform:uppercase;
   }
 </style>
 </head>
@@ -169,14 +229,17 @@
 
 <canvas id="renderCanvas"></canvas>
 
+<!-- ===== TELA INICIAL ===== -->
 <div id="startScreen">
-  <div>
-    <div id="startTitle">Ideal Place<br>for Families</div>
-    <div id="startSub">🏠 EXPLORE • ANDE • DESCUBRA</div>
+  <div id="startLogo">
+    <span class="icon">🏠</span>
+    <h1>Ideal Place</h1>
+    <div class="sub">for Families</div>
+    <div class="tagline">✦ explore infinite architecture ✦</div>
   </div>
   <div id="platformRow">
-    <button class="platBtn" id="btnPC">PC</button>
-    <button class="platBtn" id="btnMobile">MOBILE</button>
+    <button class="platBtn" id="btnPC">⌨️ PC <span class="key">WASD</span></button>
+    <button class="platBtn" id="btnMobile">📱 MOBILE <span class="key">TOUCH</span></button>
   </div>
 </div>
 
@@ -186,19 +249,19 @@
 </div>
 
 <div id="hud">
-  <div><span class="lbl">📍 Posição:</span> <span id="hudPos">0.0, 0.0, 0.0</span></div>
-  <div><span class="lbl">🏢 Andar:</span> <span id="hudFloor">0</span></div>
-  <div><span class="lbl">🚪 Sala:</span> <span id="hudRoom">---</span></div>
+  <div><span class="lbl">📍</span> <span id="hudPos">0.0, 0.0, 0.0</span></div>
+  <div><span class="lbl">🏢</span> Andar <span id="hudFloor">0</span></div>
+  <div><span class="lbl">🚪</span> Sala <span id="hudRoom">---</span></div>
 </div>
 <div id="crosshair"></div>
-<div id="pcHint">WASD mover · ESPAÇO pular · Q correr</div>
+<div id="pcHint">WASD · ESPAÇO · Q corre</div>
 <div id="toastMsg"></div>
 
 <div id="mobileControls">
   <div id="camLookZone"></div>
   <div id="joystickZone"><div id="joystickKnob"></div></div>
-  <button class="mobileBtn" id="btnJump">⬆ PULAR</button>
-  <button class="mobileBtn" id="btnRun">🏃 CORRER</button>
+  <button class="mobileBtn" id="btnJump">⬆<br>PULAR</button>
+  <button class="mobileBtn" id="btnRun">🏃<br>CORRER</button>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -207,7 +270,7 @@
 "use strict";
 
 /* ======================================================================
-   IDEAL PLACE FOR FAMILIES - EXPLORAÇÃO ARQUITETÔNICA
+   IDEAL PLACE FOR FAMILIES - VERSÃO OTIMIZADA
    ====================================================================== */
 
 /* ===== MENU ===== */
@@ -224,66 +287,60 @@ document.getElementById('btnMobile').addEventListener('click', ()=>{
   beginGame(selectedMode);
 });
 
-/* ---------------- CONFIG ---------------- */
-let CHUNK_SIZE = 40;
-let ACTIVE_RADIUS = 500;
-let UNLOAD_MARGIN = 40;
+/* ---------------- CONFIG OTIMIZADA ---------------- */
+let CHUNK_SIZE = 32;
+let ACTIVE_RADIUS = 300;
+let UNLOAD_MARGIN = 30;
 let UNLOAD_RADIUS = ACTIVE_RADIUS + UNLOAD_MARGIN;
-let INITIAL_RADIUS = 120;
-let FADE_TIME = 0.6;
+let INITIAL_RADIUS = 80;
+let FADE_TIME = 0.4;
 
 const WALK_SPEED   = 3.5;
 const RUN_MULT     = 4.5;
 
 const EYE_HEIGHT   = 1.6;
-const PLAYER_RADIUS = 0.3;
-const GRAVITY      = -22;
-const JUMP_SPEED_NORMAL = Math.sqrt(2 * Math.abs(GRAVITY) * 1.8);
-const JUMP_SPEED_RUN    = Math.sqrt(2 * Math.abs(GRAVITY) * 5);
-const MAX_FALL_SPEED = 50;
+const PLAYER_RADIUS = 0.25;
+const GRAVITY      = -20;
+const JUMP_SPEED_NORMAL = Math.sqrt(2 * Math.abs(GRAVITY) * 1.6);
+const JUMP_SPEED_RUN    = Math.sqrt(2 * Math.abs(GRAVITY) * 4.5);
+const MAX_FALL_SPEED = 45;
 
-/* ---------------- THREE SETUP ---------------- */
+/* ---------------- THREE SETUP (ULTRA OTIMIZADO) ---------------- */
 const canvas = document.getElementById('renderCanvas');
 const renderer = new THREE.WebGLRenderer({
   canvas,
   antialias: false,
-  powerPreference: "high-performance"
+  powerPreference: "high-performance",
+  stencil: false,
+  depth: true,
+  alpha: false
 });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.9;
+renderer.toneMappingExposure = 0.85;
 renderer.shadowMap.enabled = false;
 
 const isMobile = window.innerWidth < 768;
-const FOV = isMobile ? 70 : 75;
-const camera = new THREE.PerspectiveCamera(FOV, window.innerWidth/window.innerHeight, 0.1, 12000);
+const FOV = isMobile ? 72 : 78;
+const camera = new THREE.PerspectiveCamera(FOV, window.innerWidth/window.innerHeight, 0.1, 8000);
 camera.rotation.order = 'YXZ';
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x1a1a2e);
-scene.fog = new THREE.Fog(0x1a1a2e, 60, ACTIVE_RADIUS + 30);
+scene.background = new THREE.Color(0x14151a);
+scene.fog = new THREE.Fog(0x14151a, 40, ACTIVE_RADIUS + 20);
 
-const ambientLight = new THREE.AmbientLight(0x8899aa, 0.6);
+const ambientLight = new THREE.AmbientLight(0x8899aa, 0.5);
 scene.add(ambientLight);
-
-const hemisphereLight = new THREE.HemisphereLight(0xdfe6ea, 0x3a3d42, 0.5);
-scene.add(hemisphereLight);
-
-const sunLight = new THREE.DirectionalLight(0xffeedd, 0.8);
-sunLight.position.set(120, 180, 80);
+const sunLight = new THREE.DirectionalLight(0xffeedd, 0.6);
+sunLight.position.set(80, 120, 60);
 scene.add(sunLight);
 
-const fillLight = new THREE.DirectionalLight(0x6688bb, 0.2);
-fillLight.position.set(-100, 80, -100);
-scene.add(fillLight);
-
 function onResize(){
-  const w = window.innerWidth;
-  const h = window.innerHeight;
+  const w = window.innerWidth, h = window.innerHeight;
   camera.aspect = w/h;
-  camera.fov = (w < 768) ? 70 : 75;
+  camera.fov = (w < 768) ? 72 : 78;
   camera.updateProjectionMatrix();
   renderer.setSize(w, h);
 }
@@ -293,14 +350,12 @@ onResize();
 /* ===== PERSONAGEM ===== */
 const playerGroup = new THREE.Group();
 scene.add(playerGroup);
-
 function createPlayer(){
   while(playerGroup.children.length > 0){
     const child = playerGroup.children[0];
     playerGroup.remove(child);
     child.traverse(o=>{ if(o.geometry) o.geometry.dispose(); if(o.material) o.material.dispose(); });
   }
-  // Apenas um placeholder invisível para primeira pessoa
   const dummy = new THREE.Mesh(
     new THREE.BoxGeometry(0.1, 0.1, 0.1),
     new THREE.MeshBasicMaterial({ visible: false })
@@ -309,32 +364,21 @@ function createPlayer(){
   playerGroup.visible = true;
 }
 
-/* ===== TOAST ===== */
-let toastTimer = null;
-function showToast(msg){
-  const el = document.getElementById('toastMsg');
-  el.textContent = msg;
-  el.style.opacity = '1';
-  if(toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=>{ el.style.opacity='0'; }, 2000);
-}
-
 /* ===== CORES ===== */
-const COLORS = {
-  // Paleta definida: marrom, vermelho, branco
-  parede: 0xcc3333,      // Vermelho para paredes
-  pilar: 0xcc3333,       // Vermelho para pilares
-  teto: 0x8B7355,        // Marrom para teto
-  chao: 0x6B5340,        // Marrom escuro para chão
-  porta: 0x8B7355,       // Marrom para portas
-  escada: 0x8B7355,      // Marrom para escadas
-  borda: 0xeeeeee,       // Branco para bordas
-  corrimao: 0xeeeeee,    // Branco para corrimãos
-  moldura: 0xdddddd,     // Branco suave para molduras
-  vidro: 0x88ccdd,       // Vidro azul claro
+const C = {
+  parede: 0xcc3333,
+  pilar: 0xcc3333,
+  teto: 0x8B7355,
+  chao: 0x6B5340,
+  porta: 0x8B7355,
+  escada: 0x8B7355,
+  borda: 0xeeeeee,
+  corrimao: 0xeeeeee,
+  moldura: 0xdddddd,
+  vidro: 0x88ccdd,
 };
 
-/* ===== GEOMETRIA ===== */
+/* ===== GEOMETRIA SIMPLIFICADA ===== */
 const UNIT_BOX = new THREE.BoxGeometry(1,1,1).toNonIndexed();
 const BASE_POS = UNIT_BOX.attributes.position.array;
 const BASE_NORM = UNIT_BOX.attributes.normal.array;
@@ -364,56 +408,36 @@ function mulberry32(a){
 }
 
 function addWall(boxes, x, y, z, w, h, d, hasDoor, doorW, doorH, hasWindow, windowW, windowH){
-  const wallColor = COLORS.parede;
-  const borderColor = COLORS.borda;
-  const glassColor = COLORS.vidro;
-  const doorColor = COLORS.porta;
+  const wallColor = C.parede;
+  const borderColor = C.borda;
+  const glassColor = C.vidro;
+  const doorColor = C.porta;
   
   if(!hasDoor && !hasWindow){
-    // Parede sólida
     boxes.push(box(x, y, z, w, h, d, wallColor));
-    // Bordas
-    const bw = 0.05;
-    // Borda superior
-    boxes.push(box(x, y + h/2 - bw/2, z, w, bw, d, borderColor));
-    // Borda inferior
-    boxes.push(box(x, y - h/2 + bw/2, z, w, bw, d, borderColor));
-    // Borda esquerda
-    boxes.push(box(x - w/2 + bw/2, y, z, bw, h, d, borderColor));
-    // Borda direita
-    boxes.push(box(x + w/2 - bw/2, y, z, bw, h, d, borderColor));
+    // Apenas bordas superiores e inferiores para economizar
+    boxes.push(box(x, y + h/2 - 0.025, z, w, 0.04, d, borderColor));
+    boxes.push(box(x, y - h/2 + 0.025, z, w, 0.04, d, borderColor));
     return;
   }
   
   if(hasDoor){
-    // Porta no centro
-    const doorX = x;
-    const doorY = y - h/2 + doorH/2;
-    // Paredes ao redor da porta
+    const doorX = x, doorY = y - h/2 + doorH/2;
     const sideW = (w - doorW) / 2;
     if(sideW > 0.1){
-      // Lado esquerdo
       boxes.push(box(x - (w/2 - sideW/2), y, z, sideW, h, d, wallColor));
-      // Lado direito
       boxes.push(box(x + (w/2 - sideW/2), y, z, sideW, h, d, wallColor));
     }
-    // Parte acima da porta
     boxes.push(box(x, y + doorH/2 + (h - doorH)/4, z, doorW, (h - doorH)/2, d, wallColor));
-    // Porta
-    boxes.push(box(doorX, doorY, z + 0.05, doorW, doorH, 0.05, doorColor));
-    // Moldura da porta
-    boxes.push(box(doorX, doorY + doorH/2 + 0.05, z + 0.08, doorW + 0.1, 0.05, 0.05, COLORS.moldura));
-    boxes.push(box(doorX, doorY - doorH/2 - 0.05, z + 0.08, doorW + 0.1, 0.05, 0.05, COLORS.moldura));
-    boxes.push(box(doorX - doorW/2 - 0.05, doorY, z + 0.08, 0.05, doorH, 0.05, COLORS.moldura));
-    boxes.push(box(doorX + doorW/2 + 0.05, doorY, z + 0.08, 0.05, doorH, 0.05, COLORS.moldura));
+    boxes.push(box(doorX, doorY, z + 0.04, doorW, doorH, 0.04, doorColor));
+    // Moldura simplificada
+    boxes.push(box(doorX, doorY + doorH/2 + 0.03, z + 0.06, doorW + 0.08, 0.04, 0.04, C.moldura));
+    boxes.push(box(doorX, doorY - doorH/2 - 0.03, z + 0.06, doorW + 0.08, 0.04, 0.04, C.moldura));
     return;
   }
   
   if(hasWindow){
-    // Janela
-    const winX = x;
-    const winY = y - h/2 + windowH/2 + 0.5;
-    // Paredes ao redor da janela
+    const winX = x, winY = y - h/2 + windowH/2 + 0.5;
     const sideW = (w - windowW) / 2;
     const sideH = (h - windowH) / 2;
     if(sideW > 0.1){
@@ -424,16 +448,12 @@ function addWall(boxes, x, y, z, w, h, d, hasDoor, doorW, doorH, hasWindow, wind
       boxes.push(box(x, y + windowH/2 + sideH/2, z, windowW, sideH, d, wallColor));
       boxes.push(box(x, y - windowH/2 - sideH/2, z, windowW, sideH, d, wallColor));
     }
-    // Vidro
-    boxes.push(box(winX, winY, z + 0.05, windowW, windowH, 0.03, glassColor));
-    // Moldura da janela
-    boxes.push(box(winX, winY + windowH/2 + 0.03, z + 0.07, windowW + 0.1, 0.04, 0.04, COLORS.moldura));
-    boxes.push(box(winX, winY - windowH/2 - 0.03, z + 0.07, windowW + 0.1, 0.04, 0.04, COLORS.moldura));
-    boxes.push(box(winX - windowW/2 - 0.03, winY, z + 0.07, 0.04, windowH, 0.04, COLORS.moldura));
-    boxes.push(box(winX + windowW/2 + 0.03, winY, z + 0.07, 0.04, windowH, 0.04, COLORS.moldura));
-    // Cruz da janela
-    boxes.push(box(winX, winY, z + 0.06, 0.03, windowH * 0.8, 0.03, COLORS.moldura));
-    boxes.push(box(winX, winY, z + 0.06, windowW * 0.8, 0.03, 0.03, COLORS.moldura));
+    boxes.push(box(winX, winY, z + 0.04, windowW, windowH, 0.025, glassColor));
+    boxes.push(box(winX, winY + windowH/2 + 0.025, z + 0.05, windowW + 0.08, 0.03, 0.03, C.moldura));
+    boxes.push(box(winX, winY - windowH/2 - 0.025, z + 0.05, windowW + 0.08, 0.03, 0.03, C.moldura));
+    // Cruz simplificada
+    boxes.push(box(winX, winY, z + 0.045, 0.02, windowH * 0.7, 0.02, C.moldura));
+    boxes.push(box(winX, winY, z + 0.045, windowW * 0.7, 0.02, 0.02, C.moldura));
     return;
   }
 }
@@ -444,220 +464,131 @@ function generateArchitecture(cx, cz, floor){
   const ox = cx * CHUNK_SIZE;
   const oz = cz * CHUNK_SIZE;
   const yBase = floor * 4;
-  const wallH = 3.5;
+  const wallH = 3.3;
   
-  // ===== CHÃO =====
-  boxes.push(box(ox + CHUNK_SIZE/2, yBase, oz + CHUNK_SIZE/2, CHUNK_SIZE, 0.15, CHUNK_SIZE, COLORS.chao));
+  // Chão e teto (sempre presentes)
+  boxes.push(box(ox + CHUNK_SIZE/2, yBase, oz + CHUNK_SIZE/2, CHUNK_SIZE, 0.12, CHUNK_SIZE, C.chao));
+  boxes.push(box(ox + CHUNK_SIZE/2, yBase + 4, oz + CHUNK_SIZE/2, CHUNK_SIZE, 0.12, CHUNK_SIZE, C.teto));
   
-  // ===== TETO =====
-  boxes.push(box(ox + CHUNK_SIZE/2, yBase + 4, oz + CHUNK_SIZE/2, CHUNK_SIZE, 0.15, CHUNK_SIZE, COLORS.teto));
+  // Grid de salas (3x3 para simplificar e otimizar)
+  const gridSize = 3;
+  const roomSize = CHUNK_SIZE / gridSize;
   
-  // ===== QUARTOS =====
-  // Divisão interna do chunk em salas
-  const roomGrid = 3 + Math.floor(rng() * 2); // 3-4 salas por lado
-  const roomSize = CHUNK_SIZE / roomGrid;
-  
-  // Decidir quais salas são interligadas
+  // Decidir conexões (simplificado)
   const connections = [];
-  for(let i = 0; i < roomGrid; i++){
-    for(let j = 0; j < roomGrid; j++){
-      // Conexão horizontal
-      if(j < roomGrid - 1 && rng() < 0.5){
-        connections.push({x1: i, z1: j, x2: i, z2: j+1});
-      }
-      // Conexão vertical
-      if(i < roomGrid - 1 && rng() < 0.5){
-        connections.push({x1: i, z1: j, x2: i+1, z2: j});
-      }
+  for(let i = 0; i < gridSize; i++){
+    for(let j = 0; j < gridSize; j++){
+      if(j < gridSize - 1 && rng() < 0.4) connections.push({x1:i, z1:j, x2:i, z2:j+1});
+      if(i < gridSize - 1 && rng() < 0.4) connections.push({x1:i, z1:j, x2:i+1, z2:j});
     }
   }
   
-  // Determinar quais salas têm portas/janelas
-  const roomHasDoor = {};
-  const roomHasWindow = {};
-  for(let i = 0; i < roomGrid; i++){
-    for(let j = 0; j < roomGrid; j++){
-      const key = i + ',' + j;
-      roomHasDoor[key] = rng() < 0.2;
-      roomHasWindow[key] = rng() < 0.3;
-    }
-  }
-  
-  // Construir paredes internas
-  for(let i = 0; i < roomGrid; i++){
-    for(let j = 0; j < roomGrid; j++){
+  // Construir paredes
+  for(let i = 0; i < gridSize; i++){
+    for(let j = 0; j < gridSize; j++){
       const rx = ox + i * roomSize + roomSize/2;
       const rz = oz + j * roomSize + roomSize/2;
-      const key = i + ',' + j;
       
-      // Parede Norte (frente)
+      // Parede Norte
       if(j === 0){
-        // Parede externa norte
-        const hasDoor = roomHasDoor[key] && rng() < 0.3;
-        const hasWindow = roomHasWindow[key] && rng() < 0.4;
-        addWall(boxes, rx, yBase + wallH/2, oz, roomSize, wallH, 0.15, hasDoor, 0.8, 2.2, hasWindow, 0.6, 0.8);
+        const hasDoor = rng() < 0.15;
+        const hasWindow = rng() < 0.25;
+        addWall(boxes, rx, yBase + wallH/2, oz, roomSize, wallH, 0.12, hasDoor, 0.7, 2.0, hasWindow, 0.5, 0.7);
       } else {
-        // Parede interna norte (conexão com sala anterior)
-        const connKey = i + ',' + (j-1);
         const isConnected = connections.some(c => 
           (c.x1 === i && c.z1 === j-1 && c.x2 === i && c.z2 === j) ||
           (c.x2 === i && c.z2 === j-1 && c.x1 === i && c.z1 === j)
         );
-        const hasDoor = isConnected && rng() < 0.6;
-        const hasWindow = !hasDoor && rng() < 0.3;
-        addWall(boxes, rx, yBase + wallH/2, oz + j * roomSize, roomSize, wallH, 0.15, hasDoor, 0.8, 2.2, hasWindow, 0.6, 0.8);
+        const hasDoor = isConnected && rng() < 0.5;
+        const hasWindow = !hasDoor && rng() < 0.2;
+        addWall(boxes, rx, yBase + wallH/2, oz + j * roomSize, roomSize, wallH, 0.12, hasDoor, 0.7, 2.0, hasWindow, 0.5, 0.7);
       }
       
-      // Parede Sul (trás)
-      if(j === roomGrid - 1){
-        const hasDoor = roomHasDoor[key] && rng() < 0.3;
-        const hasWindow = roomHasWindow[key] && rng() < 0.4;
-        addWall(boxes, rx, yBase + wallH/2, oz + roomSize * roomGrid, roomSize, wallH, 0.15, hasDoor, 0.8, 2.2, hasWindow, 0.6, 0.8);
+      // Parede Sul
+      if(j === gridSize - 1){
+        const hasDoor = rng() < 0.15;
+        const hasWindow = rng() < 0.25;
+        addWall(boxes, rx, yBase + wallH/2, oz + roomSize * gridSize, roomSize, wallH, 0.12, hasDoor, 0.7, 2.0, hasWindow, 0.5, 0.7);
       } else {
-        const connKey = i + ',' + (j+1);
         const isConnected = connections.some(c => 
           (c.x1 === i && c.z1 === j && c.x2 === i && c.z2 === j+1) ||
           (c.x2 === i && c.z2 === j && c.x1 === i && c.z1 === j+1)
         );
-        const hasDoor = isConnected && rng() < 0.6;
-        const hasWindow = !hasDoor && rng() < 0.3;
-        addWall(boxes, rx, yBase + wallH/2, oz + (j+1) * roomSize, roomSize, wallH, 0.15, hasDoor, 0.8, 2.2, hasWindow, 0.6, 0.8);
+        const hasDoor = isConnected && rng() < 0.5;
+        const hasWindow = !hasDoor && rng() < 0.2;
+        addWall(boxes, rx, yBase + wallH/2, oz + (j+1) * roomSize, roomSize, wallH, 0.12, hasDoor, 0.7, 2.0, hasWindow, 0.5, 0.7);
       }
       
-      // Parede Oeste (esquerda)
+      // Parede Oeste
       if(i === 0){
-        const hasDoor = roomHasDoor[key] && rng() < 0.3;
-        const hasWindow = roomHasWindow[key] && rng() < 0.4;
-        addWall(boxes, ox, yBase + wallH/2, rz, 0.15, wallH, roomSize, hasDoor, 0.8, 2.2, hasWindow, 0.6, 0.8);
+        const hasDoor = rng() < 0.15;
+        const hasWindow = rng() < 0.25;
+        addWall(boxes, ox, yBase + wallH/2, rz, 0.12, wallH, roomSize, hasDoor, 0.7, 2.0, hasWindow, 0.5, 0.7);
       } else {
-        const connKey = (i-1) + ',' + j;
         const isConnected = connections.some(c => 
           (c.x1 === i-1 && c.z1 === j && c.x2 === i && c.z2 === j) ||
           (c.x2 === i-1 && c.z2 === j && c.x1 === i && c.z1 === j)
         );
-        const hasDoor = isConnected && rng() < 0.6;
-        const hasWindow = !hasDoor && rng() < 0.3;
-        addWall(boxes, ox + i * roomSize, yBase + wallH/2, rz, 0.15, wallH, roomSize, hasDoor, 0.8, 2.2, hasWindow, 0.6, 0.8);
+        const hasDoor = isConnected && rng() < 0.5;
+        const hasWindow = !hasDoor && rng() < 0.2;
+        addWall(boxes, ox + i * roomSize, yBase + wallH/2, rz, 0.12, wallH, roomSize, hasDoor, 0.7, 2.0, hasWindow, 0.5, 0.7);
       }
       
-      // Parede Leste (direita)
-      if(i === roomGrid - 1){
-        const hasDoor = roomHasDoor[key] && rng() < 0.3;
-        const hasWindow = roomHasWindow[key] && rng() < 0.4;
-        addWall(boxes, ox + roomSize * roomGrid, yBase + wallH/2, rz, 0.15, wallH, roomSize, hasDoor, 0.8, 2.2, hasWindow, 0.6, 0.8);
+      // Parede Leste
+      if(i === gridSize - 1){
+        const hasDoor = rng() < 0.15;
+        const hasWindow = rng() < 0.25;
+        addWall(boxes, ox + roomSize * gridSize, yBase + wallH/2, rz, 0.12, wallH, roomSize, hasDoor, 0.7, 2.0, hasWindow, 0.5, 0.7);
       } else {
-        const connKey = (i+1) + ',' + j;
         const isConnected = connections.some(c => 
           (c.x1 === i && c.z1 === j && c.x2 === i+1 && c.z2 === j) ||
           (c.x2 === i && c.z2 === j && c.x1 === i+1 && c.z1 === j)
         );
-        const hasDoor = isConnected && rng() < 0.6;
-        const hasWindow = !hasDoor && rng() < 0.3;
-        addWall(boxes, ox + (i+1) * roomSize, yBase + wallH/2, rz, 0.15, wallH, roomSize, hasDoor, 0.8, 2.2, hasWindow, 0.6, 0.8);
+        const hasDoor = isConnected && rng() < 0.5;
+        const hasWindow = !hasDoor && rng() < 0.2;
+        addWall(boxes, ox + (i+1) * roomSize, yBase + wallH/2, rz, 0.12, wallH, roomSize, hasDoor, 0.7, 2.0, hasWindow, 0.5, 0.7);
       }
     }
   }
   
-  // ===== PILARES =====
-  const numPillars = 1 + Math.floor(rng() * 3);
-  for(let p = 0; p < numPillars; p++){
+  // Pilares (poucos para otimizar)
+  if(rng() < 0.3){
     const px = ox + 2 + rng() * (CHUNK_SIZE - 4);
     const pz = oz + 2 + rng() * (CHUNK_SIZE - 4);
-    const pSize = 0.3 + rng() * 0.3;
-    boxes.push(box(px, yBase + wallH/2, pz, pSize, wallH, pSize, COLORS.pilar));
-    // Base do pilar
-    boxes.push(box(px, yBase + 0.1, pz, pSize * 1.4, 0.1, pSize * 1.4, COLORS.borda));
-    // Capitel
-    if(rng() < 0.4){
-      boxes.push(box(px, yBase + wallH - 0.15, pz, pSize * 1.6, 0.1, pSize * 1.6, COLORS.borda));
-    }
+    const pSize = 0.25 + rng() * 0.2;
+    boxes.push(box(px, yBase + wallH/2, pz, pSize, wallH, pSize, C.pilar));
+    boxes.push(box(px, yBase + 0.08, pz, pSize * 1.3, 0.08, pSize * 1.3, C.borda));
   }
   
-  // ===== ESCADARIAS =====
-  if(rng() < 0.2){
+  // Escadarias (raras para otimizar)
+  if(rng() < 0.12){
     const stairX = ox + 2 + rng() * (CHUNK_SIZE - 6);
     const stairZ = oz + 2 + rng() * (CHUNK_SIZE - 6);
-    const numSteps = 6 + Math.floor(rng() * 6);
-    const stepW = 1.2;
-    const stepD = 0.4;
-    const stepH = 0.25;
+    const numSteps = 5 + Math.floor(rng() * 4);
+    const stepW = 1.0, stepD = 0.35, stepH = 0.25;
     
     for(let i = 0; i < numSteps; i++){
       const sy = yBase + i * stepH;
       const sx = stairX + i * stepD;
-      boxes.push(box(sx + stepD/2, sy + stepH/2, stairZ, stepD, stepH, stepW, COLORS.escada));
-      
-      // Borda branca nos degraus
+      boxes.push(box(sx + stepD/2, sy + stepH/2, stairZ, stepD, stepH, stepW, C.escada));
       if(i % 2 === 0){
-        boxes.push(box(sx + stepD/2, sy + stepH, stairZ, stepD, 0.02, stepW, COLORS.borda));
+        boxes.push(box(sx + stepD/2, sy + stepH, stairZ, stepD, 0.02, stepW, C.borda));
       }
-      
-      // Corrimão
       if(i % 3 === 0){
-        boxes.push(box(sx + stepD/2, sy + 0.9, stairZ - stepW/2 - 0.1, stepD * 0.6, 0.04, 0.04, COLORS.corrimao));
-        boxes.push(box(sx + stepD/2, sy + 0.9, stairZ + stepW/2 + 0.1, stepD * 0.6, 0.04, 0.04, COLORS.corrimao));
+        boxes.push(box(sx + stepD/2, sy + 0.8, stairZ - stepW/2 - 0.08, stepD * 0.5, 0.03, 0.03, C.corrimao));
+        boxes.push(box(sx + stepD/2, sy + 0.8, stairZ + stepW/2 + 0.08, stepD * 0.5, 0.03, 0.03, C.corrimao));
       }
     }
-    
-    // Patamar superior
     const topY = yBase + numSteps * stepH;
-    boxes.push(box(stairX + numSteps * stepD + 1, topY + 0.05, stairZ, 1.5, 0.1, stepW + 1, COLORS.chao));
-    // Borda do patamar
-    boxes.push(box(stairX + numSteps * stepD + 1, topY + 0.1, stairZ - stepW/2 - 0.1, 1.5, 0.04, 0.04, COLORS.borda));
-    boxes.push(box(stairX + numSteps * stepD + 1, topY + 0.1, stairZ + stepW/2 + 0.1, 1.5, 0.04, 0.04, COLORS.borda));
+    boxes.push(box(stairX + numSteps * stepD + 0.8, topY + 0.04, stairZ, 1.2, 0.08, stepW + 0.8, C.chao));
   }
   
-  // ===== CORREDORES LONGOS =====
-  if(rng() < 0.15){
-    const corridorLength = 5 + Math.floor(rng() * 30);
-    const isHorizontal = rng() < 0.5;
-    const corrWidth = 1.0 + rng() * 0.8;
-    const startX = ox + 2 + rng() * (CHUNK_SIZE - 4);
-    const startZ = oz + 2 + rng() * (CHUNK_SIZE - 4);
-    const length = Math.min(corridorLength, CHUNK_SIZE - 4);
-    
-    if(isHorizontal){
-      // Chão
-      boxes.push(box(startX + length/2, yBase + 0.05, startZ, length, 0.05, corrWidth, COLORS.chao));
-      // Paredes
-      boxes.push(box(startX + length/2, yBase + wallH/2, startZ - corrWidth/2, length, wallH, 0.1, COLORS.parede));
-      boxes.push(box(startX + length/2, yBase + wallH/2, startZ + corrWidth/2, length, wallH, 0.1, COLORS.parede));
-      // Bordas do corredor
-      boxes.push(box(startX, yBase + wallH/2, startZ - corrWidth/2, 0.05, wallH, 0.1, COLORS.borda));
-      boxes.push(box(startX + length, yBase + wallH/2, startZ - corrWidth/2, 0.05, wallH, 0.1, COLORS.borda));
-      boxes.push(box(startX, yBase + wallH/2, startZ + corrWidth/2, 0.05, wallH, 0.1, COLORS.borda));
-      boxes.push(box(startX + length, yBase + wallH/2, startZ + corrWidth/2, 0.05, wallH, 0.1, COLORS.borda));
-      // Teto
-      boxes.push(box(startX + length/2, yBase + wallH, startZ, length, 0.05, corrWidth, COLORS.teto));
-      // Luminárias
-      for(let lx = startX + 2; lx < startX + length - 2; lx += 3){
-        boxes.push(box(lx, yBase + wallH - 0.1, startZ, 0.3, 0.04, 0.3, COLORS.borda));
-        boxes.push(box(lx, yBase + wallH - 0.15, startZ, 0.15, 0.04, 0.15, 0xffffaa));
-      }
-    } else {
-      boxes.push(box(startX, yBase + 0.05, startZ + length/2, corrWidth, 0.05, length, COLORS.chao));
-      boxes.push(box(startX - corrWidth/2, yBase + wallH/2, startZ + length/2, 0.1, wallH, length, COLORS.parede));
-      boxes.push(box(startX + corrWidth/2, yBase + wallH/2, startZ + length/2, 0.1, wallH, length, COLORS.parede));
-      boxes.push(box(startX - corrWidth/2, yBase + wallH/2, startZ, 0.1, wallH, 0.05, COLORS.borda));
-      boxes.push(box(startX - corrWidth/2, yBase + wallH/2, startZ + length, 0.1, wallH, 0.05, COLORS.borda));
-      boxes.push(box(startX + corrWidth/2, yBase + wallH/2, startZ, 0.1, wallH, 0.05, COLORS.borda));
-      boxes.push(box(startX + corrWidth/2, yBase + wallH/2, startZ + length, 0.1, wallH, 0.05, COLORS.borda));
-      boxes.push(box(startX, yBase + wallH, startZ + length/2, corrWidth, 0.05, length, COLORS.teto));
-      for(let lz = startZ + 2; lz < startZ + length - 2; lz += 3){
-        boxes.push(box(startX, yBase + wallH - 0.1, lz, 0.3, 0.04, 0.3, COLORS.borda));
-        boxes.push(box(startX, yBase + wallH - 0.15, lz, 0.15, 0.04, 0.15, 0xffffaa));
-      }
-    }
-  }
-  
-  // ===== RODAPÉ =====
-  const baseColor = COLORS.borda;
-  const bw = 0.05;
-  // Borda do chão
-  boxes.push(box(ox + CHUNK_SIZE/2, yBase + 0.08, oz + 0.05, CHUNK_SIZE, 0.04, 0.04, baseColor));
-  boxes.push(box(ox + CHUNK_SIZE/2, yBase + 0.08, oz + CHUNK_SIZE - 0.05, CHUNK_SIZE, 0.04, 0.04, baseColor));
-  boxes.push(box(ox + 0.05, yBase + 0.08, oz + CHUNK_SIZE/2, 0.04, 0.04, CHUNK_SIZE, baseColor));
-  boxes.push(box(ox + CHUNK_SIZE - 0.05, yBase + 0.08, oz + CHUNK_SIZE/2, 0.04, 0.04, CHUNK_SIZE, baseColor));
+  // Rodapé simplificado
+  const rb = C.borda;
+  boxes.push(box(ox + CHUNK_SIZE/2, yBase + 0.06, oz + 0.04, CHUNK_SIZE, 0.03, 0.03, rb));
+  boxes.push(box(ox + CHUNK_SIZE/2, yBase + 0.06, oz + CHUNK_SIZE - 0.04, CHUNK_SIZE, 0.03, 0.03, rb));
+  boxes.push(box(ox + 0.04, yBase + 0.06, oz + CHUNK_SIZE/2, 0.03, 0.03, CHUNK_SIZE, rb));
+  boxes.push(box(ox + CHUNK_SIZE - 0.04, yBase + 0.06, oz + CHUNK_SIZE/2, 0.03, 0.03, CHUNK_SIZE, rb));
   
   return boxes;
 }
@@ -666,8 +597,7 @@ function buildChunkMesh(boxes){
   const n = boxes.length;
   if(n === 0){
     const geo = new THREE.BufferGeometry();
-    const pos = new Float32Array(0);
-    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(0), 3));
     return new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x000000 }));
   }
   
@@ -713,15 +643,14 @@ function buildChunkMesh(boxes){
   return mesh;
 }
 
-/* ---------------- STREAMING ---------------- */
+/* ---------------- STREAMING OTIMIZADO ---------------- */
 const chunkGroup = new THREE.Group();
 scene.add(chunkGroup);
 const chunkMap = new Map();
 const buildingSet = new Set();
-
 let collidablesList = [];
-function rebuildCollidables(){ collidablesList = chunkGroup.children; }
 
+function rebuildCollidables(){ collidablesList = chunkGroup.children; }
 function chunkKey(cx, cz, floor){ return cx+','+cz+','+floor; }
 function getFloorFromY(y){ return Math.round(y / 4); }
 
@@ -729,11 +658,10 @@ function requestChunk(cx, cz, floor){
   const key = chunkKey(cx, cz, floor);
   if(chunkMap.has(key) || buildingSet.has(key)) return;
   buildingSet.add(key);
-  
   const boxes = generateArchitecture(cx, cz, floor);
   const mesh = buildChunkMesh(boxes);
   chunkGroup.add(mesh);
-  chunkMap.set(key, {cx, cz, floor, mesh, state:'in', alpha:0, scaleY:0.1});
+  chunkMap.set(key, {cx, cz, floor, mesh, state:'in', alpha:0});
   buildingSet.delete(key);
   rebuildCollidables();
 }
@@ -750,7 +678,7 @@ function unloadChunk(key){
 
 let loadingComplete = false;
 
-function nearestMissingChunks(px, py, pz, radius, forwardX, forwardZ){
+function nearestMissingChunks(px, py, pz, radius){
   const currentFloor = getFloorFromY(py);
   const floorRange = Math.ceil(radius / 4) + 1;
   const rC = Math.ceil(radius / CHUNK_SIZE);
@@ -761,50 +689,36 @@ function nearestMissingChunks(px, py, pz, radius, forwardX, forwardZ){
     const floorY = floor * 4;
     const dy = floorY - py;
     if(Math.abs(dy) > radius + 4) continue;
-    
     for(let cx = pcx - rC; cx <= pcx + rC; cx++){
       for(let cz = pcz - rC; cz <= pcz + rC; cz++){
-        const centerX = cx * CHUNK_SIZE + CHUNK_SIZE/2;
-        const centerZ = cz * CHUNK_SIZE + CHUNK_SIZE/2;
-        const dx = centerX - px;
-        const dz = centerZ - pz;
+        const dx = cx * CHUNK_SIZE + CHUNK_SIZE/2 - px;
+        const dz = cz * CHUNK_SIZE + CHUNK_SIZE/2 - pz;
         const dist = Math.hypot(dx, dy, dz);
         if(dist > radius) continue;
-        
         const key = chunkKey(cx, cz, floor);
         if(chunkMap.has(key) || buildingSet.has(key)) continue;
-        
-        let score = dist;
-        if(forwardX !== undefined && dist > 0.01){
-          const dot = (dx/dist) * forwardX + (dz/dist) * forwardZ;
-          score -= dot * 25;
-        }
-        list.push({cx, cz, floor, score});
+        list.push({cx, cz, floor, dist});
       }
     }
   }
-  list.sort((a,b) => a.score - b.score);
+  list.sort((a,b) => a.dist - b.dist);
   return list;
 }
 
-function updateStreaming(px, py, pz, forwardX, forwardZ, budget){
-  const candidates = nearestMissingChunks(px, py, pz, ACTIVE_RADIUS, forwardX, forwardZ);
-  for(let i = 0; i < Math.min(budget, candidates.length); i++){
+function updateStreaming(px, py, pz, budget){
+  const candidates = nearestMissingChunks(px, py, pz, ACTIVE_RADIUS);
+  const toLoad = Math.min(budget, candidates.length);
+  for(let i = 0; i < toLoad; i++){
     requestChunk(candidates[i].cx, candidates[i].cz, candidates[i].floor);
   }
   
   for(const [key, c] of chunkMap){
-    const centerX = c.cx * CHUNK_SIZE + CHUNK_SIZE/2;
-    const centerZ = c.cz * CHUNK_SIZE + CHUNK_SIZE/2;
-    const floorY = c.floor * 4;
-    const dy = floorY - py;
-    const dist = Math.hypot(centerX - px, centerZ - pz, dy);
-    
-    if(dist > UNLOAD_RADIUS && c.state !== 'out'){
-      c.state = 'out';
-    } else if(dist <= ACTIVE_RADIUS && c.state === 'out'){
-      c.state = 'in';
-    }
+    const dx = c.cx * CHUNK_SIZE + CHUNK_SIZE/2 - px;
+    const dz = c.cz * CHUNK_SIZE + CHUNK_SIZE/2 - pz;
+    const dy = c.floor * 4 - py;
+    const dist = Math.hypot(dx, dy, dz);
+    if(dist > UNLOAD_RADIUS && c.state !== 'out'){ c.state = 'out'; }
+    else if(dist <= ACTIVE_RADIUS && c.state === 'out'){ c.state = 'in'; }
   }
 }
 
@@ -812,12 +726,10 @@ function animateChunks(dt){
   for(const [key, c] of chunkMap){
     if(c.state === 'in'){
       c.alpha = Math.min(1, c.alpha + dt/FADE_TIME);
-      c.mesh.scale.y = 0.1 + 0.9 * c.alpha;
       c.mesh.material.opacity = c.alpha;
       if(c.alpha >= 1) c.state = 'active';
     } else if(c.state === 'out'){
       c.alpha = Math.max(0, c.alpha - dt/FADE_TIME);
-      c.mesh.scale.y = 0.1 + 0.9 * c.alpha;
       c.mesh.material.opacity = c.alpha;
       if(c.alpha <= 0) unloadChunk(key);
     }
@@ -827,12 +739,7 @@ function animateChunks(dt){
 /* ===== PLAYER ===== */
 const player = { position: new THREE.Vector3(0, EYE_HEIGHT, 0) };
 let yaw = 0, pitch = 0;
-let velocityY = 0;
-let grounded = true;
-let running = false;
-let wantsJump = false;
-let fallStartY = null;
-
+let velocityY = 0, grounded = true, running = false, wantsJump = false;
 const raycaster = new THREE.Raycaster();
 const _fwd = new THREE.Vector3(), _right = new THREE.Vector3();
 
@@ -853,11 +760,11 @@ function updatePhysics(dt, inForward, inStrafe){
   
   let dx = mx * speed * dt;
   let dz = mz * speed * dt;
-  const rayY = (player.position.y - EYE_HEIGHT) + 0.8;
+  const rayY = (player.position.y - EYE_HEIGHT) + 0.7;
   
   if(Math.abs(dx) > 1e-6){
     raycaster.set(new THREE.Vector3(player.position.x, rayY, player.position.z), new THREE.Vector3(Math.sign(dx), 0, 0));
-    raycaster.far = PLAYER_RADIUS + Math.abs(dx) + 0.05;
+    raycaster.far = PLAYER_RADIUS + Math.abs(dx) + 0.04;
     const hits = raycaster.intersectObjects(collidablesList, false);
     if(hits.length > 0){
       const allowed = Math.max(0, hits[0].distance - PLAYER_RADIUS - 0.02);
@@ -868,7 +775,7 @@ function updatePhysics(dt, inForward, inStrafe){
   
   if(Math.abs(dz) > 1e-6){
     raycaster.set(new THREE.Vector3(player.position.x, rayY, player.position.z), new THREE.Vector3(0, 0, Math.sign(dz)));
-    raycaster.far = PLAYER_RADIUS + Math.abs(dz) + 0.05;
+    raycaster.far = PLAYER_RADIUS + Math.abs(dz) + 0.04;
     const hits = raycaster.intersectObjects(collidablesList, false);
     if(hits.length > 0){
       const allowed = Math.max(0, hits[0].distance - PLAYER_RADIUS - 0.02);
@@ -886,44 +793,33 @@ function updatePhysics(dt, inForward, inStrafe){
   wantsJump = false;
   player.position.y += velocityY * dt;
   
-  const downOrigin = new THREE.Vector3(player.position.x, (player.position.y - EYE_HEIGHT) + 1.0, player.position.z);
+  const downOrigin = new THREE.Vector3(player.position.x, (player.position.y - EYE_HEIGHT) + 0.9, player.position.z);
   raycaster.set(downOrigin, new THREE.Vector3(0, -1, 0));
-  raycaster.far = Math.max(6, Math.abs(velocityY) * dt + 2);
+  raycaster.far = Math.max(5, Math.abs(velocityY) * dt + 2);
   const groundHits = raycaster.intersectObjects(collidablesList, false);
   if(groundHits.length > 0){
     const groundY = groundHits[0].point.y;
     const currentFeet = player.position.y - EYE_HEIGHT;
-    if(currentFeet <= groundY + 0.15 && velocityY <= 0){
+    if(currentFeet <= groundY + 0.12 && velocityY <= 0){
       player.position.y = groundY + EYE_HEIGHT;
       velocityY = 0;
       grounded = true;
-      fallStartY = null;
-    } else if(currentFeet > groundY + 0.15){
-      grounded = false;
-    }
+    } else { grounded = false; }
   } else {
     grounded = false;
-    if(fallStartY === null) fallStartY = player.position.y;
-    if(fallStartY - player.position.y > 20){
-      const floor = getFloorFromY(player.position.y);
-      player.position.y = floor * 4 + EYE_HEIGHT + 2;
+    if(player.position.y - EYE_HEIGHT < -20){
+      player.position.y = getFloorFromY(player.position.y) * 4 + EYE_HEIGHT + 2;
       velocityY = 0;
-      fallStartY = null;
     }
   }
   
   playerGroup.position.copy(player.position);
   playerGroup.position.y -= EYE_HEIGHT;
   playerGroup.rotation.y = yaw;
-  
   updateFirstPersonCamera();
   
-  const currentFloor = getFloorFromY(player.position.y);
-  document.getElementById('hudFloor').textContent = currentFloor;
-  
-  const roomX = Math.floor(player.position.x / 10);
-  const roomZ = Math.floor(player.position.z / 10);
-  document.getElementById('hudRoom').textContent = roomX + ',' + roomZ;
+  document.getElementById('hudFloor').textContent = getFloorFromY(player.position.y);
+  document.getElementById('hudRoom').textContent = Math.floor(player.position.x/8)+','+Math.floor(player.position.z/8);
 }
 
 /* ===== INPUT ===== */
@@ -970,7 +866,7 @@ const camLookZone = document.getElementById('camLookZone');
 const btnJump = document.getElementById('btnJump');
 const btnRun = document.getElementById('btnRun');
 
-let joyActive = false, joyId = null, joyVec = {x:0,y:0};
+let joyVec = {x:0,y:0}, joyId = null;
 let lookId = null, lookLast = {x:0,y:0};
 
 function joyCenter(){
@@ -981,40 +877,42 @@ function joyCenter(){
 joystickZone.addEventListener('touchstart', (e)=>{
   e.preventDefault();
   const t = e.changedTouches[0];
-  joyActive = true; joyId = t.identifier;
-  updateJoystick(t);
-}, {passive:false});
-
-joystickZone.addEventListener('touchmove', (e)=>{
-  e.preventDefault();
-  for(const t of e.changedTouches){
-    if(t.identifier === joyId) updateJoystick(t);
-  }
-}, {passive:false});
-
-function endJoy(e){
-  for(const t of e.changedTouches){
-    if(t.identifier === joyId){
-      joyActive = false; joyId = null;
-      joyVec = {x:0, y:0};
-      joystickKnob.style.left = '35px';
-      joystickKnob.style.top = '35px';
-    }
-  }
-}
-joystickZone.addEventListener('touchend', endJoy);
-joystickZone.addEventListener('touchcancel', endJoy);
-
-function updateJoystick(t){
+  joyId = t.identifier;
   const c = joyCenter();
   let dx = t.clientX - c.x, dy = t.clientY - c.y;
   const dist = Math.hypot(dx, dy);
   const max = c.radius;
   if(dist > max){ dx = dx/dist * max; dy = dy/dist * max; }
   joyVec.x = dx/max; joyVec.y = dy/max;
-  joystickKnob.style.left = (35 + dx) + 'px';
-  joystickKnob.style.top = (35 + dy) + 'px';
+  joystickKnob.style.left = (30 + dx) + 'px';
+  joystickKnob.style.top = (30 + dy) + 'px';
+}, {passive:false});
+
+joystickZone.addEventListener('touchmove', (e)=>{
+  e.preventDefault();
+  for(const t of e.changedTouches){
+    if(t.identifier !== joyId) continue;
+    const c = joyCenter();
+    let dx = t.clientX - c.x, dy = t.clientY - c.y;
+    const dist = Math.hypot(dx, dy);
+    const max = c.radius;
+    if(dist > max){ dx = dx/dist * max; dy = dy/dist * max; }
+    joyVec.x = dx/max; joyVec.y = dy/max;
+    joystickKnob.style.left = (30 + dx) + 'px';
+    joystickKnob.style.top = (30 + dy) + 'px';
+  }
+}, {passive:false});
+
+function endJoy(e){
+  for(const t of e.changedTouches){
+    if(t.identifier === joyId){
+      joyId = null; joyVec = {x:0,y:0};
+      joystickKnob.style.left = '30px'; joystickKnob.style.top = '30px';
+    }
+  }
 }
+joystickZone.addEventListener('touchend', endJoy);
+joystickZone.addEventListener('touchcancel', endJoy);
 
 camLookZone.addEventListener('touchstart', (e)=>{
   for(const t of e.changedTouches){
@@ -1028,22 +926,19 @@ camLookZone.addEventListener('touchmove', (e)=>{
     if(t.identifier !== lookId) continue;
     const dx = t.clientX - lookLast.x, dy = t.clientY - lookLast.y;
     lookLast = {x:t.clientX, y:t.clientY};
-    yaw -= dx * 0.0042;
-    pitch -= dy * 0.0042;
+    yaw -= dx * 0.004;
+    pitch -= dy * 0.004;
     pitch = Math.max(-Math.PI/2 + 0.02, Math.min(Math.PI/2 - 0.02, pitch));
   }
 }, {passive:true});
 
 function endLook(e){
-  for(const t of e.changedTouches){
-    if(t.identifier === lookId) lookId = null;
-  }
+  for(const t of e.changedTouches){ if(t.identifier === lookId) lookId = null; }
 }
 camLookZone.addEventListener('touchend', endLook);
 camLookZone.addEventListener('touchcancel', endLook);
 
 btnJump.addEventListener('touchstart', (e)=>{ e.preventDefault(); wantsJump = true; }, {passive:false});
-
 btnRun.addEventListener('touchstart', (e)=>{
   e.preventDefault();
   running = !running;
@@ -1061,9 +956,9 @@ function beginGame(selectedModeArg){
   document.getElementById('loadingLabel').textContent = 'CARREGANDO 0%';
   document.getElementById('loadingBarInner').style.width = '0%';
   
-  // Spawn em uma sala vazia (posição segura)
+  // Spawn em local aberto (centro do chunk 0,0)
   player.position.set(0, EYE_HEIGHT, 0);
-  velocityY = 0; fallStartY = null; grounded = true;
+  velocityY = 0; grounded = true;
   yaw = 0; pitch = 0;
   camera.position.copy(player.position);
   loadingComplete = false;
@@ -1096,51 +991,44 @@ const crosshair = document.getElementById('crosshair');
 const pcHint = document.getElementById('pcHint');
 const mobileControls = document.getElementById('mobileControls');
 
-function neededInitialChunkCount(){
+const NEEDED_INITIAL = (() => {
   const rC = Math.ceil(INITIAL_RADIUS / CHUNK_SIZE);
-  const floorRange = Math.ceil(INITIAL_RADIUS / 4) + 1;
+  const fR = Math.ceil(INITIAL_RADIUS / 4) + 1;
   let n = 0;
-  for(let floor = -floorRange; floor <= floorRange; floor++){
+  for(let f = -fR; f <= fR; f++){
     for(let cx = -rC; cx <= rC; cx++){
       for(let cz = -rC; cz <= rC; cz++){
-        const dx = cx * CHUNK_SIZE + CHUNK_SIZE/2;
-        const dz = cz * CHUNK_SIZE + CHUNK_SIZE/2;
-        const dy = floor * 4;
-        const dist = Math.hypot(dx, dy, dz);
+        const dist = Math.hypot(cx*CHUNK_SIZE + CHUNK_SIZE/2, cz*CHUNK_SIZE + CHUNK_SIZE/2, f*4);
         if(dist <= INITIAL_RADIUS) n++;
       }
     }
   }
   return n;
-}
-const NEEDED_INITIAL = neededInitialChunkCount();
+})();
 
 function initialLoadStep(){
-  const list = nearestMissingChunks(0, 0, 0, INITIAL_RADIUS, 0, -1);
-  const batch = Math.min(16, list.length);
+  const list = nearestMissingChunks(0, 0, 0, INITIAL_RADIUS);
+  const batch = Math.min(20, list.length);
   for(let i = 0; i < batch; i++){
     requestChunk(list[i].cx, list[i].cz, list[i].floor);
   }
   
-  const loadedInRange = [...chunkMap.values()].filter(c => {
-    const dx = c.cx * CHUNK_SIZE + CHUNK_SIZE/2;
-    const dz = c.cz * CHUNK_SIZE + CHUNK_SIZE/2;
-    const dy = c.floor * 4;
-    return Math.hypot(dx, dy, dz) <= INITIAL_RADIUS;
+  const loaded = [...chunkMap.values()].filter(c => {
+    const dist = Math.hypot(c.cx*CHUNK_SIZE + CHUNK_SIZE/2, c.cz*CHUNK_SIZE + CHUNK_SIZE/2, c.floor*4);
+    return dist <= INITIAL_RADIUS;
   }).length;
   
-  const pct = Math.min(100, Math.round((loadedInRange / NEEDED_INITIAL) * 100));
+  const pct = Math.min(100, Math.round((loaded / NEEDED_INITIAL) * 100));
   loadingBarInner.style.width = pct + '%';
   loadingLabel.textContent = 'CARREGANDO ' + pct + '%';
   
   for(const c of chunkMap.values()){
     c.alpha = 1;
     c.mesh.material.opacity = 1;
-    c.mesh.scale.y = 1;
     c.state = 'active';
   }
   
-  if(loadedInRange >= NEEDED_INITIAL){
+  if(loaded >= NEEDED_INITIAL){
     loadingComplete = true;
     loadingScreen.style.display = 'none';
     hud.style.display = 'block';
@@ -1151,27 +1039,20 @@ function initialLoadStep(){
 }
 
 let started = false;
-
-/* ===== MAIN LOOP ===== */
 const clock = new THREE.Clock();
 
 function animate(){
   if(!started){ started = true; clock.start(); }
   requestAnimationFrame(animate);
-  const dt = Math.min(clock.getDelta(), 0.06);
+  const dt = Math.min(clock.getDelta(), 0.05);
   
-  if(!loadingComplete){
-    initialLoadStep();
-    renderer.render(scene, camera);
-    return;
-  }
+  if(!loadingComplete){ initialLoadStep(); renderer.render(scene, camera); return; }
   
   const inVec = mode === 'pc' ? pcInputVector() : mobileInputVector();
-  
   updatePhysics(dt, inVec.f, inVec.s);
   
   _fwd.set(-Math.sin(yaw), 0, -Math.cos(yaw));
-  updateStreaming(player.position.x, player.position.y, player.position.z, _fwd.x, _fwd.z, 4);
+  updateStreaming(player.position.x, player.position.y, player.position.z, 3);
   animateChunks(dt);
   
   const pos = player.position;
