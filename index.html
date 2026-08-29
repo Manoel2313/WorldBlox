@@ -20,7 +20,6 @@
   html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0c0d0f;font-family:var(--font-ui);}
   #renderCanvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;outline:none;}
 
-  /* ===== TELA INICIAL ORIGINAL ===== */
   #startScreen{
     position:absolute;inset:0;z-index:50;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -35,93 +34,31 @@
       radial-gradient(ellipse at 70% 60%, rgba(139,115,85,0.05) 0%, transparent 50%);
     pointer-events:none;
   }
-  #startLogo{
-    position:relative;
-    z-index:1;
-    text-align:center;
-    margin-bottom:40px;
-  }
-  #startLogo .icon{
-    font-size:clamp(48px,10vw,96px);
-    display:block;
-    margin-bottom:8px;
-    animation: float 3s ease-in-out infinite;
-  }
-  @keyframes float{
-    0%,100%{transform:translateY(0px);}
-    50%{transform:translateY(-12px);}
-  }
+  #startLogo{ position:relative; z-index:1; text-align:center; margin-bottom:40px; }
+  #startLogo .icon{ font-size:clamp(48px,10vw,96px); display:block; margin-bottom:8px; animation: float 3s ease-in-out infinite; }
+  @keyframes float{ 0%,100%{transform:translateY(0px);} 50%{transform:translateY(-12px);} }
   #startLogo h1{
-    font-family:var(--font-ui);
-    font-weight:700;
-    letter-spacing:8px;
-    font-size:clamp(22px,5vw,48px);
-    color:#e8ddd0;
-    text-transform:uppercase;
-    margin:0;
+    font-family:var(--font-ui); font-weight:700; letter-spacing:8px;
+    font-size:clamp(22px,5vw,48px); color:#e8ddd0; text-transform:uppercase; margin:0;
     text-shadow:0 0 40px rgba(192,57,43,0.15);
   }
   #startLogo .sub{
-    font-family:var(--font-ui);
-    letter-spacing:12px;
-    font-size:clamp(9px,1.2vw,14px);
-    color:var(--gray-500);
-    text-transform:uppercase;
-    margin-top:6px;
-    border-top:1px solid var(--gray-700);
-    padding-top:10px;
+    font-family:var(--font-ui); letter-spacing:12px; font-size:clamp(9px,1.2vw,14px);
+    color:var(--gray-500); text-transform:uppercase; margin-top:6px;
+    border-top:1px solid var(--gray-700); padding-top:10px;
   }
-  #startLogo .tagline{
-    font-family:var(--font-ui);
-    letter-spacing:4px;
-    font-size:clamp(10px,1vw,13px);
-    color:var(--gray-500);
-    margin-top:10px;
-    opacity:0.6;
-  }
-  #platformRow{
-    position:relative;
-    z-index:1;
-    display:flex;
-    gap:24px;
-    flex-wrap:wrap;
-    justify-content:center;
-  }
+  #startLogo .tagline{ font-family:var(--font-ui); letter-spacing:4px; font-size:clamp(10px,1vw,13px); color:var(--gray-500); margin-top:10px; opacity:0.6; }
+  #platformRow{ position:relative; z-index:1; display:flex; gap:24px; flex-wrap:wrap; justify-content:center; }
   .platBtn{
-    font-family:var(--font-ui);
-    letter-spacing:3px;
-    font-size:14px;
-    padding:14px 38px;
-    color:var(--gray-100);
-    background:transparent;
-    border:1.5px solid var(--gray-700);
-    cursor:pointer;
-    text-transform:uppercase;
-    transition:all .25s;
-    position:relative;
-    overflow:hidden;
+    font-family:var(--font-ui); letter-spacing:3px; font-size:14px; padding:14px 38px;
+    color:var(--gray-100); background:transparent; border:1.5px solid var(--gray-700);
+    cursor:pointer; text-transform:uppercase; transition:all .25s; position:relative; overflow:hidden;
   }
-  .platBtn::after{
-    content:'';
-    position:absolute;
-    inset:0;
-    background:#c0392b;
-    transform:translateX(-100%);
-    transition:transform .3s;
-    z-index:-1;
-  }
+  .platBtn::after{ content:''; position:absolute; inset:0; background:#c0392b; transform:translateX(-100%); transition:transform .3s; z-index:-1; }
   .platBtn:hover::after{transform:translateX(0);}
   .platBtn:hover{border-color:#c0392b;color:#fff;}
   .platBtn:active{transform:scale(0.95);}
-  .platBtn .key{
-    display:inline-block;
-    background:var(--gray-800);
-    padding:0 8px;
-    border-radius:2px;
-    font-size:10px;
-    margin-left:6px;
-    color:var(--gray-500);
-  }
+  .platBtn .key{ display:inline-block; background:var(--gray-800); padding:0 8px; border-radius:2px; font-size:10px; margin-left:6px; color:var(--gray-500); }
 
   #loadingScreen{
     position:absolute;inset:0;z-index:40;
@@ -142,20 +79,15 @@
   #hudPos{color:#c0392b;}
   #hudFloor{color:#c0392b;font-weight:bold;}
   #hudRoom{color:var(--gray-300);}
+  #hudFps{color:var(--gray-500);}
 
   #crosshair{
     position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
     width:4px;height:4px;border-radius:50%;background:rgba(230,230,230,0.6);
     z-index:20;display:block;pointer-events:none;
   }
-  #crosshair::before{
-    content:'';position:absolute;top:-6px;left:50%;transform:translateX(-50%);
-    width:1px;height:6px;background:rgba(230,230,230,0.3);
-  }
-  #crosshair::after{
-    content:'';position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);
-    width:1px;height:6px;background:rgba(230,230,230,0.3);
-  }
+  #crosshair::before{ content:'';position:absolute;top:-6px;left:50%;transform:translateX(-50%); width:1px;height:6px;background:rgba(230,230,230,0.3); }
+  #crosshair::after{ content:'';position:absolute;bottom:-6px;left:50%;transform:translateX(-50%); width:1px;height:6px;background:rgba(230,230,230,0.3); }
 
   #pcHint{
     position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
@@ -166,43 +98,24 @@
     text-transform:uppercase;
   }
 
-  #mobileControls{
-    position:absolute;inset:0;z-index:20;
-    display:none;
-    pointer-events:none;
-  }
+  #mobileControls{ position:absolute;inset:0;z-index:20; display:none; pointer-events:none; }
   #mobileControls > * { pointer-events:auto; }
 
   #joystickZone{
-    position:absolute;left:20px;bottom:20px;width:110px;height:110px;
-    border-radius:50%;
-    background:rgba(255,255,255,0.04);
-    border:1.5px solid rgba(255,255,255,0.08);
-    backdrop-filter:blur(6px);
-    touch-action:none;
+    position:absolute;left:20px;bottom:20px;width:110px;height:110px; border-radius:50%;
+    background:rgba(255,255,255,0.04); border:1.5px solid rgba(255,255,255,0.08);
+    backdrop-filter:blur(6px); touch-action:none;
   }
   #joystickKnob{
     position:absolute;left:30px;top:30px;width:50px;height:50px;border-radius:50%;
     background:radial-gradient(circle, rgba(255,255,255,0.15), rgba(255,255,255,0.02));
-    border:1.5px solid rgba(255,255,255,0.1);
-    pointer-events:none;
+    border:1.5px solid rgba(255,255,255,0.1); pointer-events:none;
   }
   .mobileBtn{
-    border-radius:50%;
-    background:rgba(255,255,255,0.04);
-    border:1.5px solid rgba(255,255,255,0.08);
-    backdrop-filter:blur(6px);
-    color:var(--gray-100);
-    font-family:var(--font-ui);
-    font-size:9px;
-    letter-spacing:1px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    touch-action:none;
-    transition:all 0.15s;
-    text-shadow:0 1px 4px rgba(0,0,0,0.5);
-    width:60px;height:60px;
+    border-radius:50%; background:rgba(255,255,255,0.04); border:1.5px solid rgba(255,255,255,0.08);
+    backdrop-filter:blur(6px); color:var(--gray-100); font-family:var(--font-ui); font-size:9px;
+    letter-spacing:1px; display:flex; align-items:center; justify-content:center; touch-action:none;
+    transition:all 0.15s; text-shadow:0 1px 4px rgba(0,0,0,0.5); width:60px;height:60px;
   }
   .mobileBtn:active{transform:scale(0.92);background:rgba(192,57,43,0.3);}
   .mobileBtn.active{background:rgba(192,57,43,0.4);border-color:#c0392b;}
@@ -211,11 +124,7 @@
   #btnRun{position:absolute;right:20px;bottom:20px;width:56px;height:56px;font-size:8px;}
   #btnRun.active{background:rgba(192,57,43,0.4);border-color:#c0392b;}
 
-  #camLookZone{
-    position:absolute;inset:0;
-    touch-action:none;
-    pointer-events:auto;
-  }
+  #camLookZone{ position:absolute;inset:0; touch-action:none; pointer-events:auto; }
 
   #toastMsg{
     position:absolute;top:100px;left:50%;transform:translateX(-50%);
@@ -229,7 +138,6 @@
 
 <canvas id="renderCanvas"></canvas>
 
-<!-- ===== TELA INICIAL ===== -->
 <div id="startScreen">
   <div id="startLogo">
     <span class="icon">🏠</span>
@@ -252,9 +160,10 @@
   <div><span class="lbl">📍</span> <span id="hudPos">0.0, 0.0, 0.0</span></div>
   <div><span class="lbl">🏢</span> Andar <span id="hudFloor">0</span></div>
   <div><span class="lbl">🚪</span> Sala <span id="hudRoom">---</span></div>
+  <div><span class="lbl">⚙</span> <span id="hudFps">--</span> fps</div>
 </div>
 <div id="crosshair"></div>
-<div id="pcHint">WASD · ESPAÇO · Q corre</div>
+<div id="pcHint">WASD · ESPAÇO PULA · Q CORRE</div>
 <div id="toastMsg"></div>
 
 <div id="mobileControls">
@@ -270,12 +179,15 @@
 "use strict";
 
 /* ======================================================================
-   IDEAL PLACE FOR FAMILIES - VERSÃO OTIMIZADA
+   IDEAL PLACE FOR FAMILIES — v2
+   Rewrite focused on: performance (bounded horizontal/vertical streaming
+   + local-only collision queries), real multi-floor staircases (vertical
+   shafts consistent across floors), and animated doors that open on
+   approach and auto-close after 5s.
    ====================================================================== */
 
-/* ===== MENU ===== */
+/* ---------------- MENU ---------------- */
 let selectedMode = null;
-
 document.getElementById('btnPC').addEventListener('click', ()=>{
   selectedMode = 'pc';
   document.getElementById('startScreen').style.display = 'none';
@@ -287,33 +199,44 @@ document.getElementById('btnMobile').addEventListener('click', ()=>{
   beginGame(selectedMode);
 });
 
-/* ---------------- CONFIG OTIMIZADA ---------------- */
-let CHUNK_SIZE = 32;
-let ACTIVE_RADIUS = 300;
-let UNLOAD_MARGIN = 30;
-let UNLOAD_RADIUS = ACTIVE_RADIUS + UNLOAD_MARGIN;
-let INITIAL_RADIUS = 80;
-let FADE_TIME = 0.4;
+/* ---------------- CONFIG ---------------- */
+const CHUNK_SIZE   = 30;      // world units per chunk (square footprint)
+const GRID         = 3;       // rooms per chunk per axis
+const ROOM_SIZE     = CHUNK_SIZE / GRID;
+const FLOOR_HEIGHT  = 4.2;    // vertical distance between floor levels
+const WALL_H        = 3.9;    // wall height (flush floor-to-ceiling)
+const SLAB          = 0.15;   // floor/ceiling slab thickness
+
+const H_RADIUS        = 90;   // horizontal streaming radius (world units)
+const H_UNLOAD         = H_RADIUS + 24;
+const FLOOR_RADIUS     = 2;   // floors above/below player kept loaded
+const FLOOR_UNLOAD     = FLOOR_RADIUS + 1;
+const INITIAL_H_RADIUS = 54;
+const INITIAL_FLOOR_RADIUS = 1;
+
+const CHUNK_BUILD_BUDGET = 3;   // chunks generated per frame during play
+const INITIAL_BUILD_BATCH = 24; // chunks generated per frame while loading
+const FADE_TIME = 0.35;
+
+const DOOR_W = 1.0, DOOR_H = 2.15;
+const WINDOW_W = 1.6, WINDOW_H = 1.2;
+const DOOR_TRIGGER_DIST = 2.4;
+const DOOR_OPEN_TIME = 5.0; // seconds
 
 const WALK_SPEED   = 3.5;
 const RUN_MULT     = 4.5;
-
 const EYE_HEIGHT   = 1.6;
-const PLAYER_RADIUS = 0.25;
+const PLAYER_RADIUS = 0.28;
 const GRAVITY      = -20;
 const JUMP_SPEED_NORMAL = Math.sqrt(2 * Math.abs(GRAVITY) * 1.6);
 const JUMP_SPEED_RUN    = Math.sqrt(2 * Math.abs(GRAVITY) * 4.5);
 const MAX_FALL_SPEED = 45;
 
-/* ---------------- THREE SETUP (ULTRA OTIMIZADO) ---------------- */
+/* ---------------- THREE SETUP ---------------- */
 const canvas = document.getElementById('renderCanvas');
 const renderer = new THREE.WebGLRenderer({
-  canvas,
-  antialias: false,
-  powerPreference: "high-performance",
-  stencil: false,
-  depth: true,
-  alpha: false
+  canvas, antialias:false, powerPreference:"high-performance",
+  stencil:false, depth:true, alpha:false
 });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1));
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -324,15 +247,14 @@ renderer.shadowMap.enabled = false;
 
 const isMobile = window.innerWidth < 768;
 const FOV = isMobile ? 72 : 78;
-const camera = new THREE.PerspectiveCamera(FOV, window.innerWidth/window.innerHeight, 0.1, 8000);
+const camera = new THREE.PerspectiveCamera(FOV, window.innerWidth/window.innerHeight, 0.1, 2000);
 camera.rotation.order = 'YXZ';
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x14151a);
-scene.fog = new THREE.Fog(0x14151a, 40, ACTIVE_RADIUS + 20);
+scene.fog = new THREE.Fog(0x14151a, 30, H_RADIUS + 15);
 
-const ambientLight = new THREE.AmbientLight(0x8899aa, 0.5);
-scene.add(ambientLight);
+scene.add(new THREE.AmbientLight(0x8899aa, 0.55));
 const sunLight = new THREE.DirectionalLight(0xffeedd, 0.6);
 sunLight.position.set(80, 120, 60);
 scene.add(sunLight);
@@ -347,24 +269,7 @@ function onResize(){
 window.addEventListener('resize', onResize);
 onResize();
 
-/* ===== PERSONAGEM ===== */
-const playerGroup = new THREE.Group();
-scene.add(playerGroup);
-function createPlayer(){
-  while(playerGroup.children.length > 0){
-    const child = playerGroup.children[0];
-    playerGroup.remove(child);
-    child.traverse(o=>{ if(o.geometry) o.geometry.dispose(); if(o.material) o.material.dispose(); });
-  }
-  const dummy = new THREE.Mesh(
-    new THREE.BoxGeometry(0.1, 0.1, 0.1),
-    new THREE.MeshBasicMaterial({ visible: false })
-  );
-  playerGroup.add(dummy);
-  playerGroup.visible = true;
-}
-
-/* ===== CORES ===== */
+/* ===== COLORS ===== */
 const C = {
   parede: 0xcc3333,
   pilar: 0xcc3333,
@@ -378,14 +283,14 @@ const C = {
   vidro: 0x88ccdd,
 };
 
-/* ===== GEOMETRIA SIMPLIFICADA ===== */
+/* ===== BOX / RNG HELPERS ===== */
 const UNIT_BOX = new THREE.BoxGeometry(1,1,1).toNonIndexed();
 const BASE_POS = UNIT_BOX.attributes.position.array;
 const BASE_NORM = UNIT_BOX.attributes.normal.array;
 const VERTS_PER_BOX = BASE_POS.length/3;
 
 function box(x,y,z,w,h,d,color){
-  return {x,y,z,w,h,d,color: new THREE.Color(color)};
+  return {x,y,z,w,h,d,color:new THREE.Color(color)};
 }
 
 function hashSeed(cx, cz, cy, salt){
@@ -397,7 +302,6 @@ function hashSeed(cx, cz, cy, salt){
   h = Math.imul(h ^ 0x9e3779b9, 16777619);
   return h>>>0;
 }
-
 function mulberry32(a){
   return function(){
     a |= 0; a = (a + 0x6D2B79F5) | 0;
@@ -406,319 +310,381 @@ function mulberry32(a){
     return ((t ^ (t>>>14))>>>0) / 4294967296;
   };
 }
+function getFloorFromY(y){ return Math.round(y / FLOOR_HEIGHT); }
+function chunkKey(cx, cz, floor){ return cx+','+cz+','+floor; }
 
-function addWall(boxes, x, y, z, w, h, d, hasDoor, doorW, doorH, hasWindow, windowW, windowH){
+/* ===== STAIRWELL COLUMN (consistent across every floor of a column) =====
+   Each chunk column (cx,cz) either has a permanent stairwell shaft or not.
+   If it does, EVERY floor in that column has a hole in the same room cell
+   plus a staircase connecting that level to the one above, forming a
+   continuous, climbable shaft — like a real stairwell tower. */
+function columnStairInfo(cx, cz){
+  const rng = mulberry32(hashSeed(cx, cz, 0, 0xFACE));
+  const nearSpawn = Math.abs(cx) <= 1 && Math.abs(cz) <= 1;
+  const has = !nearSpawn && rng() < 0.16;
+  const ci = Math.floor(rng()*GRID);
+  const cj = Math.floor(rng()*GRID);
+  return {has, ci, cj};
+}
+
+/* ===== WALL / DOOR / WINDOW BUILDER ===== */
+function addWall(boxes, doorDescs, rng, x,y,z,w,h,d, orientation, hasDoor, hasWindow){
   const wallColor = C.parede;
-  const borderColor = C.borda;
-  const glassColor = C.vidro;
-  const doorColor = C.porta;
-  
   if(!hasDoor && !hasWindow){
-    boxes.push(box(x, y, z, w, h, d, wallColor));
-    // Apenas bordas superiores e inferiores para economizar
-    boxes.push(box(x, y + h/2 - 0.025, z, w, 0.04, d, borderColor));
-    boxes.push(box(x, y - h/2 + 0.025, z, w, 0.04, d, borderColor));
+    boxes.push(box(x,y,z,w,h,d,wallColor));
     return;
   }
-  
+  const length = (orientation === 'x') ? w : d;
+  const bottomY = y - h/2;
+
   if(hasDoor){
-    const doorX = x, doorY = y - h/2 + doorH/2;
-    const sideW = (w - doorW) / 2;
-    if(sideW > 0.1){
-      boxes.push(box(x - (w/2 - sideW/2), y, z, sideW, h, d, wallColor));
-      boxes.push(box(x + (w/2 - sideW/2), y, z, sideW, h, d, wallColor));
+    const dW = Math.min(DOOR_W, length*0.6);
+    const dH = Math.min(DOOR_H, h*0.9);
+    const thickness = (orientation === 'x') ? d : w;
+    const sideLen = (length - dW) / 2;
+
+    if(sideLen > 0.12){
+      if(orientation === 'x'){
+        boxes.push(box(x-(length/2-sideLen/2), y, z, sideLen, h, d, wallColor));
+        boxes.push(box(x+(length/2-sideLen/2), y, z, sideLen, h, d, wallColor));
+      } else {
+        boxes.push(box(x, y, z-(length/2-sideLen/2), w, h, sideLen, wallColor));
+        boxes.push(box(x, y, z+(length/2-sideLen/2), w, h, sideLen, wallColor));
+      }
     }
-    boxes.push(box(x, y + doorH/2 + (h - doorH)/4, z, doorW, (h - doorH)/2, d, wallColor));
-    boxes.push(box(doorX, doorY, z + 0.04, doorW, doorH, 0.04, doorColor));
-    // Moldura simplificada
-    boxes.push(box(doorX, doorY + doorH/2 + 0.03, z + 0.06, doorW + 0.08, 0.04, 0.04, C.moldura));
-    boxes.push(box(doorX, doorY - doorH/2 - 0.03, z + 0.06, doorW + 0.08, 0.04, 0.04, C.moldura));
+    const headerH = h - dH;
+    if(headerH > 0.05){
+      const headerY = bottomY + dH + headerH/2;
+      if(orientation === 'x') boxes.push(box(x, headerY, z, dW, headerH, d, wallColor));
+      else boxes.push(box(x, headerY, z, w, headerH, dW, wallColor));
+    }
+    // frame trim
+    if(orientation === 'x'){
+      boxes.push(box(x-dW/2-0.03, bottomY+dH/2, z, 0.05, dH, d*1.05, C.moldura));
+      boxes.push(box(x+dW/2+0.03, bottomY+dH/2, z, 0.05, dH, d*1.05, C.moldura));
+    } else {
+      boxes.push(box(x, bottomY+dH/2, z-dW/2-0.03, w*1.05, dH, 0.05, C.moldura));
+      boxes.push(box(x, bottomY+dH/2, z+dW/2+0.03, w*1.05, dH, 0.05, C.moldura));
+    }
+
+    const swing = rng() < 0.5 ? 1 : -1;
+    const baseRot = (orientation === 'z') ? -Math.PI/2 : 0;
+    let hingeX, hingeZ;
+    if(orientation === 'x'){ hingeX = x - dW/2; hingeZ = z; }
+    else { hingeX = x; hingeZ = z - dW/2; }
+
+    doorDescs.push({
+      hingeX, hingeZ, y: bottomY, w: dW, h: dH, thickness: Math.max(0.06, thickness*0.75),
+      closedRot: baseRot, openRot: baseRot + swing*(Math.PI/2*0.92),
+      centerX: x, centerZ: z
+    });
     return;
   }
-  
+
   if(hasWindow){
-    const winX = x, winY = y - h/2 + windowH/2 + 0.5;
-    const sideW = (w - windowW) / 2;
-    const sideH = (h - windowH) / 2;
-    if(sideW > 0.1){
-      boxes.push(box(x - (w/2 - sideW/2), y, z, sideW, h, d, wallColor));
-      boxes.push(box(x + (w/2 - sideW/2), y, z, sideW, h, d, wallColor));
+    const wW = Math.min(WINDOW_W, length*0.55);
+    const wH = Math.min(WINDOW_H, h*0.4);
+    const sillY = bottomY + h*0.42;
+    const sideLen = (length - wW) / 2;
+    const belowH = sillY - bottomY;
+    const aboveH = h - belowH - wH;
+
+    if(orientation === 'x'){
+      if(sideLen > 0.12){
+        boxes.push(box(x-(length/2-sideLen/2), y, z, sideLen, h, d, wallColor));
+        boxes.push(box(x+(length/2-sideLen/2), y, z, sideLen, h, d, wallColor));
+      }
+      if(belowH > 0.05) boxes.push(box(x, bottomY+belowH/2, z, wW, belowH, d, wallColor));
+      if(aboveH > 0.05) boxes.push(box(x, bottomY+belowH+wH+aboveH/2, z, wW, aboveH, d, wallColor));
+      boxes.push(box(x, sillY+wH/2, z, wW, wH, Math.max(0.03,d*0.35), C.vidro));
+      boxes.push(box(x, sillY+wH+0.02, z, wW+0.06, 0.03, d, C.moldura));
+      boxes.push(box(x, sillY-0.02, z, wW+0.06, 0.03, d, C.moldura));
+    } else {
+      if(sideLen > 0.12){
+        boxes.push(box(x, y, z-(length/2-sideLen/2), w, h, sideLen, wallColor));
+        boxes.push(box(x, y, z+(length/2-sideLen/2), w, h, sideLen, wallColor));
+      }
+      if(belowH > 0.05) boxes.push(box(x, bottomY+belowH/2, z, w, belowH, wW, wallColor));
+      if(aboveH > 0.05) boxes.push(box(x, bottomY+belowH+wH+aboveH/2, z, w, aboveH, wW, wallColor));
+      boxes.push(box(x, sillY+wH/2, z, Math.max(0.03,w*0.35), wH, wW, C.vidro));
+      boxes.push(box(x, sillY+wH+0.02, z, w, 0.03, wW+0.06, C.moldura));
+      boxes.push(box(x, sillY-0.02, z, w, 0.03, wW+0.06, C.moldura));
     }
-    if(sideH > 0.1){
-      boxes.push(box(x, y + windowH/2 + sideH/2, z, windowW, sideH, d, wallColor));
-      boxes.push(box(x, y - windowH/2 - sideH/2, z, windowW, sideH, d, wallColor));
-    }
-    boxes.push(box(winX, winY, z + 0.04, windowW, windowH, 0.025, glassColor));
-    boxes.push(box(winX, winY + windowH/2 + 0.025, z + 0.05, windowW + 0.08, 0.03, 0.03, C.moldura));
-    boxes.push(box(winX, winY - windowH/2 - 0.025, z + 0.05, windowW + 0.08, 0.03, 0.03, C.moldura));
-    // Cruz simplificada
-    boxes.push(box(winX, winY, z + 0.045, 0.02, windowH * 0.7, 0.02, C.moldura));
-    boxes.push(box(winX, winY, z + 0.045, windowW * 0.7, 0.02, 0.02, C.moldura));
     return;
   }
 }
 
+/* ===== STAIRCASE (connects yBase to yBase+FLOOR_HEIGHT within one cell) ===== */
+function buildStairs(boxes, cellOx, cellOz, yBase){
+  const steps = 12;
+  const stepH = FLOOR_HEIGHT / steps;
+  const runLen = ROOM_SIZE * 0.66;
+  const stepD = runLen / steps;
+  const stepW = ROOM_SIZE * 0.42;
+  const startX = cellOx + ROOM_SIZE*0.14;
+  const centerZ = cellOz + ROOM_SIZE/2;
+
+  for(let i=0;i<steps;i++){
+    const sy = yBase + i*stepH;
+    const sx = startX + i*stepD;
+    boxes.push(box(sx+stepD/2, sy+stepH/2, centerZ, stepD+0.03, stepH, stepW, C.escada));
+    if(i % 2 === 0){
+      boxes.push(box(sx+stepD/2, sy+stepH+0.01, centerZ, stepD, 0.02, stepW, C.borda));
+    }
+    if(i % 2 === 1){
+      boxes.push(box(sx+stepD/2, sy+0.85, centerZ-stepW/2-0.05, 0.04, 0.85, 0.04, C.corrimao));
+      boxes.push(box(sx+stepD/2, sy+0.85, centerZ+stepW/2+0.05, 0.04, 0.85, 0.04, C.corrimao));
+    }
+  }
+  // top landing filling the rest of the cell, flush with the floor above
+  const landingX0 = startX + runLen;
+  const landingW = (cellOx + ROOM_SIZE) - landingX0 - ROOM_SIZE*0.1;
+  if(landingW > 0.3){
+    boxes.push(box(landingX0 + landingW/2, yBase+FLOOR_HEIGHT-SLAB/2, centerZ, landingW, SLAB, stepW+0.6, C.chao));
+  }
+}
+
+/* ===== CHUNK ARCHITECTURE GENERATION ===== */
 function generateArchitecture(cx, cz, floor){
   const rng = mulberry32(hashSeed(cx, cz, floor, 0xABCD));
   const boxes = [];
+  const doorDescs = [];
   const ox = cx * CHUNK_SIZE;
   const oz = cz * CHUNK_SIZE;
-  const yBase = floor * 4;
-  const wallH = 3.3;
-  
-  // Chão e teto (sempre presentes)
-  boxes.push(box(ox + CHUNK_SIZE/2, yBase, oz + CHUNK_SIZE/2, CHUNK_SIZE, 0.12, CHUNK_SIZE, C.chao));
-  boxes.push(box(ox + CHUNK_SIZE/2, yBase + 4, oz + CHUNK_SIZE/2, CHUNK_SIZE, 0.12, CHUNK_SIZE, C.teto));
-  
-  // Grid de salas (3x3 para simplificar e otimizar)
-  const gridSize = 3;
-  const roomSize = CHUNK_SIZE / gridSize;
-  
-  // Decidir conexões (simplificado)
+  const yBase = floor * FLOOR_HEIGHT;
+  const stair = columnStairInfo(cx, cz);
+
+  // room connections (doorways / open passages between adjacent cells)
   const connections = [];
-  for(let i = 0; i < gridSize; i++){
-    for(let j = 0; j < gridSize; j++){
-      if(j < gridSize - 1 && rng() < 0.4) connections.push({x1:i, z1:j, x2:i, z2:j+1});
-      if(i < gridSize - 1 && rng() < 0.4) connections.push({x1:i, z1:j, x2:i+1, z2:j});
+  for(let i=0;i<GRID;i++){
+    for(let j=0;j<GRID;j++){
+      const corridorBoost = (j === Math.floor(GRID/2)) ? 0.7 : 0.4;
+      if(j < GRID-1 && rng() < corridorBoost) connections.push({x1:i,z1:j,x2:i,z2:j+1});
+      if(i < GRID-1 && rng() < 0.4) connections.push({x1:i,z1:j,x2:i+1,z2:j});
     }
   }
-  
-  // Construir paredes
-  for(let i = 0; i < gridSize; i++){
-    for(let j = 0; j < gridSize; j++){
-      const rx = ox + i * roomSize + roomSize/2;
-      const rz = oz + j * roomSize + roomSize/2;
-      
-      // Parede Norte
+  function isConnected(i1,j1,i2,j2){
+    return connections.some(c =>
+      (c.x1===i1&&c.z1===j1&&c.x2===i2&&c.z2===j2) ||
+      (c.x1===i2&&c.z1===j2&&c.x2===i1&&c.z2===j1)
+    );
+  }
+
+  // floor + ceiling tiles per room cell (skipped at the stairwell cell -> hole)
+  for(let i=0;i<GRID;i++){
+    for(let j=0;j<GRID;j++){
+      const isStairCell = stair.has && i===stair.ci && j===stair.cj;
+      if(isStairCell) continue;
+      const cxw = ox + i*ROOM_SIZE + ROOM_SIZE/2;
+      const czw = oz + j*ROOM_SIZE + ROOM_SIZE/2;
+      boxes.push(box(cxw, yBase+SLAB/2, czw, ROOM_SIZE, SLAB, ROOM_SIZE, C.chao));
+      boxes.push(box(cxw, yBase+WALL_H+SLAB/2, czw, ROOM_SIZE, SLAB, ROOM_SIZE, C.teto));
+    }
+  }
+
+  // walls
+  for(let i=0;i<GRID;i++){
+    for(let j=0;j<GRID;j++){
+      const rx = ox + i*ROOM_SIZE + ROOM_SIZE/2;
+      const rz = oz + j*ROOM_SIZE + ROOM_SIZE/2;
+
+      // North
       if(j === 0){
-        const hasDoor = rng() < 0.15;
-        const hasWindow = rng() < 0.25;
-        addWall(boxes, rx, yBase + wallH/2, oz, roomSize, wallH, 0.12, hasDoor, 0.7, 2.0, hasWindow, 0.5, 0.7);
+        addWall(boxes, doorDescs, rng, rx, yBase+WALL_H/2, oz, ROOM_SIZE, WALL_H, 0.14, 'x', rng()<0.14, rng()<0.28);
       } else {
-        const isConnected = connections.some(c => 
-          (c.x1 === i && c.z1 === j-1 && c.x2 === i && c.z2 === j) ||
-          (c.x2 === i && c.z2 === j-1 && c.x1 === i && c.z1 === j)
-        );
-        const hasDoor = isConnected && rng() < 0.5;
-        const hasWindow = !hasDoor && rng() < 0.2;
-        addWall(boxes, rx, yBase + wallH/2, oz + j * roomSize, roomSize, wallH, 0.12, hasDoor, 0.7, 2.0, hasWindow, 0.5, 0.7);
+        const hasDoor = isConnected(i,j-1,i,j) && rng() < 0.55;
+        const hasWindow = !hasDoor && rng() < 0.15;
+        addWall(boxes, doorDescs, rng, rx, yBase+WALL_H/2, oz+j*ROOM_SIZE, ROOM_SIZE, WALL_H, 0.14, 'x', hasDoor, hasWindow);
       }
-      
-      // Parede Sul
-      if(j === gridSize - 1){
-        const hasDoor = rng() < 0.15;
-        const hasWindow = rng() < 0.25;
-        addWall(boxes, rx, yBase + wallH/2, oz + roomSize * gridSize, roomSize, wallH, 0.12, hasDoor, 0.7, 2.0, hasWindow, 0.5, 0.7);
+      // South
+      if(j === GRID-1){
+        addWall(boxes, doorDescs, rng, rx, yBase+WALL_H/2, oz+ROOM_SIZE*GRID, ROOM_SIZE, WALL_H, 0.14, 'x', rng()<0.14, rng()<0.28);
       } else {
-        const isConnected = connections.some(c => 
-          (c.x1 === i && c.z1 === j && c.x2 === i && c.z2 === j+1) ||
-          (c.x2 === i && c.z2 === j && c.x1 === i && c.z1 === j+1)
-        );
-        const hasDoor = isConnected && rng() < 0.5;
-        const hasWindow = !hasDoor && rng() < 0.2;
-        addWall(boxes, rx, yBase + wallH/2, oz + (j+1) * roomSize, roomSize, wallH, 0.12, hasDoor, 0.7, 2.0, hasWindow, 0.5, 0.7);
+        const hasDoor = isConnected(i,j,i,j+1) && rng() < 0.55;
+        const hasWindow = !hasDoor && rng() < 0.15;
+        addWall(boxes, doorDescs, rng, rx, yBase+WALL_H/2, oz+(j+1)*ROOM_SIZE, ROOM_SIZE, WALL_H, 0.14, 'x', hasDoor, hasWindow);
       }
-      
-      // Parede Oeste
+      // West
       if(i === 0){
-        const hasDoor = rng() < 0.15;
-        const hasWindow = rng() < 0.25;
-        addWall(boxes, ox, yBase + wallH/2, rz, 0.12, wallH, roomSize, hasDoor, 0.7, 2.0, hasWindow, 0.5, 0.7);
+        addWall(boxes, doorDescs, rng, ox, yBase+WALL_H/2, rz, 0.14, WALL_H, ROOM_SIZE, 'z', rng()<0.14, rng()<0.28);
       } else {
-        const isConnected = connections.some(c => 
-          (c.x1 === i-1 && c.z1 === j && c.x2 === i && c.z2 === j) ||
-          (c.x2 === i-1 && c.z2 === j && c.x1 === i && c.z1 === j)
-        );
-        const hasDoor = isConnected && rng() < 0.5;
-        const hasWindow = !hasDoor && rng() < 0.2;
-        addWall(boxes, ox + i * roomSize, yBase + wallH/2, rz, 0.12, wallH, roomSize, hasDoor, 0.7, 2.0, hasWindow, 0.5, 0.7);
+        const hasDoor = isConnected(i-1,j,i,j) && rng() < 0.55;
+        const hasWindow = !hasDoor && rng() < 0.15;
+        addWall(boxes, doorDescs, rng, ox+i*ROOM_SIZE, yBase+WALL_H/2, rz, 0.14, WALL_H, ROOM_SIZE, 'z', hasDoor, hasWindow);
       }
-      
-      // Parede Leste
-      if(i === gridSize - 1){
-        const hasDoor = rng() < 0.15;
-        const hasWindow = rng() < 0.25;
-        addWall(boxes, ox + roomSize * gridSize, yBase + wallH/2, rz, 0.12, wallH, roomSize, hasDoor, 0.7, 2.0, hasWindow, 0.5, 0.7);
+      // East
+      if(i === GRID-1){
+        addWall(boxes, doorDescs, rng, ox+ROOM_SIZE*GRID, yBase+WALL_H/2, rz, 0.14, WALL_H, ROOM_SIZE, 'z', rng()<0.14, rng()<0.28);
       } else {
-        const isConnected = connections.some(c => 
-          (c.x1 === i && c.z1 === j && c.x2 === i+1 && c.z2 === j) ||
-          (c.x2 === i && c.z2 === j && c.x1 === i+1 && c.z1 === j)
-        );
-        const hasDoor = isConnected && rng() < 0.5;
-        const hasWindow = !hasDoor && rng() < 0.2;
-        addWall(boxes, ox + (i+1) * roomSize, yBase + wallH/2, rz, 0.12, wallH, roomSize, hasDoor, 0.7, 2.0, hasWindow, 0.5, 0.7);
+        const hasDoor = isConnected(i,j,i+1,j) && rng() < 0.55;
+        const hasWindow = !hasDoor && rng() < 0.15;
+        addWall(boxes, doorDescs, rng, ox+(i+1)*ROOM_SIZE, yBase+WALL_H/2, rz, 0.14, WALL_H, ROOM_SIZE, 'z', hasDoor, hasWindow);
       }
     }
   }
-  
-  // Pilares (poucos para otimizar)
-  if(rng() < 0.3){
-    const px = ox + 2 + rng() * (CHUNK_SIZE - 4);
-    const pz = oz + 2 + rng() * (CHUNK_SIZE - 4);
-    const pSize = 0.25 + rng() * 0.2;
-    boxes.push(box(px, yBase + wallH/2, pz, pSize, wallH, pSize, C.pilar));
-    boxes.push(box(px, yBase + 0.08, pz, pSize * 1.3, 0.08, pSize * 1.3, C.borda));
+
+  // pillars scattered around the chunk (avoiding the stairwell cell)
+  const pillarCount = 1 + Math.floor(rng()*3);
+  for(let p=0;p<pillarCount;p++){
+    const pi = Math.floor(rng()*GRID), pj = Math.floor(rng()*GRID);
+    if(stair.has && pi===stair.ci && pj===stair.cj) continue;
+    const px = ox + pi*ROOM_SIZE + ROOM_SIZE*(0.25+rng()*0.5);
+    const pz = oz + pj*ROOM_SIZE + ROOM_SIZE*(0.25+rng()*0.5);
+    const pSize = 0.28 + rng()*0.18;
+    boxes.push(box(px, yBase+WALL_H/2, pz, pSize, WALL_H, pSize, C.pilar));
+    boxes.push(box(px, yBase+0.09, pz, pSize*1.3, 0.08, pSize*1.3, C.borda));
+    boxes.push(box(px, yBase+WALL_H-0.06, pz, pSize*1.3, 0.08, pSize*1.3, C.borda));
   }
-  
-  // Escadarias (raras para otimizar)
-  if(rng() < 0.12){
-    const stairX = ox + 2 + rng() * (CHUNK_SIZE - 6);
-    const stairZ = oz + 2 + rng() * (CHUNK_SIZE - 6);
-    const numSteps = 5 + Math.floor(rng() * 4);
-    const stepW = 1.0, stepD = 0.35, stepH = 0.25;
-    
-    for(let i = 0; i < numSteps; i++){
-      const sy = yBase + i * stepH;
-      const sx = stairX + i * stepD;
-      boxes.push(box(sx + stepD/2, sy + stepH/2, stairZ, stepD, stepH, stepW, C.escada));
-      if(i % 2 === 0){
-        boxes.push(box(sx + stepD/2, sy + stepH, stairZ, stepD, 0.02, stepW, C.borda));
-      }
-      if(i % 3 === 0){
-        boxes.push(box(sx + stepD/2, sy + 0.8, stairZ - stepW/2 - 0.08, stepD * 0.5, 0.03, 0.03, C.corrimao));
-        boxes.push(box(sx + stepD/2, sy + 0.8, stairZ + stepW/2 + 0.08, stepD * 0.5, 0.03, 0.03, C.corrimao));
-      }
-    }
-    const topY = yBase + numSteps * stepH;
-    boxes.push(box(stairX + numSteps * stepD + 0.8, topY + 0.04, stairZ, 1.2, 0.08, stepW + 0.8, C.chao));
+
+  // staircase (only if this column has one)
+  if(stair.has){
+    buildStairs(boxes, ox+stair.ci*ROOM_SIZE, oz+stair.cj*ROOM_SIZE, yBase);
   }
-  
-  // Rodapé simplificado
-  const rb = C.borda;
-  boxes.push(box(ox + CHUNK_SIZE/2, yBase + 0.06, oz + 0.04, CHUNK_SIZE, 0.03, 0.03, rb));
-  boxes.push(box(ox + CHUNK_SIZE/2, yBase + 0.06, oz + CHUNK_SIZE - 0.04, CHUNK_SIZE, 0.03, 0.03, rb));
-  boxes.push(box(ox + 0.04, yBase + 0.06, oz + CHUNK_SIZE/2, 0.03, 0.03, CHUNK_SIZE, rb));
-  boxes.push(box(ox + CHUNK_SIZE - 0.04, yBase + 0.06, oz + CHUNK_SIZE/2, 0.03, 0.03, CHUNK_SIZE, rb));
-  
-  return boxes;
+
+  return {boxes, doorDescs};
 }
 
+/* ===== CHUNK MESH BUILD ===== */
 function buildChunkMesh(boxes){
   const n = boxes.length;
-  if(n === 0){
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(0), 3));
-    return new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x000000 }));
-  }
-  
   const positions = new Float32Array(n * VERTS_PER_BOX * 3);
   const normals = new Float32Array(n * VERTS_PER_BOX * 3);
   const colors = new Float32Array(n * VERTS_PER_BOX * 3);
   let vOff = 0;
-  
-  for(let bi = 0; bi < n; bi++){
+  for(let bi=0; bi<n; bi++){
     const b = boxes[bi];
-    for(let i = 0; i < VERTS_PER_BOX; i++){
-      const lx = BASE_POS[i*3], ly = BASE_POS[i*3+1], lz = BASE_POS[i*3+2];
-      const idx = (vOff + i) * 3;
-      positions[idx] = b.x + lx * b.w;
-      positions[idx+1] = b.y + ly * b.h;
-      positions[idx+2] = b.z + lz * b.d;
-      normals[idx] = BASE_NORM[i*3];
+    for(let i=0;i<VERTS_PER_BOX;i++){
+      const lx=BASE_POS[i*3], ly=BASE_POS[i*3+1], lz=BASE_POS[i*3+2];
+      const idx = (vOff+i)*3;
+      positions[idx]   = b.x + lx*b.w;
+      positions[idx+1] = b.y + ly*b.h;
+      positions[idx+2] = b.z + lz*b.d;
+      normals[idx]   = BASE_NORM[i*3];
       normals[idx+1] = BASE_NORM[i*3+1];
       normals[idx+2] = BASE_NORM[i*3+2];
-      colors[idx] = b.color.r;
+      colors[idx]   = b.color.r;
       colors[idx+1] = b.color.g;
       colors[idx+2] = b.color.b;
     }
     vOff += VERTS_PER_BOX;
   }
-  
   const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  geo.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
-  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  
+  geo.setAttribute('position', new THREE.BufferAttribute(positions,3));
+  geo.setAttribute('normal', new THREE.BufferAttribute(normals,3));
+  geo.setAttribute('color', new THREE.BufferAttribute(colors,3));
   const mat = new THREE.MeshStandardMaterial({
-    vertexColors: true,
-    roughness: 0.7,
-    metalness: 0.05,
-    transparent: true,
-    opacity: 0
+    vertexColors:true, roughness:0.75, metalness:0.05, transparent:true, opacity:0
   });
-  
   const mesh = new THREE.Mesh(geo, mat);
-  mesh.frustumCulled = true;
-  mesh.userData.boxes = boxes;
   return mesh;
 }
 
-/* ---------------- STREAMING OTIMIZADO ---------------- */
+/* ===== DOORS ===== */
+const DOOR_MAT = new THREE.MeshStandardMaterial({ color:C.porta, roughness:0.65, metalness:0.02 });
+let doorList = [];
+
+function createDoorObject(desc, key){
+  const pivot = new THREE.Group();
+  pivot.position.set(desc.hingeX, desc.y, desc.hingeZ);
+  pivot.rotation.y = desc.closedRot;
+  const geo = new THREE.BoxGeometry(desc.w, desc.h, desc.thickness);
+  const mesh = new THREE.Mesh(geo, DOOR_MAT);
+  mesh.position.set(desc.w/2, desc.h/2, 0);
+  pivot.add(mesh);
+  scene.add(pivot);
+  return {
+    pivot, geo,
+    closedRot: desc.closedRot, openRot: desc.openRot,
+    worldX: desc.centerX, worldZ: desc.centerZ,
+    open:false, timer:0, chunkKey:key
+  };
+}
+
+function updateDoors(dt, px, pz){
+  for(let k=0;k<doorList.length;k++){
+    const d = doorList[k];
+    const dx = d.worldX - px, dz = d.worldZ - pz;
+    const dist = Math.hypot(dx,dz);
+    if(dist < DOOR_TRIGGER_DIST){
+      d.open = true;
+      d.timer = DOOR_OPEN_TIME;
+    } else if(d.open){
+      d.timer -= dt;
+      if(d.timer <= 0) d.open = false;
+    }
+    const target = d.open ? d.openRot : d.closedRot;
+    d.pivot.rotation.y += (target - d.pivot.rotation.y) * Math.min(1, dt*6);
+  }
+}
+
+/* ---------------- STREAMING ---------------- */
 const chunkGroup = new THREE.Group();
 scene.add(chunkGroup);
 const chunkMap = new Map();
 const buildingSet = new Set();
-let collidablesList = [];
-
-function rebuildCollidables(){ collidablesList = chunkGroup.children; }
-function chunkKey(cx, cz, floor){ return cx+','+cz+','+floor; }
-function getFloorFromY(y){ return Math.round(y / 4); }
 
 function requestChunk(cx, cz, floor){
   const key = chunkKey(cx, cz, floor);
   if(chunkMap.has(key) || buildingSet.has(key)) return;
   buildingSet.add(key);
-  const boxes = generateArchitecture(cx, cz, floor);
+  const {boxes, doorDescs} = generateArchitecture(cx, cz, floor);
   const mesh = buildChunkMesh(boxes);
   chunkGroup.add(mesh);
-  chunkMap.set(key, {cx, cz, floor, mesh, state:'in', alpha:0});
+  const doors = doorDescs.map(d => createDoorObject(d, key));
+  if(doors.length) doorList.push(...doors);
+  chunkMap.set(key, {cx, cz, floor, mesh, doors, state:'in', alpha:0});
   buildingSet.delete(key);
-  rebuildCollidables();
 }
 
 function unloadChunk(key){
   const c = chunkMap.get(key);
   if(!c) return;
   chunkGroup.remove(c.mesh);
-  if(c.mesh.geometry) c.mesh.geometry.dispose();
-  if(c.mesh.material) c.mesh.material.dispose();
+  c.mesh.geometry.dispose();
+  c.mesh.material.dispose();
+  if(c.doors.length){
+    for(const d of c.doors){ scene.remove(d.pivot); d.geo.dispose(); }
+    doorList = doorList.filter(d => d.chunkKey !== key);
+  }
   chunkMap.delete(key);
-  rebuildCollidables();
 }
 
-let loadingComplete = false;
-
-function nearestMissingChunks(px, py, pz, radius){
+function nearestMissingChunks(px, py, pz, hRadius, floorRadius){
   const currentFloor = getFloorFromY(py);
-  const floorRange = Math.ceil(radius / 4) + 1;
-  const rC = Math.ceil(radius / CHUNK_SIZE);
+  const rC = Math.ceil(hRadius / CHUNK_SIZE);
   const pcx = Math.floor(px / CHUNK_SIZE), pcz = Math.floor(pz / CHUNK_SIZE);
   const list = [];
-  
-  for(let floor = currentFloor - floorRange; floor <= currentFloor + floorRange; floor++){
-    const floorY = floor * 4;
-    const dy = floorY - py;
-    if(Math.abs(dy) > radius + 4) continue;
-    for(let cx = pcx - rC; cx <= pcx + rC; cx++){
-      for(let cz = pcz - rC; cz <= pcz + rC; cz++){
-        const dx = cx * CHUNK_SIZE + CHUNK_SIZE/2 - px;
-        const dz = cz * CHUNK_SIZE + CHUNK_SIZE/2 - pz;
-        const dist = Math.hypot(dx, dy, dz);
-        if(dist > radius) continue;
+  for(let floor = currentFloor-floorRadius; floor <= currentFloor+floorRadius; floor++){
+    for(let cx = pcx-rC; cx <= pcx+rC; cx++){
+      for(let cz = pcz-rC; cz <= pcz+rC; cz++){
+        const dx = cx*CHUNK_SIZE + CHUNK_SIZE/2 - px;
+        const dz = cz*CHUNK_SIZE + CHUNK_SIZE/2 - pz;
+        const hd = Math.hypot(dx, dz);
+        if(hd > hRadius) continue;
         const key = chunkKey(cx, cz, floor);
         if(chunkMap.has(key) || buildingSet.has(key)) continue;
-        list.push({cx, cz, floor, dist});
+        list.push({cx, cz, floor, dist: hd + Math.abs(floor-currentFloor)*10});
       }
     }
   }
-  list.sort((a,b) => a.dist - b.dist);
+  list.sort((a,b)=>a.dist-b.dist);
   return list;
 }
 
-function updateStreaming(px, py, pz, budget){
-  const candidates = nearestMissingChunks(px, py, pz, ACTIVE_RADIUS);
-  const toLoad = Math.min(budget, candidates.length);
-  for(let i = 0; i < toLoad; i++){
-    requestChunk(candidates[i].cx, candidates[i].cz, candidates[i].floor);
-  }
-  
+function updateStreaming(px, py, pz){
+  const candidates = nearestMissingChunks(px, py, pz, H_RADIUS, FLOOR_RADIUS);
+  const toLoad = Math.min(CHUNK_BUILD_BUDGET, candidates.length);
+  for(let i=0;i<toLoad;i++) requestChunk(candidates[i].cx, candidates[i].cz, candidates[i].floor);
+
+  const currentFloor = getFloorFromY(py);
   for(const [key, c] of chunkMap){
-    const dx = c.cx * CHUNK_SIZE + CHUNK_SIZE/2 - px;
-    const dz = c.cz * CHUNK_SIZE + CHUNK_SIZE/2 - pz;
-    const dy = c.floor * 4 - py;
-    const dist = Math.hypot(dx, dy, dz);
-    if(dist > UNLOAD_RADIUS && c.state !== 'out'){ c.state = 'out'; }
-    else if(dist <= ACTIVE_RADIUS && c.state === 'out'){ c.state = 'in'; }
+    const dx = c.cx*CHUNK_SIZE + CHUNK_SIZE/2 - px;
+    const dz = c.cz*CHUNK_SIZE + CHUNK_SIZE/2 - pz;
+    const hd = Math.hypot(dx, dz);
+    const fDiff = Math.abs(c.floor - currentFloor);
+    const shouldUnload = hd > H_UNLOAD || fDiff > FLOOR_UNLOAD;
+    if(shouldUnload && c.state !== 'out') c.state = 'out';
+    else if(!shouldUnload && c.state === 'out') c.state = 'in';
   }
 }
 
@@ -736,6 +702,21 @@ function animateChunks(dt){
   }
 }
 
+/* Only chunks near the player are used for collision — bounded cost
+   regardless of how many chunks are loaded overall. */
+function nearbyCollidables(px, py, pz){
+  const pfloor = getFloorFromY(py);
+  const list = [];
+  for(const c of chunkMap.values()){
+    if(Math.abs(c.floor - pfloor) > 1) continue;
+    const dx = c.cx*CHUNK_SIZE + CHUNK_SIZE/2 - px;
+    const dz = c.cz*CHUNK_SIZE + CHUNK_SIZE/2 - pz;
+    if(Math.hypot(dx,dz) > CHUNK_SIZE*1.8) continue;
+    list.push(c.mesh);
+  }
+  return list;
+}
+
 /* ===== PLAYER ===== */
 const player = { position: new THREE.Vector3(0, EYE_HEIGHT, 0) };
 let yaw = 0, pitch = 0;
@@ -749,77 +730,73 @@ function updateFirstPersonCamera(){
 }
 
 function updatePhysics(dt, inForward, inStrafe){
+  const collidables = nearbyCollidables(player.position.x, player.position.y, player.position.z);
   const speed = WALK_SPEED * (running ? RUN_MULT : 1);
   _fwd.set(-Math.sin(yaw), 0, -Math.cos(yaw));
   _right.set(Math.cos(yaw), 0, -Math.sin(yaw));
-  
-  let mx = _fwd.x * inForward + _right.x * inStrafe;
-  let mz = _fwd.z * inForward + _right.z * inStrafe;
+
+  let mx = _fwd.x*inForward + _right.x*inStrafe;
+  let mz = _fwd.z*inForward + _right.z*inStrafe;
   const len = Math.hypot(mx, mz);
-  if(len > 1){ mx /= len; mz /= len; }
-  
-  let dx = mx * speed * dt;
-  let dz = mz * speed * dt;
-  const rayY = (player.position.y - EYE_HEIGHT) + 0.7;
-  
+  if(len > 1){ mx/=len; mz/=len; }
+
+  let dx = mx*speed*dt, dz = mz*speed*dt;
+  const rayY = (player.position.y - EYE_HEIGHT) + 0.9;
+
   if(Math.abs(dx) > 1e-6){
-    raycaster.set(new THREE.Vector3(player.position.x, rayY, player.position.z), new THREE.Vector3(Math.sign(dx), 0, 0));
+    raycaster.set(new THREE.Vector3(player.position.x, rayY, player.position.z), new THREE.Vector3(Math.sign(dx),0,0));
     raycaster.far = PLAYER_RADIUS + Math.abs(dx) + 0.04;
-    const hits = raycaster.intersectObjects(collidablesList, false);
-    if(hits.length > 0){
+    const hits = raycaster.intersectObjects(collidables, false);
+    if(hits.length>0){
       const allowed = Math.max(0, hits[0].distance - PLAYER_RADIUS - 0.02);
-      dx = Math.sign(dx) * Math.min(Math.abs(dx), allowed);
+      dx = Math.sign(dx)*Math.min(Math.abs(dx), allowed);
     }
   }
   player.position.x += dx;
-  
+
   if(Math.abs(dz) > 1e-6){
-    raycaster.set(new THREE.Vector3(player.position.x, rayY, player.position.z), new THREE.Vector3(0, 0, Math.sign(dz)));
+    raycaster.set(new THREE.Vector3(player.position.x, rayY, player.position.z), new THREE.Vector3(0,0,Math.sign(dz)));
     raycaster.far = PLAYER_RADIUS + Math.abs(dz) + 0.04;
-    const hits = raycaster.intersectObjects(collidablesList, false);
-    if(hits.length > 0){
+    const hits = raycaster.intersectObjects(collidables, false);
+    if(hits.length>0){
       const allowed = Math.max(0, hits[0].distance - PLAYER_RADIUS - 0.02);
-      dz = Math.sign(dz) * Math.min(Math.abs(dz), allowed);
+      dz = Math.sign(dz)*Math.min(Math.abs(dz), allowed);
     }
   }
   player.position.z += dz;
-  
-  velocityY += GRAVITY * dt;
+
+  velocityY += GRAVITY*dt;
   if(velocityY < -MAX_FALL_SPEED) velocityY = -MAX_FALL_SPEED;
   if(wantsJump && grounded){
     velocityY = running ? JUMP_SPEED_RUN : JUMP_SPEED_NORMAL;
     grounded = false;
   }
   wantsJump = false;
-  player.position.y += velocityY * dt;
-  
-  const downOrigin = new THREE.Vector3(player.position.x, (player.position.y - EYE_HEIGHT) + 0.9, player.position.z);
-  raycaster.set(downOrigin, new THREE.Vector3(0, -1, 0));
-  raycaster.far = Math.max(5, Math.abs(velocityY) * dt + 2);
-  const groundHits = raycaster.intersectObjects(collidablesList, false);
-  if(groundHits.length > 0){
+  player.position.y += velocityY*dt;
+
+  const downOrigin = new THREE.Vector3(player.position.x, (player.position.y-EYE_HEIGHT)+0.95, player.position.z);
+  raycaster.set(downOrigin, new THREE.Vector3(0,-1,0));
+  raycaster.far = Math.max(5, Math.abs(velocityY)*dt + 2.5);
+  const groundHits = raycaster.intersectObjects(collidables, false);
+  if(groundHits.length>0){
     const groundY = groundHits[0].point.y;
     const currentFeet = player.position.y - EYE_HEIGHT;
-    if(currentFeet <= groundY + 0.12 && velocityY <= 0){
+    if(currentFeet <= groundY + 0.15 && velocityY <= 0){
       player.position.y = groundY + EYE_HEIGHT;
       velocityY = 0;
       grounded = true;
     } else { grounded = false; }
   } else {
     grounded = false;
-    if(player.position.y - EYE_HEIGHT < -20){
-      player.position.y = getFloorFromY(player.position.y) * 4 + EYE_HEIGHT + 2;
+    if(player.position.y - EYE_HEIGHT < -40){
+      player.position.y = getFloorFromY(player.position.y)*FLOOR_HEIGHT + EYE_HEIGHT + 2;
       velocityY = 0;
     }
   }
-  
-  playerGroup.position.copy(player.position);
-  playerGroup.position.y -= EYE_HEIGHT;
-  playerGroup.rotation.y = yaw;
+
   updateFirstPersonCamera();
-  
   document.getElementById('hudFloor').textContent = getFloorFromY(player.position.y);
-  document.getElementById('hudRoom').textContent = Math.floor(player.position.x/8)+','+Math.floor(player.position.z/8);
+  document.getElementById('hudRoom').textContent = Math.floor(player.position.x/ROOM_SIZE)+','+Math.floor(player.position.z/ROOM_SIZE);
 }
 
 /* ===== INPUT ===== */
@@ -836,7 +813,6 @@ window.addEventListener('keyup', (e)=>{
   keys[e.code] = false;
   if(e.code === 'KeyQ'){ running = false; }
 });
-
 canvas.addEventListener('click', ()=>{
   if(!pointerLocked && mode === 'pc'){ canvas.requestPointerLock(); }
 });
@@ -847,15 +823,14 @@ document.addEventListener('mousemove', (e)=>{
   if(mode !== 'pc' || !pointerLocked) return;
   yaw -= e.movementX * 0.0022;
   pitch -= e.movementY * 0.0022;
-  pitch = Math.max(-Math.PI/2 + 0.02, Math.min(Math.PI/2 - 0.02, pitch));
+  pitch = Math.max(-Math.PI/2+0.02, Math.min(Math.PI/2-0.02, pitch));
 });
-
 function pcInputVector(){
   let f=0, s=0;
-  if(keys['KeyW']) f += 1;
-  if(keys['KeyS']) f -= 1;
-  if(keys['KeyD']) s += 1;
-  if(keys['KeyA']) s -= 1;
+  if(keys['KeyW']) f+=1;
+  if(keys['KeyS']) f-=1;
+  if(keys['KeyD']) s+=1;
+  if(keys['KeyA']) s-=1;
   return {f,s};
 }
 
@@ -871,43 +846,36 @@ let lookId = null, lookLast = {x:0,y:0};
 
 function joyCenter(){
   const r = joystickZone.getBoundingClientRect();
-  return {x: r.left + r.width/2, y: r.top + r.height/2, radius: r.width/2};
+  return {x:r.left+r.width/2, y:r.top+r.height/2, radius:r.width/2};
 }
-
 joystickZone.addEventListener('touchstart', (e)=>{
   e.preventDefault();
   const t = e.changedTouches[0];
   joyId = t.identifier;
   const c = joyCenter();
-  let dx = t.clientX - c.x, dy = t.clientY - c.y;
-  const dist = Math.hypot(dx, dy);
-  const max = c.radius;
-  if(dist > max){ dx = dx/dist * max; dy = dy/dist * max; }
-  joyVec.x = dx/max; joyVec.y = dy/max;
-  joystickKnob.style.left = (30 + dx) + 'px';
-  joystickKnob.style.top = (30 + dy) + 'px';
+  let dx=t.clientX-c.x, dy=t.clientY-c.y;
+  const dist=Math.hypot(dx,dy), max=c.radius;
+  if(dist>max){ dx=dx/dist*max; dy=dy/dist*max; }
+  joyVec.x=dx/max; joyVec.y=dy/max;
+  joystickKnob.style.left=(30+dx)+'px'; joystickKnob.style.top=(30+dy)+'px';
 }, {passive:false});
-
 joystickZone.addEventListener('touchmove', (e)=>{
   e.preventDefault();
   for(const t of e.changedTouches){
-    if(t.identifier !== joyId) continue;
+    if(t.identifier!==joyId) continue;
     const c = joyCenter();
-    let dx = t.clientX - c.x, dy = t.clientY - c.y;
-    const dist = Math.hypot(dx, dy);
-    const max = c.radius;
-    if(dist > max){ dx = dx/dist * max; dy = dy/dist * max; }
-    joyVec.x = dx/max; joyVec.y = dy/max;
-    joystickKnob.style.left = (30 + dx) + 'px';
-    joystickKnob.style.top = (30 + dy) + 'px';
+    let dx=t.clientX-c.x, dy=t.clientY-c.y;
+    const dist=Math.hypot(dx,dy), max=c.radius;
+    if(dist>max){ dx=dx/dist*max; dy=dy/dist*max; }
+    joyVec.x=dx/max; joyVec.y=dy/max;
+    joystickKnob.style.left=(30+dx)+'px'; joystickKnob.style.top=(30+dy)+'px';
   }
 }, {passive:false});
-
 function endJoy(e){
   for(const t of e.changedTouches){
-    if(t.identifier === joyId){
-      joyId = null; joyVec = {x:0,y:0};
-      joystickKnob.style.left = '30px'; joystickKnob.style.top = '30px';
+    if(t.identifier===joyId){
+      joyId=null; joyVec={x:0,y:0};
+      joystickKnob.style.left='30px'; joystickKnob.style.top='30px';
     }
   }
 }
@@ -916,69 +884,57 @@ joystickZone.addEventListener('touchcancel', endJoy);
 
 camLookZone.addEventListener('touchstart', (e)=>{
   for(const t of e.changedTouches){
-    if(t.identifier === joyId) continue;
-    if(lookId === null){ lookId = t.identifier; lookLast = {x:t.clientX, y:t.clientY}; }
+    if(t.identifier===joyId) continue;
+    if(lookId===null){ lookId=t.identifier; lookLast={x:t.clientX,y:t.clientY}; }
   }
 }, {passive:true});
-
 camLookZone.addEventListener('touchmove', (e)=>{
   for(const t of e.changedTouches){
-    if(t.identifier !== lookId) continue;
-    const dx = t.clientX - lookLast.x, dy = t.clientY - lookLast.y;
-    lookLast = {x:t.clientX, y:t.clientY};
-    yaw -= dx * 0.004;
-    pitch -= dy * 0.004;
-    pitch = Math.max(-Math.PI/2 + 0.02, Math.min(Math.PI/2 - 0.02, pitch));
+    if(t.identifier!==lookId) continue;
+    const dx=t.clientX-lookLast.x, dy=t.clientY-lookLast.y;
+    lookLast={x:t.clientX,y:t.clientY};
+    yaw -= dx*0.004; pitch -= dy*0.004;
+    pitch = Math.max(-Math.PI/2+0.02, Math.min(Math.PI/2-0.02, pitch));
   }
 }, {passive:true});
-
-function endLook(e){
-  for(const t of e.changedTouches){ if(t.identifier === lookId) lookId = null; }
-}
+function endLook(e){ for(const t of e.changedTouches){ if(t.identifier===lookId) lookId=null; } }
 camLookZone.addEventListener('touchend', endLook);
 camLookZone.addEventListener('touchcancel', endLook);
 
-btnJump.addEventListener('touchstart', (e)=>{ e.preventDefault(); wantsJump = true; }, {passive:false});
+btnJump.addEventListener('touchstart', (e)=>{ e.preventDefault(); wantsJump=true; }, {passive:false});
 btnRun.addEventListener('touchstart', (e)=>{
-  e.preventDefault();
-  running = !running;
-  btnRun.classList.toggle('active', running);
+  e.preventDefault(); running=!running; btnRun.classList.toggle('active', running);
 }, {passive:false});
-
-function mobileInputVector(){
-  return { f: -joyVec.y, s: joyVec.x };
-}
+function mobileInputVector(){ return {f:-joyVec.y, s:joyVec.x}; }
 
 /* ===== START ===== */
+let loadingComplete = false;
+let started = false;
+const clock = new THREE.Clock();
+
 function beginGame(selectedModeArg){
   mode = selectedModeArg;
-  document.getElementById('loadingScreen').style.display = 'flex';
-  document.getElementById('loadingLabel').textContent = 'CARREGANDO 0%';
-  document.getElementById('loadingBarInner').style.width = '0%';
-  
-  // Spawn em local aberto (centro do chunk 0,0)
+  document.getElementById('loadingScreen').style.display='flex';
+  document.getElementById('loadingLabel').textContent='CARREGANDO 0%';
+  document.getElementById('loadingBarInner').style.width='0%';
+
   player.position.set(0, EYE_HEIGHT, 0);
-  velocityY = 0; grounded = true;
-  yaw = 0; pitch = 0;
+  velocityY=0; grounded=true; yaw=0; pitch=0;
   camera.position.copy(player.position);
   loadingComplete = false;
   started = false;
-  
-  createPlayer();
-  playerGroup.position.copy(player.position);
-  playerGroup.position.y -= EYE_HEIGHT;
-  playerGroup.rotation.y = yaw;
-  playerGroup.visible = true;
-  
+
   chunkMap.clear();
-  while(chunkGroup.children.length > 0){
+  buildingSet.clear();
+  while(chunkGroup.children.length>0){
     const child = chunkGroup.children[0];
     chunkGroup.remove(child);
     if(child.geometry) child.geometry.dispose();
     if(child.material) child.material.dispose();
   }
-  rebuildCollidables();
-  
+  for(const d of doorList){ scene.remove(d.pivot); d.geo.dispose(); }
+  doorList = [];
+
   animate();
 }
 
@@ -991,43 +947,40 @@ const crosshair = document.getElementById('crosshair');
 const pcHint = document.getElementById('pcHint');
 const mobileControls = document.getElementById('mobileControls');
 
-const NEEDED_INITIAL = (() => {
-  const rC = Math.ceil(INITIAL_RADIUS / CHUNK_SIZE);
-  const fR = Math.ceil(INITIAL_RADIUS / 4) + 1;
+function countNeededInitial(){
+  const rC = Math.ceil(INITIAL_H_RADIUS/CHUNK_SIZE);
   let n = 0;
-  for(let f = -fR; f <= fR; f++){
-    for(let cx = -rC; cx <= rC; cx++){
-      for(let cz = -rC; cz <= rC; cz++){
-        const dist = Math.hypot(cx*CHUNK_SIZE + CHUNK_SIZE/2, cz*CHUNK_SIZE + CHUNK_SIZE/2, f*4);
-        if(dist <= INITIAL_RADIUS) n++;
+  for(let f=-INITIAL_FLOOR_RADIUS; f<=INITIAL_FLOOR_RADIUS; f++){
+    for(let cx=-rC; cx<=rC; cx++){
+      for(let cz=-rC; cz<=rC; cz++){
+        const dist = Math.hypot(cx*CHUNK_SIZE+CHUNK_SIZE/2, cz*CHUNK_SIZE+CHUNK_SIZE/2);
+        if(dist <= INITIAL_H_RADIUS) n++;
       }
     }
   }
   return n;
-})();
+}
+const NEEDED_INITIAL = countNeededInitial();
 
 function initialLoadStep(){
-  const list = nearestMissingChunks(0, 0, 0, INITIAL_RADIUS);
-  const batch = Math.min(20, list.length);
-  for(let i = 0; i < batch; i++){
-    requestChunk(list[i].cx, list[i].cz, list[i].floor);
-  }
-  
-  const loaded = [...chunkMap.values()].filter(c => {
-    const dist = Math.hypot(c.cx*CHUNK_SIZE + CHUNK_SIZE/2, c.cz*CHUNK_SIZE + CHUNK_SIZE/2, c.floor*4);
-    return dist <= INITIAL_RADIUS;
-  }).length;
-  
-  const pct = Math.min(100, Math.round((loaded / NEEDED_INITIAL) * 100));
-  loadingBarInner.style.width = pct + '%';
-  loadingLabel.textContent = 'CARREGANDO ' + pct + '%';
-  
+  const list = nearestMissingChunks(0, 0, 0, INITIAL_H_RADIUS, INITIAL_FLOOR_RADIUS);
+  const batch = Math.min(INITIAL_BUILD_BATCH, list.length);
+  for(let i=0;i<batch;i++) requestChunk(list[i].cx, list[i].cz, list[i].floor);
+
+  let loaded = 0;
   for(const c of chunkMap.values()){
-    c.alpha = 1;
-    c.mesh.material.opacity = 1;
-    c.state = 'active';
+    if(Math.abs(c.floor) > INITIAL_FLOOR_RADIUS) continue;
+    const dist = Math.hypot(c.cx*CHUNK_SIZE+CHUNK_SIZE/2, c.cz*CHUNK_SIZE+CHUNK_SIZE/2);
+    if(dist <= INITIAL_H_RADIUS) loaded++;
   }
-  
+  const pct = Math.min(100, Math.round((loaded/NEEDED_INITIAL)*100));
+  loadingBarInner.style.width = pct+'%';
+  loadingLabel.textContent = 'CARREGANDO '+pct+'%';
+
+  for(const c of chunkMap.values()){
+    c.alpha = 1; c.mesh.material.opacity = 1; c.state = 'active';
+  }
+
   if(loaded >= NEEDED_INITIAL){
     loadingComplete = true;
     loadingScreen.style.display = 'none';
@@ -1038,30 +991,38 @@ function initialLoadStep(){
   }
 }
 
-let started = false;
-const clock = new THREE.Clock();
+/* ===== MAIN LOOP ===== */
+let fpsAccum = 0, fpsFrames = 0, fpsLabel = 0;
 
 function animate(){
   if(!started){ started = true; clock.start(); }
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.05);
-  
-  if(!loadingComplete){ initialLoadStep(); renderer.render(scene, camera); return; }
-  
+
+  if(!loadingComplete){
+    initialLoadStep();
+    renderer.render(scene, camera);
+    return;
+  }
+
   const inVec = mode === 'pc' ? pcInputVector() : mobileInputVector();
   updatePhysics(dt, inVec.f, inVec.s);
-  
-  _fwd.set(-Math.sin(yaw), 0, -Math.cos(yaw));
-  updateStreaming(player.position.x, player.position.y, player.position.z, 3);
+  updateStreaming(player.position.x, player.position.y, player.position.z);
   animateChunks(dt);
-  
+  updateDoors(dt, player.position.x, player.position.z);
+
   const pos = player.position;
-  document.getElementById('hudPos').textContent = pos.x.toFixed(1) + ', ' + (pos.y - EYE_HEIGHT).toFixed(1) + ', ' + pos.z.toFixed(1);
-  
+  document.getElementById('hudPos').textContent = pos.x.toFixed(1)+', '+(pos.y-EYE_HEIGHT).toFixed(1)+', '+pos.z.toFixed(1);
+
+  fpsAccum += dt; fpsFrames++;
+  if(fpsAccum >= 0.5){
+    fpsLabel = Math.round(fpsFrames/fpsAccum);
+    document.getElementById('hudFps').textContent = fpsLabel;
+    fpsAccum = 0; fpsFrames = 0;
+  }
+
   renderer.render(scene, camera);
 }
-
-animate();
 
 })();
 </script>
