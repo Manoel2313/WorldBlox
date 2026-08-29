@@ -13,7 +13,7 @@
     --gray-500:#6b6f76;
     --gray-300:#a8acb3;
     --gray-100:#e4e6e9;
-    --accent:#ff6b9d;
+    --accent:#c0392b;
     --font-ui: 'Consolas','Courier New',monospace;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none;}
@@ -36,7 +36,7 @@
     color:var(--gray-100);
     text-transform:uppercase;
     text-align:center;
-    text-shadow:0 0 24px rgba(255,107,157,0.15), 0 2px 0 #000;
+    text-shadow:0 0 24px rgba(192,57,43,0.2), 0 2px 0 #000;
     border-top:2px solid var(--gray-700);
     border-bottom:2px solid var(--gray-700);
     padding:18px 26px;
@@ -61,9 +61,9 @@
     text-transform:uppercase;
     transition:background .15s, border-color .15s, transform .1s;
   }
-  .platBtn:hover{background:var(--gray-700);border-color:var(--accent);}
+  .platBtn:hover{background:var(--gray-700);border-color:#c0392b;}
   .platBtn:active{transform:scale(0.97);}
-  .platBtn.active{background:var(--accent);border-color:var(--accent);color:#111;}
+  .platBtn.active{background:#c0392b;border-color:#c0392b;color:#fff;}
 
   #loadingScreen{
     position:absolute;inset:0;z-index:40;
@@ -72,7 +72,7 @@
   }
   #loadingLabel{color:var(--gray-300);letter-spacing:5px;font-size:12px;text-transform:uppercase;}
   #loadingBarOuter{width:min(420px,70vw);height:6px;background:var(--gray-800);border:1px solid var(--gray-700);}
-  #loadingBarInner{width:0%;height:100%;background:var(--accent);transition:width .12s linear;}
+  #loadingBarInner{width:0%;height:100%;background:#c0392b;transition:width .12s linear;}
 
   #hud{
     position:absolute;top:14px;left:16px;z-index:20;
@@ -81,15 +81,16 @@
     display:none;line-height:1.6;pointer-events:none;
   }
   #hud .lbl{color:var(--gray-500);}
-  #hudPos{color:var(--accent);}
-  #hudFloor{color:var(--accent);font-weight:bold;}
+  #hudPos{color:#c0392b;}
+  #hudFloor{color:#c0392b;font-weight:bold;}
   #hudRoom{color:var(--gray-300);}
 
   #crosshair{
     position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
     width:6px;height:6px;border-radius:50%;background:rgba(230,230,230,0.75);
-    z-index:20;display:none;pointer-events:none;
+    z-index:20;display:block;pointer-events:none;
   }
+
   #pcHint{
     position:absolute;bottom:14px;left:16px;z-index:20;color:var(--gray-500);
     font-family:var(--font-ui);font-size:11px;letter-spacing:1px;display:none;pointer-events:none;
@@ -136,6 +137,7 @@
     text-shadow:0 1px 4px rgba(0,0,0,0.5);
   }
   .mobileBtn:active{transform:scale(0.92);}
+  .mobileBtn.active{background:#c0392b;border-color:#c0392b;color:#fff;text-shadow:none;}
 
   #btnJump{
     position:absolute;right:20px;bottom:120px;width:72px;height:72px;
@@ -148,7 +150,7 @@
     position:absolute;right:20px;bottom:20px;width:60px;height:60px;
     font-size:9px;
   }
-  #btnRun.active{background:var(--accent);border-color:var(--accent);color:#111;}
+  #btnRun.active{background:#c0392b;border-color:#c0392b;color:#fff;}
 
   #camLookZone{
     position:absolute;inset:0;
@@ -189,7 +191,7 @@
   <div><span class="lbl">🚪 Sala:</span> <span id="hudRoom">---</span></div>
 </div>
 <div id="crosshair"></div>
-<div id="pcHint">WASD mover · ESPAÇO pular · Q correr · R câmera</div>
+<div id="pcHint">WASD mover · ESPAÇO pular · Q correr</div>
 <div id="toastMsg"></div>
 
 <div id="mobileControls">
@@ -223,12 +225,12 @@ document.getElementById('btnMobile').addEventListener('click', ()=>{
 });
 
 /* ---------------- CONFIG ---------------- */
-let CHUNK_SIZE = 50;
-let ACTIVE_RADIUS = 700;
-let UNLOAD_MARGIN = 50;
+let CHUNK_SIZE = 40;
+let ACTIVE_RADIUS = 500;
+let UNLOAD_MARGIN = 40;
 let UNLOAD_RADIUS = ACTIVE_RADIUS + UNLOAD_MARGIN;
-let INITIAL_RADIUS = 160;
-let FADE_TIME = 0.8;
+let INITIAL_RADIUS = 120;
+let FADE_TIME = 0.6;
 
 const WALK_SPEED   = 3.5;
 const RUN_MULT     = 4.5;
@@ -240,62 +242,40 @@ const JUMP_SPEED_NORMAL = Math.sqrt(2 * Math.abs(GRAVITY) * 1.8);
 const JUMP_SPEED_RUN    = Math.sqrt(2 * Math.abs(GRAVITY) * 5);
 const MAX_FALL_SPEED = 50;
 
-/* ===== CÂMERA ===== */
-let cameraMode = 'third';
-const THIRD_PERSON_DISTANCE = 4.5;
-const THIRD_PERSON_PITCH_MIN = -0.7;
-const THIRD_PERSON_PITCH_MAX = 0.8;
-
-function toggleCamera(){
-  cameraMode = cameraMode === 'third' ? 'first' : 'third';
-  const btn = document.getElementById('btnCamera');
-  if(btn) btn.classList.toggle('active', cameraMode === 'first');
-}
-
 /* ---------------- THREE SETUP ---------------- */
 const canvas = document.getElementById('renderCanvas');
 const renderer = new THREE.WebGLRenderer({
   canvas,
-  antialias: true,
+  antialias: false,
   powerPreference: "high-performance"
 });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.0;
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMappingExposure = 0.9;
+renderer.shadowMap.enabled = false;
 
 const isMobile = window.innerWidth < 768;
-const FOV = isMobile ? 68 : 75;
+const FOV = isMobile ? 70 : 75;
 const camera = new THREE.PerspectiveCamera(FOV, window.innerWidth/window.innerHeight, 0.1, 12000);
 camera.rotation.order = 'YXZ';
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x1a1a2e);
-scene.fog = new THREE.Fog(0x1a1a2e, 80, ACTIVE_RADIUS + 50);
+scene.fog = new THREE.Fog(0x1a1a2e, 60, ACTIVE_RADIUS + 30);
 
-const ambientLight = new THREE.AmbientLight(0x8899aa, 0.5);
+const ambientLight = new THREE.AmbientLight(0x8899aa, 0.6);
 scene.add(ambientLight);
 
-const hemisphereLight = new THREE.HemisphereLight(0xdfe6ea, 0x3a3d42, 0.6);
+const hemisphereLight = new THREE.HemisphereLight(0xdfe6ea, 0x3a3d42, 0.5);
 scene.add(hemisphereLight);
 
-const sunLight = new THREE.DirectionalLight(0xffeedd, 1.0);
+const sunLight = new THREE.DirectionalLight(0xffeedd, 0.8);
 sunLight.position.set(120, 180, 80);
-sunLight.castShadow = true;
-sunLight.shadow.mapSize.width = 2048;
-sunLight.shadow.mapSize.height = 2048;
-sunLight.shadow.camera.near = 0.5;
-sunLight.shadow.camera.far = 400;
-sunLight.shadow.camera.left = -120;
-sunLight.shadow.camera.right = 120;
-sunLight.shadow.camera.top = 120;
-sunLight.shadow.camera.bottom = -120;
 scene.add(sunLight);
 
-const fillLight = new THREE.DirectionalLight(0x6688bb, 0.25);
+const fillLight = new THREE.DirectionalLight(0x6688bb, 0.2);
 fillLight.position.set(-100, 80, -100);
 scene.add(fillLight);
 
@@ -303,7 +283,7 @@ function onResize(){
   const w = window.innerWidth;
   const h = window.innerHeight;
   camera.aspect = w/h;
-  camera.fov = (w < 768) ? 68 : 75;
+  camera.fov = (w < 768) ? 70 : 75;
   camera.updateProjectionMatrix();
   renderer.setSize(w, h);
 }
@@ -320,54 +300,12 @@ function createPlayer(){
     playerGroup.remove(child);
     child.traverse(o=>{ if(o.geometry) o.geometry.dispose(); if(o.material) o.material.dispose(); });
   }
-
-  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x4a6fa5, roughness: 0.6, metalness: 0.1 });
-  const skinMat = new THREE.MeshStandardMaterial({ color: 0xf5d0b8, roughness: 0.7 });
-  const pantsMat = new THREE.MeshStandardMaterial({ color: 0x2d4059, roughness: 0.8 });
-  const shoesMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
-
-  // Corpo
-  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.35), bodyMat);
-  torso.position.y = 0.8;
-  torso.castShadow = true;
-  playerGroup.add(torso);
-
-  // Cabeça
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 10), skinMat);
-  head.position.y = 1.35;
-  head.castShadow = true;
-  playerGroup.add(head);
-
-  // Cabelo
-  const hairMat = new THREE.MeshStandardMaterial({ color: 0x5d3a1a, roughness: 0.9 });
-  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.24, 8, 8), hairMat);
-  hair.scale.set(1, 0.4, 1);
-  hair.position.set(0, 1.45, 0);
-  playerGroup.add(hair);
-
-  // Braços
-  const armMat = new THREE.MeshStandardMaterial({ color: 0xf5d0b8, roughness: 0.7 });
-  for(const side of [-1, 1]){
-    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.5, 6), armMat);
-    arm.position.set(side * 0.4, 0.95, 0);
-    arm.rotation.z = side * 0.15;
-    arm.castShadow = true;
-    playerGroup.add(arm);
-  }
-
-  // Pernas
-  for(const side of [-1, 1]){
-    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.09, 0.5, 6), pantsMat);
-    leg.position.set(side * 0.15, 0.35, 0);
-    leg.castShadow = true;
-    playerGroup.add(leg);
-    
-    const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.06, 0.2), shoesMat);
-    shoe.position.set(side * 0.15, 0.08, 0.04);
-    playerGroup.add(shoe);
-  }
-
-  playerGroup.position.y = 0;
+  // Apenas um placeholder invisível para primeira pessoa
+  const dummy = new THREE.Mesh(
+    new THREE.BoxGeometry(0.1, 0.1, 0.1),
+    new THREE.MeshBasicMaterial({ visible: false })
+  );
+  playerGroup.add(dummy);
   playerGroup.visible = true;
 }
 
@@ -381,6 +319,21 @@ function showToast(msg){
   toastTimer = setTimeout(()=>{ el.style.opacity='0'; }, 2000);
 }
 
+/* ===== CORES ===== */
+const COLORS = {
+  // Paleta definida: marrom, vermelho, branco
+  parede: 0xcc3333,      // Vermelho para paredes
+  pilar: 0xcc3333,       // Vermelho para pilares
+  teto: 0x8B7355,        // Marrom para teto
+  chao: 0x6B5340,        // Marrom escuro para chão
+  porta: 0x8B7355,       // Marrom para portas
+  escada: 0x8B7355,      // Marrom para escadas
+  borda: 0xeeeeee,       // Branco para bordas
+  corrimao: 0xeeeeee,    // Branco para corrimãos
+  moldura: 0xdddddd,     // Branco suave para molduras
+  vidro: 0x88ccdd,       // Vidro azul claro
+};
+
 /* ===== GEOMETRIA ===== */
 const UNIT_BOX = new THREE.BoxGeometry(1,1,1).toNonIndexed();
 const BASE_POS = UNIT_BOX.attributes.position.array;
@@ -391,32 +344,6 @@ function box(x,y,z,w,h,d,color){
   return {x,y,z,w,h,d,color: new THREE.Color(color)};
 }
 
-/* ===== CORES ===== */
-const COLORS = {
-  vermelho: 0xdd3355,
-  azul: 0x3377dd,
-  verde: 0x33cc77,
-  roxo: 0x9944cc,
-  amarelo: 0xddcc33,
-  ciano: 0x33dddd,
-  rosa: 0xff66aa,
-  cinza: 0x8899aa,
-  cinza_escuro: 0x445566,
-  branco: 0xeeeedd,
-  bege: 0xddccbb,
-};
-
-function randomColor(){
-  const keys = ['vermelho','azul','verde','roxo','amarelo','ciano','rosa'];
-  return COLORS[keys[Math.floor(Math.random() * keys.length)]];
-}
-
-function randomLightColor(){
-  const keys = ['amarelo','ciano','rosa','bege','branco'];
-  return COLORS[keys[Math.floor(Math.random() * keys.length)]];
-}
-
-/* ===== GERADOR DE ARQUITETURA ===== */
 function hashSeed(cx, cz, cy, salt){
   let h = 2166136261;
   h = Math.imul(h ^ (cx|0), 16777619);
@@ -436,243 +363,301 @@ function mulberry32(a){
   };
 }
 
+function addWall(boxes, x, y, z, w, h, d, hasDoor, doorW, doorH, hasWindow, windowW, windowH){
+  const wallColor = COLORS.parede;
+  const borderColor = COLORS.borda;
+  const glassColor = COLORS.vidro;
+  const doorColor = COLORS.porta;
+  
+  if(!hasDoor && !hasWindow){
+    // Parede sólida
+    boxes.push(box(x, y, z, w, h, d, wallColor));
+    // Bordas
+    const bw = 0.05;
+    // Borda superior
+    boxes.push(box(x, y + h/2 - bw/2, z, w, bw, d, borderColor));
+    // Borda inferior
+    boxes.push(box(x, y - h/2 + bw/2, z, w, bw, d, borderColor));
+    // Borda esquerda
+    boxes.push(box(x - w/2 + bw/2, y, z, bw, h, d, borderColor));
+    // Borda direita
+    boxes.push(box(x + w/2 - bw/2, y, z, bw, h, d, borderColor));
+    return;
+  }
+  
+  if(hasDoor){
+    // Porta no centro
+    const doorX = x;
+    const doorY = y - h/2 + doorH/2;
+    // Paredes ao redor da porta
+    const sideW = (w - doorW) / 2;
+    if(sideW > 0.1){
+      // Lado esquerdo
+      boxes.push(box(x - (w/2 - sideW/2), y, z, sideW, h, d, wallColor));
+      // Lado direito
+      boxes.push(box(x + (w/2 - sideW/2), y, z, sideW, h, d, wallColor));
+    }
+    // Parte acima da porta
+    boxes.push(box(x, y + doorH/2 + (h - doorH)/4, z, doorW, (h - doorH)/2, d, wallColor));
+    // Porta
+    boxes.push(box(doorX, doorY, z + 0.05, doorW, doorH, 0.05, doorColor));
+    // Moldura da porta
+    boxes.push(box(doorX, doorY + doorH/2 + 0.05, z + 0.08, doorW + 0.1, 0.05, 0.05, COLORS.moldura));
+    boxes.push(box(doorX, doorY - doorH/2 - 0.05, z + 0.08, doorW + 0.1, 0.05, 0.05, COLORS.moldura));
+    boxes.push(box(doorX - doorW/2 - 0.05, doorY, z + 0.08, 0.05, doorH, 0.05, COLORS.moldura));
+    boxes.push(box(doorX + doorW/2 + 0.05, doorY, z + 0.08, 0.05, doorH, 0.05, COLORS.moldura));
+    return;
+  }
+  
+  if(hasWindow){
+    // Janela
+    const winX = x;
+    const winY = y - h/2 + windowH/2 + 0.5;
+    // Paredes ao redor da janela
+    const sideW = (w - windowW) / 2;
+    const sideH = (h - windowH) / 2;
+    if(sideW > 0.1){
+      boxes.push(box(x - (w/2 - sideW/2), y, z, sideW, h, d, wallColor));
+      boxes.push(box(x + (w/2 - sideW/2), y, z, sideW, h, d, wallColor));
+    }
+    if(sideH > 0.1){
+      boxes.push(box(x, y + windowH/2 + sideH/2, z, windowW, sideH, d, wallColor));
+      boxes.push(box(x, y - windowH/2 - sideH/2, z, windowW, sideH, d, wallColor));
+    }
+    // Vidro
+    boxes.push(box(winX, winY, z + 0.05, windowW, windowH, 0.03, glassColor));
+    // Moldura da janela
+    boxes.push(box(winX, winY + windowH/2 + 0.03, z + 0.07, windowW + 0.1, 0.04, 0.04, COLORS.moldura));
+    boxes.push(box(winX, winY - windowH/2 - 0.03, z + 0.07, windowW + 0.1, 0.04, 0.04, COLORS.moldura));
+    boxes.push(box(winX - windowW/2 - 0.03, winY, z + 0.07, 0.04, windowH, 0.04, COLORS.moldura));
+    boxes.push(box(winX + windowW/2 + 0.03, winY, z + 0.07, 0.04, windowH, 0.04, COLORS.moldura));
+    // Cruz da janela
+    boxes.push(box(winX, winY, z + 0.06, 0.03, windowH * 0.8, 0.03, COLORS.moldura));
+    boxes.push(box(winX, winY, z + 0.06, windowW * 0.8, 0.03, 0.03, COLORS.moldura));
+    return;
+  }
+}
+
 function generateArchitecture(cx, cz, floor){
   const rng = mulberry32(hashSeed(cx, cz, floor, 0xABCD));
   const boxes = [];
   const ox = cx * CHUNK_SIZE;
   const oz = cz * CHUNK_SIZE;
-  const yBase = floor * 4; // Cada andar tem 4 unidades de altura
+  const yBase = floor * 4;
+  const wallH = 3.5;
   
   // ===== CHÃO =====
-  const floorColor = (floor % 2 === 0) ? COLORS.cinza_escuro : COLORS.cinza;
-  boxes.push(box(ox + CHUNK_SIZE/2, yBase, oz + CHUNK_SIZE/2, CHUNK_SIZE, 0.2, CHUNK_SIZE, floorColor));
+  boxes.push(box(ox + CHUNK_SIZE/2, yBase, oz + CHUNK_SIZE/2, CHUNK_SIZE, 0.15, CHUNK_SIZE, COLORS.chao));
   
   // ===== TETO =====
-  const ceilColor = (floor % 2 === 0) ? COLORS.branco : COLORS.bege;
-  boxes.push(box(ox + CHUNK_SIZE/2, yBase + 4, oz + CHUNK_SIZE/2, CHUNK_SIZE, 0.2, CHUNK_SIZE, ceilColor));
+  boxes.push(box(ox + CHUNK_SIZE/2, yBase + 4, oz + CHUNK_SIZE/2, CHUNK_SIZE, 0.15, CHUNK_SIZE, COLORS.teto));
   
-  // ===== PAREDES EXTERNAS =====
-  const wallColor = (floor % 3 === 0) ? COLORS.azul : (floor % 3 === 1) ? COLORS.roxo : COLORS.verde;
-  const wallH = 3.8;
+  // ===== QUARTOS =====
+  // Divisão interna do chunk em salas
+  const roomGrid = 3 + Math.floor(rng() * 2); // 3-4 salas por lado
+  const roomSize = CHUNK_SIZE / roomGrid;
   
-  // Paredes com aberturas (portas/janelas)
-  const hasDoorNorth = rng() < 0.3;
-  const hasDoorSouth = rng() < 0.3;
-  const hasDoorEast = rng() < 0.3;
-  const hasDoorWest = rng() < 0.3;
-  
-  // Parede Norte
-  if(!hasDoorNorth){
-    boxes.push(box(ox + CHUNK_SIZE/2, yBase + wallH/2, oz, CHUNK_SIZE, wallH, 0.2, wallColor));
-  } else {
-    // Porta no norte
-    const doorW = 1.2;
-    const doorH = 2.4;
-    // Paredes ao redor da porta
-    boxes.push(box(ox + (CHUNK_SIZE - doorW)/4, yBase + wallH/2, oz, (CHUNK_SIZE - doorW)/2, wallH, 0.2, wallColor));
-    boxes.push(box(ox + CHUNK_SIZE - (CHUNK_SIZE - doorW)/4, yBase + wallH/2, oz, (CHUNK_SIZE - doorW)/2, wallH, 0.2, wallColor));
-    boxes.push(box(ox + CHUNK_SIZE/2, yBase + doorH + (wallH - doorH)/2, oz, doorW, wallH - doorH, 0.2, wallColor));
-    // Porta (visual)
-    boxes.push(box(ox + CHUNK_SIZE/2, yBase + doorH/2, oz + 0.15, doorW, doorH, 0.1, COLORS.rosa));
-  }
-  
-  // Parede Sul
-  if(!hasDoorSouth){
-    boxes.push(box(ox + CHUNK_SIZE/2, yBase + wallH/2, oz + CHUNK_SIZE, CHUNK_SIZE, wallH, 0.2, wallColor));
-  } else {
-    const doorW = 1.2;
-    const doorH = 2.4;
-    boxes.push(box(ox + (CHUNK_SIZE - doorW)/4, yBase + wallH/2, oz + CHUNK_SIZE, (CHUNK_SIZE - doorW)/2, wallH, 0.2, wallColor));
-    boxes.push(box(ox + CHUNK_SIZE - (CHUNK_SIZE - doorW)/4, yBase + wallH/2, oz + CHUNK_SIZE, (CHUNK_SIZE - doorW)/2, wallH, 0.2, wallColor));
-    boxes.push(box(ox + CHUNK_SIZE/2, yBase + doorH + (wallH - doorH)/2, oz + CHUNK_SIZE, doorW, wallH - doorH, 0.2, wallColor));
-    boxes.push(box(ox + CHUNK_SIZE/2, yBase + doorH/2, oz + CHUNK_SIZE - 0.15, doorW, doorH, 0.1, COLORS.rosa));
-  }
-  
-  // Parede Leste
-  if(!hasDoorEast){
-    boxes.push(box(ox + CHUNK_SIZE, yBase + wallH/2, oz + CHUNK_SIZE/2, 0.2, wallH, CHUNK_SIZE, wallColor));
-  } else {
-    const doorW = 1.2;
-    const doorH = 2.4;
-    boxes.push(box(ox + CHUNK_SIZE, yBase + wallH/2, oz + (CHUNK_SIZE - doorW)/4, 0.2, wallH, (CHUNK_SIZE - doorW)/2, wallColor));
-    boxes.push(box(ox + CHUNK_SIZE, yBase + wallH/2, oz + CHUNK_SIZE - (CHUNK_SIZE - doorW)/4, 0.2, wallH, (CHUNK_SIZE - doorW)/2, wallColor));
-    boxes.push(box(ox + CHUNK_SIZE, yBase + doorH + (wallH - doorH)/2, oz + CHUNK_SIZE/2, 0.2, wallH - doorH, doorW, wallColor));
-    boxes.push(box(ox + CHUNK_SIZE - 0.15, yBase + doorH/2, oz + CHUNK_SIZE/2, 0.1, doorH, doorW, COLORS.rosa));
-  }
-  
-  // Parede Oeste
-  if(!hasDoorWest){
-    boxes.push(box(ox, yBase + wallH/2, oz + CHUNK_SIZE/2, 0.2, wallH, CHUNK_SIZE, wallColor));
-  } else {
-    const doorW = 1.2;
-    const doorH = 2.4;
-    boxes.push(box(ox, yBase + wallH/2, oz + (CHUNK_SIZE - doorW)/4, 0.2, wallH, (CHUNK_SIZE - doorW)/2, wallColor));
-    boxes.push(box(ox, yBase + wallH/2, oz + CHUNK_SIZE - (CHUNK_SIZE - doorW)/4, 0.2, wallH, (CHUNK_SIZE - doorW)/2, wallColor));
-    boxes.push(box(ox, yBase + doorH + (wallH - doorH)/2, oz + CHUNK_SIZE/2, 0.2, wallH - doorH, doorW, wallColor));
-    boxes.push(box(ox + 0.15, yBase + doorH/2, oz + CHUNK_SIZE/2, 0.1, doorH, doorW, COLORS.rosa));
-  }
-  
-  // ===== JANELAS =====
-  const hasWindowNorth = rng() < 0.4 && !hasDoorNorth;
-  const hasWindowSouth = rng() < 0.4 && !hasDoorSouth;
-  const hasWindowEast = rng() < 0.4 && !hasDoorEast;
-  const hasWindowWest = rng() < 0.4 && !hasDoorWest;
-  
-  if(hasWindowNorth){
-    const wPos = ox + CHUNK_SIZE * (0.2 + rng() * 0.6);
-    boxes.push(box(wPos, yBase + 2.2, oz + 0.15, 0.8, 1.2, 0.1, COLORS.ciano));
-    boxes.push(box(wPos, yBase + 2.2, oz, 0.9, 1.3, 0.05, COLORS.branco));
-  }
-  if(hasWindowSouth){
-    const wPos = ox + CHUNK_SIZE * (0.2 + rng() * 0.6);
-    boxes.push(box(wPos, yBase + 2.2, oz + CHUNK_SIZE - 0.15, 0.8, 1.2, 0.1, COLORS.ciano));
-    boxes.push(box(wPos, yBase + 2.2, oz + CHUNK_SIZE, 0.9, 1.3, 0.05, COLORS.branco));
-  }
-  if(hasWindowEast){
-    const wPos = oz + CHUNK_SIZE * (0.2 + rng() * 0.6);
-    boxes.push(box(ox + CHUNK_SIZE - 0.15, yBase + 2.2, wPos, 0.1, 1.2, 0.8, COLORS.ciano));
-    boxes.push(box(ox + CHUNK_SIZE, yBase + 2.2, wPos, 0.05, 1.3, 0.9, COLORS.branco));
-  }
-  if(hasWindowWest){
-    const wPos = oz + CHUNK_SIZE * (0.2 + rng() * 0.6);
-    boxes.push(box(ox + 0.15, yBase + 2.2, wPos, 0.1, 1.2, 0.8, COLORS.ciano));
-    boxes.push(box(ox, yBase + 2.2, wPos, 0.05, 1.3, 0.9, COLORS.branco));
-  }
-  
-  // ===== SALAS INTERNAS =====
-  // Sala grande (40m³)
-  if(rng() < 0.15){
-    const roomSize = 6 + rng() * 8;
-    const rx = ox + 2 + rng() * (CHUNK_SIZE - roomSize - 4);
-    const rz = oz + 2 + rng() * (CHUNK_SIZE - roomSize - 4);
-    const roomColor = randomColor();
-    // Paredes internas da sala
-    boxes.push(box(rx + roomSize/2, yBase + wallH/2, rz, roomSize, wallH, 0.15, roomColor));
-    boxes.push(box(rx + roomSize/2, yBase + wallH/2, rz + roomSize, roomSize, wallH, 0.15, roomColor));
-    boxes.push(box(rx, yBase + wallH/2, rz + roomSize/2, 0.15, wallH, roomSize, roomColor));
-    boxes.push(box(rx + roomSize, yBase + wallH/2, rz + roomSize/2, 0.15, wallH, roomSize, roomColor));
-    // Porta da sala
-    boxes.push(box(rx + roomSize/2, yBase + 1.2, rz + 0.2, 0.8, 2.0, 0.1, COLORS.rosa));
-    // Piso da sala
-    boxes.push(box(rx + roomSize/2, yBase + 0.1, rz + roomSize/2, roomSize - 0.4, 0.1, roomSize - 0.4, COLORS.cinza_escuro));
-    // Luminária
-    boxes.push(box(rx + roomSize/2, yBase + 3.9, rz + roomSize/2, 0.4, 0.05, 0.4, COLORS.amarelo));
-  }
-  
-  // ===== SALAS PEQUENAS (5m³) =====
-  const numSmallRooms = Math.floor(rng() * 4) + 2;
-  for(let i = 0; i < numSmallRooms; i++){
-    const roomSize = 1.5 + rng() * 2.5;
-    const rx = ox + 1 + rng() * (CHUNK_SIZE - roomSize - 2);
-    const rz = oz + 1 + rng() * (CHUNK_SIZE - roomSize - 2);
-    const roomColor = randomLightColor();
-    
-    // Paredes
-    boxes.push(box(rx + roomSize/2, yBase + wallH/2, rz, roomSize, wallH, 0.1, roomColor));
-    boxes.push(box(rx + roomSize/2, yBase + wallH/2, rz + roomSize, roomSize, wallH, 0.1, roomColor));
-    boxes.push(box(rx, yBase + wallH/2, rz + roomSize/2, 0.1, wallH, roomSize, roomColor));
-    boxes.push(box(rx + roomSize, yBase + wallH/2, rz + roomSize/2, 0.1, wallH, roomSize, roomColor));
-    // Porta
-    boxes.push(box(rx + roomSize/2, yBase + 1.2, rz + 0.15, 0.6, 1.8, 0.08, COLORS.rosa));
-  }
-  
-  // ===== CORREDORES =====
-  // Corredor longo (até 500m)
-  if(rng() < 0.2){
-    const corridorLength = 5 + rng() * 45;
-    const isHorizontal = rng() < 0.5;
-    const corridorColor = randomLightColor();
-    const corridorWidth = 1.2 + rng() * 1.5;
-    const startX = ox + 2 + rng() * (CHUNK_SIZE - 4);
-    const startZ = oz + 2 + rng() * (CHUNK_SIZE - 4);
-    
-    if(isHorizontal){
-      const length = Math.min(corridorLength, CHUNK_SIZE - 4);
-      // Chão do corredor
-      boxes.push(box(startX + length/2, yBase + 0.1, startZ, length, 0.1, corridorWidth, COLORS.cinza_escuro));
-      // Paredes
-      boxes.push(box(startX + length/2, yBase + wallH/2, startZ - corridorWidth/2, length, wallH, 0.1, corridorColor));
-      boxes.push(box(startX + length/2, yBase + wallH/2, startZ + corridorWidth/2, length, wallH, 0.1, corridorColor));
-      // Teto
-      boxes.push(box(startX + length/2, yBase + wallH, startZ, length, 0.1, corridorWidth, COLORS.branco));
-      // Luminárias
-      for(let lx = startX + 2; lx < startX + length - 2; lx += 4){
-        boxes.push(box(lx, yBase + 3.9, startZ, 0.3, 0.05, 0.3, COLORS.amarelo));
+  // Decidir quais salas são interligadas
+  const connections = [];
+  for(let i = 0; i < roomGrid; i++){
+    for(let j = 0; j < roomGrid; j++){
+      // Conexão horizontal
+      if(j < roomGrid - 1 && rng() < 0.5){
+        connections.push({x1: i, z1: j, x2: i, z2: j+1});
       }
-    } else {
-      const length = Math.min(corridorLength, CHUNK_SIZE - 4);
-      boxes.push(box(startX, yBase + 0.1, startZ + length/2, corridorWidth, 0.1, length, COLORS.cinza_escuro));
-      boxes.push(box(startX - corridorWidth/2, yBase + wallH/2, startZ + length/2, 0.1, wallH, length, corridorColor));
-      boxes.push(box(startX + corridorWidth/2, yBase + wallH/2, startZ + length/2, 0.1, wallH, length, corridorColor));
-      boxes.push(box(startX, yBase + wallH, startZ + length/2, corridorWidth, 0.1, length, COLORS.branco));
-      for(let lz = startZ + 2; lz < startZ + length - 2; lz += 4){
-        boxes.push(box(startX, yBase + 3.9, lz, 0.3, 0.05, 0.3, COLORS.amarelo));
+      // Conexão vertical
+      if(i < roomGrid - 1 && rng() < 0.5){
+        connections.push({x1: i, z1: j, x2: i+1, z2: j});
       }
+    }
+  }
+  
+  // Determinar quais salas têm portas/janelas
+  const roomHasDoor = {};
+  const roomHasWindow = {};
+  for(let i = 0; i < roomGrid; i++){
+    for(let j = 0; j < roomGrid; j++){
+      const key = i + ',' + j;
+      roomHasDoor[key] = rng() < 0.2;
+      roomHasWindow[key] = rng() < 0.3;
+    }
+  }
+  
+  // Construir paredes internas
+  for(let i = 0; i < roomGrid; i++){
+    for(let j = 0; j < roomGrid; j++){
+      const rx = ox + i * roomSize + roomSize/2;
+      const rz = oz + j * roomSize + roomSize/2;
+      const key = i + ',' + j;
+      
+      // Parede Norte (frente)
+      if(j === 0){
+        // Parede externa norte
+        const hasDoor = roomHasDoor[key] && rng() < 0.3;
+        const hasWindow = roomHasWindow[key] && rng() < 0.4;
+        addWall(boxes, rx, yBase + wallH/2, oz, roomSize, wallH, 0.15, hasDoor, 0.8, 2.2, hasWindow, 0.6, 0.8);
+      } else {
+        // Parede interna norte (conexão com sala anterior)
+        const connKey = i + ',' + (j-1);
+        const isConnected = connections.some(c => 
+          (c.x1 === i && c.z1 === j-1 && c.x2 === i && c.z2 === j) ||
+          (c.x2 === i && c.z2 === j-1 && c.x1 === i && c.z1 === j)
+        );
+        const hasDoor = isConnected && rng() < 0.6;
+        const hasWindow = !hasDoor && rng() < 0.3;
+        addWall(boxes, rx, yBase + wallH/2, oz + j * roomSize, roomSize, wallH, 0.15, hasDoor, 0.8, 2.2, hasWindow, 0.6, 0.8);
+      }
+      
+      // Parede Sul (trás)
+      if(j === roomGrid - 1){
+        const hasDoor = roomHasDoor[key] && rng() < 0.3;
+        const hasWindow = roomHasWindow[key] && rng() < 0.4;
+        addWall(boxes, rx, yBase + wallH/2, oz + roomSize * roomGrid, roomSize, wallH, 0.15, hasDoor, 0.8, 2.2, hasWindow, 0.6, 0.8);
+      } else {
+        const connKey = i + ',' + (j+1);
+        const isConnected = connections.some(c => 
+          (c.x1 === i && c.z1 === j && c.x2 === i && c.z2 === j+1) ||
+          (c.x2 === i && c.z2 === j && c.x1 === i && c.z1 === j+1)
+        );
+        const hasDoor = isConnected && rng() < 0.6;
+        const hasWindow = !hasDoor && rng() < 0.3;
+        addWall(boxes, rx, yBase + wallH/2, oz + (j+1) * roomSize, roomSize, wallH, 0.15, hasDoor, 0.8, 2.2, hasWindow, 0.6, 0.8);
+      }
+      
+      // Parede Oeste (esquerda)
+      if(i === 0){
+        const hasDoor = roomHasDoor[key] && rng() < 0.3;
+        const hasWindow = roomHasWindow[key] && rng() < 0.4;
+        addWall(boxes, ox, yBase + wallH/2, rz, 0.15, wallH, roomSize, hasDoor, 0.8, 2.2, hasWindow, 0.6, 0.8);
+      } else {
+        const connKey = (i-1) + ',' + j;
+        const isConnected = connections.some(c => 
+          (c.x1 === i-1 && c.z1 === j && c.x2 === i && c.z2 === j) ||
+          (c.x2 === i-1 && c.z2 === j && c.x1 === i && c.z1 === j)
+        );
+        const hasDoor = isConnected && rng() < 0.6;
+        const hasWindow = !hasDoor && rng() < 0.3;
+        addWall(boxes, ox + i * roomSize, yBase + wallH/2, rz, 0.15, wallH, roomSize, hasDoor, 0.8, 2.2, hasWindow, 0.6, 0.8);
+      }
+      
+      // Parede Leste (direita)
+      if(i === roomGrid - 1){
+        const hasDoor = roomHasDoor[key] && rng() < 0.3;
+        const hasWindow = roomHasWindow[key] && rng() < 0.4;
+        addWall(boxes, ox + roomSize * roomGrid, yBase + wallH/2, rz, 0.15, wallH, roomSize, hasDoor, 0.8, 2.2, hasWindow, 0.6, 0.8);
+      } else {
+        const connKey = (i+1) + ',' + j;
+        const isConnected = connections.some(c => 
+          (c.x1 === i && c.z1 === j && c.x2 === i+1 && c.z2 === j) ||
+          (c.x2 === i && c.z2 === j && c.x1 === i+1 && c.z1 === j)
+        );
+        const hasDoor = isConnected && rng() < 0.6;
+        const hasWindow = !hasDoor && rng() < 0.3;
+        addWall(boxes, ox + (i+1) * roomSize, yBase + wallH/2, rz, 0.15, wallH, roomSize, hasDoor, 0.8, 2.2, hasWindow, 0.6, 0.8);
+      }
+    }
+  }
+  
+  // ===== PILARES =====
+  const numPillars = 1 + Math.floor(rng() * 3);
+  for(let p = 0; p < numPillars; p++){
+    const px = ox + 2 + rng() * (CHUNK_SIZE - 4);
+    const pz = oz + 2 + rng() * (CHUNK_SIZE - 4);
+    const pSize = 0.3 + rng() * 0.3;
+    boxes.push(box(px, yBase + wallH/2, pz, pSize, wallH, pSize, COLORS.pilar));
+    // Base do pilar
+    boxes.push(box(px, yBase + 0.1, pz, pSize * 1.4, 0.1, pSize * 1.4, COLORS.borda));
+    // Capitel
+    if(rng() < 0.4){
+      boxes.push(box(px, yBase + wallH - 0.15, pz, pSize * 1.6, 0.1, pSize * 1.6, COLORS.borda));
     }
   }
   
   // ===== ESCADARIAS =====
-  if(rng() < 0.25){
-    const stairX = ox + 2 + rng() * (CHUNK_SIZE - 10);
-    const stairZ = oz + 2 + rng() * (CHUNK_SIZE - 10);
-    const stairColor = randomColor();
-    const numSteps = 8 + Math.floor(rng() * 6);
-    const stepW = 1.0 + rng() * 0.5;
-    const stepD = 0.6 + rng() * 0.4;
-    const stepH = 0.3 + rng() * 0.15;
-    
-    // Corrimão
-    const railMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.7, roughness: 0.3 });
+  if(rng() < 0.2){
+    const stairX = ox + 2 + rng() * (CHUNK_SIZE - 6);
+    const stairZ = oz + 2 + rng() * (CHUNK_SIZE - 6);
+    const numSteps = 6 + Math.floor(rng() * 6);
+    const stepW = 1.2;
+    const stepD = 0.4;
+    const stepH = 0.25;
     
     for(let i = 0; i < numSteps; i++){
       const sy = yBase + i * stepH;
       const sx = stairX + i * stepD;
-      boxes.push(box(sx + stepD/2, sy + stepH/2, stairZ, stepD, stepH, stepW, stairColor));
+      boxes.push(box(sx + stepD/2, sy + stepH/2, stairZ, stepD, stepH, stepW, COLORS.escada));
       
-      // Corrimão esquerdo
+      // Borda branca nos degraus
+      if(i % 2 === 0){
+        boxes.push(box(sx + stepD/2, sy + stepH, stairZ, stepD, 0.02, stepW, COLORS.borda));
+      }
+      
+      // Corrimão
       if(i % 3 === 0){
-        boxes.push(box(sx + stepD/2, sy + 1.0, stairZ - stepW/2 - 0.15, stepD * 0.8, 0.05, 0.05, COLORS.cinza));
-      }
-      // Corrimão direito
-      if(i % 3 === 1){
-        boxes.push(box(sx + stepD/2, sy + 1.0, stairZ + stepW/2 + 0.15, stepD * 0.8, 0.05, 0.05, COLORS.cinza));
+        boxes.push(box(sx + stepD/2, sy + 0.9, stairZ - stepW/2 - 0.1, stepD * 0.6, 0.04, 0.04, COLORS.corrimao));
+        boxes.push(box(sx + stepD/2, sy + 0.9, stairZ + stepW/2 + 0.1, stepD * 0.6, 0.04, 0.04, COLORS.corrimao));
       }
     }
     
-    // Piso do patamar superior
+    // Patamar superior
     const topY = yBase + numSteps * stepH;
-    boxes.push(box(stairX + numSteps * stepD + 1, topY + 0.05, stairZ, 1.5, 0.1, stepW + 1, COLORS.cinza_escuro));
+    boxes.push(box(stairX + numSteps * stepD + 1, topY + 0.05, stairZ, 1.5, 0.1, stepW + 1, COLORS.chao));
+    // Borda do patamar
+    boxes.push(box(stairX + numSteps * stepD + 1, topY + 0.1, stairZ - stepW/2 - 0.1, 1.5, 0.04, 0.04, COLORS.borda));
+    boxes.push(box(stairX + numSteps * stepD + 1, topY + 0.1, stairZ + stepW/2 + 0.1, 1.5, 0.04, 0.04, COLORS.borda));
   }
   
-  // ===== PILARES =====
-  const numPillars = 2 + Math.floor(rng() * 4);
-  for(let i = 0; i < numPillars; i++){
-    const px = ox + 1 + rng() * (CHUNK_SIZE - 2);
-    const pz = oz + 1 + rng() * (CHUNK_SIZE - 2);
-    const pillarColor = randomLightColor();
-    const pillarSize = 0.3 + rng() * 0.4;
-    boxes.push(box(px, yBase + wallH/2, pz, pillarSize, wallH, pillarSize, pillarColor));
+  // ===== CORREDORES LONGOS =====
+  if(rng() < 0.15){
+    const corridorLength = 5 + Math.floor(rng() * 30);
+    const isHorizontal = rng() < 0.5;
+    const corrWidth = 1.0 + rng() * 0.8;
+    const startX = ox + 2 + rng() * (CHUNK_SIZE - 4);
+    const startZ = oz + 2 + rng() * (CHUNK_SIZE - 4);
+    const length = Math.min(corridorLength, CHUNK_SIZE - 4);
     
-    // Capitel
-    if(rng() < 0.5){
-      boxes.push(box(px, yBase + wallH - 0.3, pz, pillarSize * 1.8, 0.2, pillarSize * 1.8, COLORS.branco));
+    if(isHorizontal){
+      // Chão
+      boxes.push(box(startX + length/2, yBase + 0.05, startZ, length, 0.05, corrWidth, COLORS.chao));
+      // Paredes
+      boxes.push(box(startX + length/2, yBase + wallH/2, startZ - corrWidth/2, length, wallH, 0.1, COLORS.parede));
+      boxes.push(box(startX + length/2, yBase + wallH/2, startZ + corrWidth/2, length, wallH, 0.1, COLORS.parede));
+      // Bordas do corredor
+      boxes.push(box(startX, yBase + wallH/2, startZ - corrWidth/2, 0.05, wallH, 0.1, COLORS.borda));
+      boxes.push(box(startX + length, yBase + wallH/2, startZ - corrWidth/2, 0.05, wallH, 0.1, COLORS.borda));
+      boxes.push(box(startX, yBase + wallH/2, startZ + corrWidth/2, 0.05, wallH, 0.1, COLORS.borda));
+      boxes.push(box(startX + length, yBase + wallH/2, startZ + corrWidth/2, 0.05, wallH, 0.1, COLORS.borda));
+      // Teto
+      boxes.push(box(startX + length/2, yBase + wallH, startZ, length, 0.05, corrWidth, COLORS.teto));
+      // Luminárias
+      for(let lx = startX + 2; lx < startX + length - 2; lx += 3){
+        boxes.push(box(lx, yBase + wallH - 0.1, startZ, 0.3, 0.04, 0.3, COLORS.borda));
+        boxes.push(box(lx, yBase + wallH - 0.15, startZ, 0.15, 0.04, 0.15, 0xffffaa));
+      }
+    } else {
+      boxes.push(box(startX, yBase + 0.05, startZ + length/2, corrWidth, 0.05, length, COLORS.chao));
+      boxes.push(box(startX - corrWidth/2, yBase + wallH/2, startZ + length/2, 0.1, wallH, length, COLORS.parede));
+      boxes.push(box(startX + corrWidth/2, yBase + wallH/2, startZ + length/2, 0.1, wallH, length, COLORS.parede));
+      boxes.push(box(startX - corrWidth/2, yBase + wallH/2, startZ, 0.1, wallH, 0.05, COLORS.borda));
+      boxes.push(box(startX - corrWidth/2, yBase + wallH/2, startZ + length, 0.1, wallH, 0.05, COLORS.borda));
+      boxes.push(box(startX + corrWidth/2, yBase + wallH/2, startZ, 0.1, wallH, 0.05, COLORS.borda));
+      boxes.push(box(startX + corrWidth/2, yBase + wallH/2, startZ + length, 0.1, wallH, 0.05, COLORS.borda));
+      boxes.push(box(startX, yBase + wallH, startZ + length/2, corrWidth, 0.05, length, COLORS.teto));
+      for(let lz = startZ + 2; lz < startZ + length - 2; lz += 3){
+        boxes.push(box(startX, yBase + wallH - 0.1, lz, 0.3, 0.04, 0.3, COLORS.borda));
+        boxes.push(box(startX, yBase + wallH - 0.15, lz, 0.15, 0.04, 0.15, 0xffffaa));
+      }
     }
   }
   
-  // ===== ELEMENTOS DECORATIVOS =====
-  // Rodapé
-  const baseboardColor = COLORS.cinza_escuro;
-  boxes.push(box(ox + CHUNK_SIZE/2, yBase + 0.1, oz + 0.1, CHUNK_SIZE - 0.2, 0.1, 0.1, baseboardColor));
-  boxes.push(box(ox + CHUNK_SIZE/2, yBase + 0.1, oz + CHUNK_SIZE - 0.1, CHUNK_SIZE - 0.2, 0.1, 0.1, baseboardColor));
-  boxes.push(box(ox + 0.1, yBase + 0.1, oz + CHUNK_SIZE/2, 0.1, 0.1, CHUNK_SIZE - 0.2, baseboardColor));
-  boxes.push(box(ox + CHUNK_SIZE - 0.1, yBase + 0.1, oz + CHUNK_SIZE/2, 0.1, 0.1, CHUNK_SIZE - 0.2, baseboardColor));
-  
-  // Sancas
-  const corniceColor = COLORS.branco;
-  boxes.push(box(ox + CHUNK_SIZE/2, yBase + wallH - 0.1, oz + 0.1, CHUNK_SIZE - 0.2, 0.1, 0.1, corniceColor));
-  boxes.push(box(ox + CHUNK_SIZE/2, yBase + wallH - 0.1, oz + CHUNK_SIZE - 0.1, CHUNK_SIZE - 0.2, 0.1, 0.1, corniceColor));
-  boxes.push(box(ox + 0.1, yBase + wallH - 0.1, oz + CHUNK_SIZE/2, 0.1, 0.1, CHUNK_SIZE - 0.2, corniceColor));
-  boxes.push(box(ox + CHUNK_SIZE - 0.1, yBase + wallH - 0.1, oz + CHUNK_SIZE/2, 0.1, 0.1, CHUNK_SIZE - 0.2, corniceColor));
+  // ===== RODAPÉ =====
+  const baseColor = COLORS.borda;
+  const bw = 0.05;
+  // Borda do chão
+  boxes.push(box(ox + CHUNK_SIZE/2, yBase + 0.08, oz + 0.05, CHUNK_SIZE, 0.04, 0.04, baseColor));
+  boxes.push(box(ox + CHUNK_SIZE/2, yBase + 0.08, oz + CHUNK_SIZE - 0.05, CHUNK_SIZE, 0.04, 0.04, baseColor));
+  boxes.push(box(ox + 0.05, yBase + 0.08, oz + CHUNK_SIZE/2, 0.04, 0.04, CHUNK_SIZE, baseColor));
+  boxes.push(box(ox + CHUNK_SIZE - 0.05, yBase + 0.08, oz + CHUNK_SIZE/2, 0.04, 0.04, CHUNK_SIZE, baseColor));
   
   return boxes;
 }
@@ -716,8 +701,8 @@ function buildChunkMesh(boxes){
   
   const mat = new THREE.MeshStandardMaterial({
     vertexColors: true,
-    roughness: 0.6,
-    metalness: 0.1,
+    roughness: 0.7,
+    metalness: 0.05,
     transparent: true,
     opacity: 0
   });
@@ -732,7 +717,6 @@ function buildChunkMesh(boxes){
 const chunkGroup = new THREE.Group();
 scene.add(chunkGroup);
 const chunkMap = new Map();
-const saltMap = new Map();
 const buildingSet = new Set();
 
 let collidablesList = [];
@@ -793,7 +777,7 @@ function nearestMissingChunks(px, py, pz, radius, forwardX, forwardZ){
         let score = dist;
         if(forwardX !== undefined && dist > 0.01){
           const dot = (dx/dist) * forwardX + (dz/dist) * forwardZ;
-          score -= dot * 30;
+          score -= dot * 25;
         }
         list.push({cx, cz, floor, score});
       }
@@ -852,52 +836,9 @@ let fallStartY = null;
 const raycaster = new THREE.Raycaster();
 const _fwd = new THREE.Vector3(), _right = new THREE.Vector3();
 
-function updateThirdPersonCamera(){
-  const feet = player.position.y - EYE_HEIGHT;
-  const pivot = new THREE.Vector3(player.position.x, feet + 1.2, player.position.z);
-  
-  const cp = Math.max(THIRD_PERSON_PITCH_MIN, Math.min(THIRD_PERSON_PITCH_MAX, pitch));
-  const cosP = Math.cos(cp);
-  const sinP = Math.sin(cp);
-  const backX = Math.sin(yaw) * THIRD_PERSON_DISTANCE * cosP;
-  const backZ = Math.cos(yaw) * THIRD_PERSON_DISTANCE * cosP;
-  const upY = -sinP * THIRD_PERSON_DISTANCE + 0.8;
-  
-  const camPosTarget = new THREE.Vector3(pivot.x + backX, pivot.y + upY, pivot.z + backZ);
-  
-  let finalPos = camPosTarget;
-  const dir = camPosTarget.clone().sub(pivot);
-  const dist = dir.length();
-  if(dist > 0.001){
-    dir.normalize();
-    raycaster.set(pivot, dir);
-    raycaster.far = dist;
-    const hits = raycaster.intersectObjects(collidablesList, false);
-    if(hits.length > 0 && hits[0].distance < dist){
-      const newDist = Math.max(1.0, hits[0].distance - 0.2);
-      finalPos = pivot.clone().add(dir.multiplyScalar(newDist));
-    }
-  }
-  
-  camera.position.copy(finalPos);
-  camera.lookAt(pivot.x, pivot.y + 0.2, pivot.z);
-}
-
 function updateFirstPersonCamera(){
   camera.position.copy(player.position);
   camera.rotation.set(pitch, yaw, 0, 'YXZ');
-}
-
-function updateCamera(){
-  if(cameraMode === 'third'){
-    updateThirdPersonCamera();
-    playerGroup.visible = true;
-    document.getElementById('crosshair').style.display = 'none';
-  } else {
-    updateFirstPersonCamera();
-    playerGroup.visible = false;
-    document.getElementById('crosshair').style.display = 'block';
-  }
 }
 
 function updatePhysics(dt, inForward, inStrafe){
@@ -975,12 +916,11 @@ function updatePhysics(dt, inForward, inStrafe){
   playerGroup.position.y -= EYE_HEIGHT;
   playerGroup.rotation.y = yaw;
   
-  updateCamera();
+  updateFirstPersonCamera();
   
   const currentFloor = getFloorFromY(player.position.y);
   document.getElementById('hudFloor').textContent = currentFloor;
   
-  // Detecta sala atual
   const roomX = Math.floor(player.position.x / 10);
   const roomZ = Math.floor(player.position.z / 10);
   document.getElementById('hudRoom').textContent = roomX + ',' + roomZ;
@@ -995,7 +935,6 @@ window.addEventListener('keydown', (e)=>{
   keys[e.code] = true;
   if(e.code === 'Space'){ wantsJump = true; e.preventDefault(); }
   if(e.code === 'KeyQ'){ running = true; }
-  if(e.code === 'KeyR' && !e.repeat){ toggleCamera(); }
 });
 window.addEventListener('keyup', (e)=>{
   keys[e.code] = false;
@@ -1122,6 +1061,7 @@ function beginGame(selectedModeArg){
   document.getElementById('loadingLabel').textContent = 'CARREGANDO 0%';
   document.getElementById('loadingBarInner').style.width = '0%';
   
+  // Spawn em uma sala vazia (posição segura)
   player.position.set(0, EYE_HEIGHT, 0);
   velocityY = 0; fallStartY = null; grounded = true;
   yaw = 0; pitch = 0;
@@ -1134,11 +1074,8 @@ function beginGame(selectedModeArg){
   playerGroup.position.y -= EYE_HEIGHT;
   playerGroup.rotation.y = yaw;
   playerGroup.visible = true;
-  cameraMode = 'third';
-  document.getElementById('hudCamMode').textContent = '3ª PESSOA';
   
   chunkMap.clear();
-  saltMap.clear();
   while(chunkGroup.children.length > 0){
     const child = chunkGroup.children[0];
     chunkGroup.remove(child);
@@ -1180,7 +1117,7 @@ const NEEDED_INITIAL = neededInitialChunkCount();
 
 function initialLoadStep(){
   const list = nearestMissingChunks(0, 0, 0, INITIAL_RADIUS, 0, -1);
-  const batch = Math.min(12, list.length);
+  const batch = Math.min(16, list.length);
   for(let i = 0; i < batch; i++){
     requestChunk(list[i].cx, list[i].cz, list[i].floor);
   }
@@ -1207,11 +1144,9 @@ function initialLoadStep(){
     loadingComplete = true;
     loadingScreen.style.display = 'none';
     hud.style.display = 'block';
-    if(mode === 'pc'){ crosshair.style.display = 'block'; pcHint.style.display = 'block'; }
+    crosshair.style.display = 'block';
+    if(mode === 'pc'){ pcHint.style.display = 'block'; }
     if(mode === 'mobile'){ mobileControls.style.display = 'block'; }
-    cameraMode = 'third';
-    playerGroup.visible = true;
-    document.getElementById('crosshair').style.display = 'none';
   }
 }
 
@@ -1236,7 +1171,7 @@ function animate(){
   updatePhysics(dt, inVec.f, inVec.s);
   
   _fwd.set(-Math.sin(yaw), 0, -Math.cos(yaw));
-  updateStreaming(player.position.x, player.position.y, player.position.z, _fwd.x, _fwd.z, 3);
+  updateStreaming(player.position.x, player.position.y, player.position.z, _fwd.x, _fwd.z, 4);
   animateChunks(dt);
   
   const pos = player.position;
